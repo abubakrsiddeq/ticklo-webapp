@@ -1,0 +1,59 @@
+import { z } from "zod";
+import { fromPKTInputValue } from "@/lib/format";
+import { optionalPktDateTime, optionalText, pktDateTime, requiredText } from "./common";
+
+const intString = (label: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d+$/, `${label} must be a whole number`)
+    .refine((v) => Number(v) >= min && Number(v) <= max, `${label} must be between ${min} and ${max}`);
+
+// ORG-04
+export const eventSchema = z
+  .object({
+    name: requiredText("Event name", 3, 150),
+    description: optionalText("Description", 5000),
+    venue: requiredText("Venue", 2, 200),
+    starts_at: pktDateTime("Start time"),
+    ends_at: pktDateTime("End time"),
+    capacity: intString("Capacity", 1, 100000),
+    visibility: z.enum(["public", "link_only"]),
+    max_tickets_per_order: intString("Max tickets per order", 1, 20),
+  })
+  .refine((v) => (fromPKTInputValue(v.ends_at) ?? "") > (fromPKTInputValue(v.starts_at) ?? ""), {
+    message: "End time must be after the start time",
+    path: ["ends_at"],
+  });
+
+export type EventInput = z.infer<typeof eventSchema>;
+
+// ORG-05 (price in rupees as typed; 0 = free)
+export const ticketTypeSchema = z
+  .object({
+    name: requiredText("Ticket name", 1, 80),
+    description: optionalText("Description", 500),
+    price: z
+      .string()
+      .trim()
+      .regex(/^\d+(\.\d{1,2})?$/, "Enter the price in rupees, e.g. 1500 (0 for free)")
+      .refine((v) => Number(v) <= 1_000_000, "Price is too high"),
+    quantity: intString("Quantity", 1, 100000),
+    sale_starts_at: optionalPktDateTime,
+    sale_ends_at: optionalPktDateTime,
+    requires_student_card: z.boolean(),
+  })
+  .refine(
+    (v) =>
+      !v.sale_starts_at ||
+      !v.sale_ends_at ||
+      (fromPKTInputValue(v.sale_ends_at) ?? "") > (fromPKTInputValue(v.sale_starts_at) ?? ""),
+    { message: "Sale end must be after sale start", path: ["sale_ends_at"] },
+  );
+
+export type TicketTypeInput = z.infer<typeof ticketTypeSchema>;
+
+export const cancelEventSchema = z.object({
+  reason: requiredText("Reason", 5, 1000),
+  confirm: z.literal("CANCEL", { message: 'Type CANCEL to confirm' }),
+});
