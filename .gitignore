@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Env files: never commit secrets (examples are allowed)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Supabase local state
+supabase/.temp
+supabase/.branches
+supabase/functions/.env
