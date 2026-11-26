@@ -48,7 +48,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         </select>
         <Button type="submit">Search</Button>
       </form>
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-secondary/60 text-left text-muted-foreground">
             <tr>

@@ -72,8 +72,8 @@ export function BookingWidget(props: {
   }
 
   return (
-    <section aria-labelledby="tickets-heading" className="rounded-xl border bg-white p-4 shadow-sm sm:p-5">
-      <h2 id="tickets-heading" className="mb-3 text-lg font-semibold text-navy">
+    <section aria-labelledby="tickets-heading" className="rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
+      <h2 id="tickets-heading" className="mb-4 font-heading text-xl font-bold text-navy">
         Tickets
       </h2>
       <ul className="grid gap-3">
@@ -82,7 +82,7 @@ export function BookingWidget(props: {
           const soldOut = t.remaining <= 0;
           const canBuy = props.onSale && t.saleState === "on" && !soldOut;
           return (
-            <li key={t.id} className="rounded-lg border p-3">
+            <li key={t.id} className="rounded-2xl border border-navy/10 p-4 transition-colors hover:border-brand/40">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-medium text-navy">{t.name}</p>

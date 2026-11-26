@@ -59,7 +59,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
     .sort((a, b) => b.event.starts_at.localeCompare(a.event.starts_at));
 
   const Group = ({ g, dim }: { g: (typeof groups)[number]; dim?: boolean }) => (
-    <section className={`overflow-hidden rounded-xl border bg-white ${dim ? "opacity-80" : ""}`}>
+    <section className={`overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] ${dim ? "opacity-80" : ""}`}>
       <div className="flex gap-3 p-3">
         <Poster src={g.event.poster_url} name={g.event.name} className="size-20 shrink-0 rounded-lg" sizes="80px" />
         <div className="min-w-0">
@@ -95,7 +95,10 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl font-bold text-navy">My tickets</h1>
+      <div>
+        <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Your wallet</p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">My tickets</h1>
+      </div>
       {upcoming.length ? <InstallHint /> : null}
       {sp.password === "updated" ? (
         <Alert>
@@ -112,7 +115,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
               <Link
                 key={o.id}
                 href={st === "awaiting_payment" ? `/checkout/${o.id}` : `/checkout/${o.id}/status`}
-                className="flex items-center justify-between gap-3 rounded-xl border bg-white p-4 hover:bg-secondary/60"
+                className="flex items-center justify-between gap-3 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4 hover:bg-secondary/60"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-navy">{o.events.name}</p>

@@ -36,7 +36,7 @@ export default async function FraudPage() {
           <AlertTriangle className="size-5 text-red-600" aria-hidden /> Possible duplicates ({flags?.length ?? 0})
         </h2>
         {flags?.length ? (
-          <div className="overflow-x-auto rounded-xl border bg-white">
+          <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
             <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-secondary/60 text-left text-muted-foreground">
                 <tr>
@@ -93,7 +93,7 @@ export default async function FraudPage() {
       <section>
         <h2 className="mb-3 text-xl font-semibold text-navy">Accounts rejected 3+ times</h2>
         {repeat?.length ? (
-          <ul className="divide-y rounded-xl border bg-white">
+          <ul className="divide-y rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
             {repeat.map((r) => (
               <li key={r.user_id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                 <div>

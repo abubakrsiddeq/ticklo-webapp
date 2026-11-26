@@ -130,7 +130,7 @@ export default async function CheckoutPage({
                 accounts.length ? (
                   <div className="grid gap-3">
                     {accounts.map((a) => (
-                      <div key={a.id} className="rounded-xl border bg-white px-4 py-2">
+                      <div key={a.id} className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] px-4 py-2">
                         <div className="flex items-center gap-2 pt-2 font-semibold text-navy">
                           {a.kind === "bank" ? <Landmark className="size-4" aria-hidden /> : <Wallet className="size-4" aria-hidden />}
                           {accountLabel(a)}

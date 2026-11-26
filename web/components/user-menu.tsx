@@ -39,15 +39,15 @@ export function UserMenu(props: {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="gap-2 px-2" aria-label="Account menu">
-          <Avatar className="size-8">
+        <Button variant="ghost" className="h-12 gap-2 rounded-full bg-secondary/70 py-1 pr-3 pl-1 hover:bg-secondary" aria-label="Account menu">
+          <Avatar className="size-10 ring-2 ring-white">
             {props.avatarUrl ? <AvatarImage src={props.avatarUrl} alt="" /> : null}
             <AvatarFallback className="bg-navy text-xs text-white">{initials(props.name) || "U"}</AvatarFallback>
           </Avatar>
           <span className="hidden max-w-32 truncate text-sm font-medium md:inline">{props.name}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" sideOffset={10} className="w-72 rounded-2xl p-2 shadow-lift">
         <DropdownMenuLabel className="font-normal">
           <div className="truncate text-sm font-medium">{props.name}</div>
           <div className="truncate text-xs text-muted-foreground">{props.email}</div>

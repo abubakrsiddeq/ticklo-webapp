@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { NavTabs } from "@/components/nav-tabs";
 import { requireAdmin } from "@/lib/auth";
 
@@ -11,8 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">TickLO admin</p>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <p className="mb-1 text-sm font-semibold tracking-widest text-brand-strong uppercase">TickLO admin</p>
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-navy">Control centre</h1>
         <NavTabs
           exact={["/admin"]}
           items={[
@@ -27,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         />
         {children}
       </main>
+      <SiteFooter showCta={false} />
     </>
   );
 }

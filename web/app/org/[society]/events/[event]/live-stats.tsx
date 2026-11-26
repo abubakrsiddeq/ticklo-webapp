@@ -20,7 +20,7 @@ export interface EventStats {
 
 function Stat({ icon: Icon, label, value, sub, href }: { icon: typeof Ticket; label: string; value: string; sub?: string; href?: string }) {
   const body = (
-    <div className="flex h-full flex-col gap-1 rounded-xl border bg-white p-4">
+    <div className="flex h-full flex-col gap-1 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
       <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Icon className="size-4" aria-hidden /> {label}
       </span>
@@ -80,7 +80,7 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
         <Stat icon={Banknote} label="Collected" value={formatPKR(stats.collected_paisa)} sub={`${stats.approved_orders} approved orders`} />
         <Stat icon={Users} label="Checked in" value={`${stats.checked_in}/${stats.total_tickets}`} sub={`${inPct}% arrived`} />
       </div>
-      <div className="grid gap-2 rounded-xl border bg-white p-4">
+      <div className="grid gap-2 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
         <div className="flex justify-between text-sm">
           <span className="flex items-center gap-1.5 font-medium text-navy">
             <Activity className="size-4" aria-hidden /> Capacity used
@@ -90,7 +90,7 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
         <Progress value={capPct} aria-label="Capacity used" />
       </div>
       {stats.by_type.length ? (
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-left text-muted-foreground">
               <tr>

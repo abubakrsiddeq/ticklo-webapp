@@ -70,7 +70,7 @@ export function AttendeeTable({ orgSlug, rows, canCheckIn }: { orgSlug: string; 
       <p className="text-sm text-muted-foreground">
         {filtered.length} of {rows.length} tickets · {rows.filter((r) => r.status === "checked_in").length} checked in
       </p>
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-secondary/60 text-left text-muted-foreground">
             <tr>

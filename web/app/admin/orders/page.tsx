@@ -57,7 +57,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         </form>
         {q ? (
           results.length ? (
-            <div className="overflow-x-auto rounded-xl border bg-white">
+            <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
               <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-secondary/60 text-left text-muted-foreground">
                   <tr>
@@ -104,7 +104,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         {disputes?.length ? (
           <ul className="grid gap-3">
             {disputes.map((d) => (
-              <li key={d.id} className="grid gap-2 rounded-xl border bg-white p-4">
+              <li key={d.id} className="grid gap-2 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Link href={`/admin/orders/${d.orders.id}`} className="font-mono font-semibold text-brand-strong underline">
                     {d.orders.ref_code}

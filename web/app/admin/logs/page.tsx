@@ -47,7 +47,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
             {onlyFailed ? "Show all emails" : "Show only failed"}
           </Link>
         </p>
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-secondary/60 text-left text-muted-foreground">
               <tr>
@@ -88,7 +88,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
   return (
     <div>
       {tabs}
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-secondary/60 text-left text-muted-foreground">
             <tr>

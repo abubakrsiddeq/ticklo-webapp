@@ -19,7 +19,7 @@ interface Overview {
 
 function Tile({ icon: Icon, label, value, href, alert }: { icon: typeof Ticket; label: string; value: string | number; href?: string; alert?: boolean }) {
   const body = (
-    <div className={`flex h-full flex-col gap-1 rounded-xl border bg-white p-4 ${alert ? "border-amber-300 bg-amber-50" : ""}`}>
+    <div className={`flex h-full flex-col gap-1 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4 ${alert ? "border-amber-300 bg-amber-50" : ""}`}>
       <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <Icon className="size-4" aria-hidden /> {label}
       </span>
@@ -63,7 +63,7 @@ export default async function AdminOverviewPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border bg-white p-4">
+        <section className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-semibold text-navy">
               <MailWarning className="size-4" aria-hidden /> Failed emails ({o.failed_emails_7d ?? 0} in 7 days)
@@ -83,7 +83,7 @@ export default async function AdminOverviewPage() {
             <p className="text-sm text-muted-foreground">No failed emails.</p>
           )}
         </section>
-        <section className="rounded-xl border bg-white p-4">
+        <section className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="font-semibold text-navy">Recent admin activity</h2>
             <Link href="/admin/logs" className="text-sm text-brand-strong hover:underline">Audit log</Link>
@@ -100,7 +100,7 @@ export default async function AdminOverviewPage() {
       </div>
 
       {deletions?.length ? (
-        <section className="rounded-xl border bg-white p-4">
+        <section className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <h2 className="mb-2 font-semibold text-navy">Account deletion requests (AUTH-08)</h2>
           <ul className="divide-y text-sm">
             {deletions.map((d) => (

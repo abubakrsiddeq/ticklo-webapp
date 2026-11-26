@@ -32,15 +32,15 @@ export default async function ReportPage({ params }: { params: Promise<{ society
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border bg-white p-4">
+        <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="text-sm text-muted-foreground">Collected</div>
           <div className="font-heading text-2xl font-bold text-navy">{formatPKR(r.total)}</div>
         </div>
-        <div className="rounded-xl border bg-white p-4">
+        <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="text-sm text-muted-foreground">Approved orders</div>
           <div className="font-heading text-2xl font-bold text-navy">{r.orders.length}</div>
         </div>
-        <div className="rounded-xl border bg-white p-4">
+        <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="text-sm text-muted-foreground">Tickets</div>
           <div className="font-heading text-2xl font-bold text-navy">{r.tickets}</div>
         </div>
@@ -48,7 +48,7 @@ export default async function ReportPage({ params }: { params: Promise<{ society
 
       <section>
         <h3 className="mb-2 font-semibold text-navy">By payment account</h3>
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-left text-muted-foreground">
               <tr>
@@ -77,7 +77,7 @@ export default async function ReportPage({ params }: { params: Promise<{ society
 
       <section>
         <h3 className="mb-2 font-semibold text-navy">By ticket type</h3>
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-left text-muted-foreground">
               <tr>
@@ -101,7 +101,7 @@ export default async function ReportPage({ params }: { params: Promise<{ society
 
       <section>
         <h3 className="mb-2 font-semibold text-navy">Approved orders</h3>
-        <div className="overflow-x-auto rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-secondary/60 text-left text-muted-foreground">
               <tr>

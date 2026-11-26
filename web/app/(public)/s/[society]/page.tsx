@@ -32,8 +32,8 @@ export default async function SocietyPage({ params }: { params: Promise<Params> 
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-navy">
+      <header className="mb-10 flex flex-col gap-5 rounded-[2rem] bg-white p-6 shadow-card ring-1 ring-navy/[0.06] sm:flex-row sm:items-center sm:p-8">
+        <div className="relative size-24 shrink-0 overflow-hidden rounded-3xl bg-navy shadow-lift">
           {org.logo_url ? (
             <Image src={org.logo_url} alt={`${org.name} logo`} fill sizes="80px" className="object-cover" />
           ) : (
@@ -41,7 +41,7 @@ export default async function SocietyPage({ params }: { params: Promise<Params> 
           )}
         </div>
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold text-navy">{org.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-navy sm:text-4xl">{org.name}</h1>
           <p className="text-muted-foreground">
             {org.type === "department" ? "Department" : "Society"}
             {org.universities ? ` · ${org.universities.name}` : ""}
@@ -62,12 +62,12 @@ export default async function SocietyPage({ params }: { params: Promise<Params> 
       </header>
       {org.about ? <p className="mb-8 max-w-3xl whitespace-pre-line text-slate-700">{org.about}</p> : null}
 
-      <h2 className="mb-4 text-xl font-semibold text-navy">Upcoming events</h2>
+      <h2 className="mb-5 text-2xl font-bold text-navy">Upcoming events</h2>
       {upcoming.length ? <EventGrid events={upcoming} /> : <EmptyState title="No upcoming events" description="Follow the society on social media for announcements." />}
 
       {past.length ? (
         <>
-          <h2 className="mb-4 mt-10 text-xl font-semibold text-navy">Past events</h2>
+          <h2 className="mt-12 mb-5 text-2xl font-bold text-navy">Past events</h2>
           <EventGrid events={past} />
         </>
       ) : null}

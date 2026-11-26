@@ -12,15 +12,15 @@ export default async function SocietyLayout({ children, params }: { children: Re
   const { org, isOwner } = await requireOrgStaff(society, `/org/${society}`);
   const base = `/org/${org.slug}`;
   const tabs = [
-    { href: base, label: "Dashboard" },
+    { href: base, label: "Dashboard", match: [`${base}/events`] },
     ...(isOwner ? [{ href: `${base}/team`, label: "Team" }, { href: `${base}/payment-accounts`, label: "Payment accounts & reports" }] : []),
     { href: `${base}/settings`, label: "Society profile" },
   ];
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-3">
-        <div className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-navy">
+      <div className="mb-6 flex items-center gap-4 rounded-3xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] sm:p-5">
+        <div className="relative size-14 shrink-0 overflow-hidden rounded-2xl bg-navy">
           {org.logo_url ? (
             <Image src={org.logo_url} alt="" fill sizes="48px" className="object-cover" />
           ) : (
@@ -28,14 +28,14 @@ export default async function SocietyLayout({ children, params }: { children: Re
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Organizer dashboard</p>
+          <p className="text-xs font-semibold tracking-widest text-brand-strong uppercase">Organizer dashboard</p>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate font-heading text-xl font-bold text-navy sm:text-2xl">{org.name}</h1>
             <StatusBadge status={org.status} />
           </div>
         </div>
         {org.status === "approved" ? (
-          <Link href={`/s/${org.slug}`} className="ml-auto hidden text-sm text-brand-strong hover:underline sm:block">
+          <Link href={`/s/${org.slug}`} className="ml-auto hidden h-10 items-center rounded-full bg-secondary px-4 text-sm font-medium text-navy hover:bg-brand-soft hover:text-brand-strong sm:inline-flex">
             Public page →
           </Link>
         ) : null}

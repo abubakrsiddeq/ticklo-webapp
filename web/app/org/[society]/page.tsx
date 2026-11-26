@@ -83,7 +83,7 @@ export default async function OrgDashboardPage({
               <li key={e.id}>
                 <Link
                   href={`/org/${org.slug}/events/${e.slug}`}
-                  className="flex flex-col gap-2 rounded-xl border bg-white p-4 hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4 hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">

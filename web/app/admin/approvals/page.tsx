@@ -48,7 +48,7 @@ export default async function ApprovalsPage() {
               const proofUrl = o.proof_path ? proofs.get(o.proof_path) : null;
               const links = Object.entries((o.social_links ?? {}) as Record<string, string>);
               return (
-                <li key={o.id} className="grid gap-3 rounded-xl border bg-white p-4">
+                <li key={o.id} className="grid gap-3 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
                   <div>
                     <p className="text-lg font-semibold text-navy">{o.name}</p>
                     <p className="text-sm text-muted-foreground">
@@ -97,7 +97,7 @@ export default async function ApprovalsPage() {
         {events?.length ? (
           <ul className="grid gap-4">
             {events.map((e) => (
-              <li key={e.id} className="grid gap-3 rounded-xl border bg-white p-4">
+              <li key={e.id} className="grid gap-3 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-lg font-semibold text-navy">{e.name}</p>

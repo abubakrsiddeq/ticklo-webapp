@@ -121,7 +121,7 @@ export default async function EventPage({ params }: { params: Promise<Params> })
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:gap-10">
         <div className="min-w-0">
-          <div className="relative overflow-hidden rounded-2xl bg-navy">
+          <div className="relative overflow-hidden rounded-3xl bg-navy shadow-lift">
             {event.poster_url ? (
               <>
                 <Image src={event.poster_url} alt="" fill sizes="10vw" className="scale-110 object-cover opacity-40 blur-2xl" aria-hidden />
@@ -140,18 +140,18 @@ export default async function EventPage({ params }: { params: Promise<Params> })
               {org.name}
               {uni ? <span className="text-muted-foreground">· {uni.short_name ?? uni.name}</span> : null}
             </Link>
-            <h1 className={`mt-2 text-3xl font-bold text-navy sm:text-4xl ${cancelled ? "line-through decoration-2" : ""}`}>{event.name}</h1>
-            <ul className="mt-4 grid gap-2 text-slate-700">
-              <li className="flex items-start gap-2">
+            <h1 className={`mt-2 text-3xl font-bold tracking-tight text-navy sm:text-5xl ${cancelled ? "line-through decoration-2" : ""}`}>{event.name}</h1>
+            <ul className="mt-5 grid gap-3 text-slate-700 sm:grid-cols-2">
+              <li className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06]">
                 <CalendarDays className="mt-0.5 size-5 shrink-0 text-brand-strong" aria-hidden />
                 <span>{formatEventRange(event.starts_at, event.ends_at)}</span>
               </li>
-              <li className="flex items-start gap-2">
+              <li className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06]">
                 <MapPin className="mt-0.5 size-5 shrink-0 text-brand-strong" aria-hidden />
                 <span>{event.venue}</span>
               </li>
               {!ended && !cancelled ? (
-                <li className="flex items-start gap-2">
+                <li className="flex items-start gap-2 sm:col-span-2">
                   <Clock className="mt-0.5 size-5 shrink-0 text-brand-strong" aria-hidden />
                   <span className="text-sm text-muted-foreground">All times are Pakistan time (PKT).</span>
                 </li>
@@ -178,14 +178,14 @@ export default async function EventPage({ params }: { params: Promise<Params> })
           </header>
 
           {event.description ? (
-            <section className="mt-8">
-              <h2 className="mb-2 text-xl font-semibold text-navy">About this event</h2>
+            <section className="mt-10 rounded-3xl bg-white p-6 shadow-card ring-1 ring-navy/[0.06] sm:p-8">
+              <h2 className="mb-3 text-2xl font-bold text-navy">About this event</h2>
               <div className="whitespace-pre-line leading-relaxed text-slate-700">{event.description}</div>
             </section>
           ) : null}
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside className="lg:sticky lg:top-28 lg:self-start">
           <BookingWidget
             eventId={event.id}
             types={types}

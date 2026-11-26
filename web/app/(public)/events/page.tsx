@@ -31,13 +31,15 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-4 text-3xl font-bold text-navy">Events</h1>
-      <div className="mb-4">
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Discover</p>
+      <h1 className="mt-1 text-4xl font-bold tracking-tight text-navy">Events near your campus</h1>
+      <p className="mt-2 max-w-2xl text-slate-600">Concerts, fests, workshops and more – by verified university societies.</p>
+      <div className="mt-6 mb-5">
         <EventFilters universities={universities} q={sp.q} uni={uni} past={past} />
       </div>
       {/* EVT-09: past events in a separate tab (booking closed) */}
-      <div className="mb-6 flex gap-2" role="tablist" aria-label="Upcoming or past">
+      <div className="mb-8 inline-flex gap-1 rounded-full bg-white p-1 shadow-card ring-1 ring-navy/[0.06]" role="tablist" aria-label="Upcoming or past">
         {[
           { label: "Upcoming", href: qs({ tab: undefined, page: undefined }), active: !past },
           { label: "Past events", href: qs({ tab: "past", page: undefined }), active: past },
@@ -48,8 +50,8 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
             role="tab"
             aria-selected={t.active}
             className={cn(
-              "inline-flex h-11 items-center rounded-full px-4 text-sm font-medium",
-              t.active ? "bg-navy text-white" : "bg-white text-navy ring-1 ring-border hover:bg-secondary",
+              "inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-colors",
+              t.active ? "bg-navy text-white shadow-sm" : "text-slate-600 hover:text-navy",
             )}
           >
             {t.label}
@@ -61,7 +63,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           <EventGrid events={events} />
           {total > page * PAGE_SIZE ? (
             <div className="mt-8 flex justify-center">
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="rounded-full px-6">
                 <Link href={qs({ page: String(page + 1) })}>Show more</Link>
               </Button>
             </div>

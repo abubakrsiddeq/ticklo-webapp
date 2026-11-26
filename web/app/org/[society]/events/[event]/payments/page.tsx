@@ -103,7 +103,7 @@ export default async function PaymentsPage({
             const p = o.proof;
             const dup = Boolean(p?.is_possible_duplicate);
             return (
-              <li key={o.id} className={cn("rounded-xl border bg-white p-4", dup && "border-2 border-red-500")}>
+              <li key={o.id} className={cn("rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4", dup && "border-2 border-red-500")}>
                 {dup ? (
                   <div className="mb-3 flex items-start gap-2 rounded-lg bg-red-600 p-3 text-sm font-semibold text-white" role="alert">
                     <AlertTriangle className="size-5 shrink-0" aria-hidden />

@@ -1,7 +1,6 @@
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NativeSelect } from "@/components/native-select";
+import { cn } from "@/lib/utils";
 
 /** EVT-02: filter by university + search by name (plain GET form, works without JS). */
 export function EventFilters({
@@ -9,32 +8,55 @@ export function EventFilters({
   q,
   uni,
   past,
+  className,
 }: {
   universities: { id: string; name: string; short_name: string | null }[];
   q?: string;
   uni?: string;
   past?: boolean;
+  className?: string;
 }) {
   return (
-    <form action="/events" method="get" className="grid gap-2 sm:grid-cols-[1fr_220px_auto]" role="search">
+    <form
+      action="/events"
+      method="get"
+      role="search"
+      className={cn(
+        "flex flex-col gap-1 rounded-3xl bg-white p-1.5 shadow-pill ring-1 ring-navy/[0.06] sm:flex-row sm:items-center sm:rounded-full",
+        className,
+      )}
+    >
       {past ? <input type="hidden" name="tab" value="past" /> : null}
-      <label className="relative">
+      <label className="relative flex-1">
         <span className="sr-only">Search events</span>
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input name="q" defaultValue={q} placeholder="Search events…" className="pl-9" />
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" aria-hidden />
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Search events…"
+          className="h-12 w-full rounded-full bg-transparent pr-4 pl-12 text-base text-navy outline-none placeholder:text-slate-400"
+        />
       </label>
-      <label>
+      <span className="hidden h-8 w-px bg-border sm:block" aria-hidden />
+      <label className="relative sm:w-56">
         <span className="sr-only">University</span>
-        <NativeSelect name="uni" defaultValue={uni ?? ""}>
+        <MapPin className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" aria-hidden />
+        <select
+          name="uni"
+          defaultValue={uni ?? ""}
+          className="h-12 w-full appearance-none truncate rounded-full bg-transparent pr-8 pl-12 text-base text-navy outline-none sm:text-sm"
+        >
           <option value="">All universities</option>
           {universities.map((u) => (
             <option key={u.id} value={u.id}>
               {u.short_name ? `${u.short_name} – ${u.name}` : u.name}
             </option>
           ))}
-        </NativeSelect>
+        </select>
       </label>
-      <Button type="submit">Search</Button>
+      <Button type="submit" variant="brand" size="lg" className="rounded-full px-7">
+        Search
+      </Button>
     </form>
   );
 }

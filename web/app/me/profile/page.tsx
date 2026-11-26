@@ -15,7 +15,10 @@ export default async function ProfilePage() {
   const p = user.profile;
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl font-bold text-navy">Profile</h1>
+      <div>
+        <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Account</p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">Profile</h1>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Your details</CardTitle>
