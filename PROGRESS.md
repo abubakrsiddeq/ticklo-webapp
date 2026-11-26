@@ -181,8 +181,7 @@ Event dashboard → **Printed tickets** tab.
 - 16 template categories × 6 designs; modern layouts with the society logo; TickLO logo is a
   fixed size and can only be moved. Rendered all 96 in headless Chrome (long names too) and
   checked that the logo cannot be resized in the editor. 17 print unit tests, 11 DB tests.
-- **Needs:** apply migration `20261126001100_brand_fixed_size.sql` to TICkLO (until then the
-  database still accepts a smaller logo; the app itself already blocks it).
+- Migration `20261126001100_brand_fixed_size.sql` applied to TICkLO (2026-11-26) and checked.
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -234,7 +233,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261126001100_brand_fixed_size.sql`** to TICkLO (fixed TickLO logo size, D-040).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.
