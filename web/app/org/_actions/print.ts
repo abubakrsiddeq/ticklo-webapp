@@ -9,6 +9,7 @@ import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { designProblems, designSchema, serialLabel } from "@/lib/print/design";
 import { ticketQrToken } from "@/lib/qr";
 import type { Json } from "@/lib/database.types";
+import { fetchAll } from "@/lib/queries/fetch-all";
 
 // Printed tickets (PRT-02 .. PRT-08). Every write goes through a Postgres
 // function that checks the organizer again; these actions add input checks
@@ -157,7 +158,9 @@ export async function getPrintData(
   const supabase = await createClient();
   const [{ data: batch }, { data: rows, error }] = await Promise.all([
     supabase.from("print_batches").select("id, prefix, design, events!inner ( org_id )").eq("id", batchId).maybeSingle(),
-    supabase.from("tickets").select("id, code, serial_no, status").eq("batch_id", batchId).neq("status", "cancelled").order("serial_no"),
+    fetchAll((from, to) =>
+      supabase.from("tickets").select("id, code, serial_no, status").eq("batch_id", batchId).neq("status", "cancelled").order("serial_no").range(from, to),
+    ),
   ]);
   if (error) return fail(error);
   if (!batch || batch.events.org_id !== access.org.id) return { ok: false, error: "Batch not found." };

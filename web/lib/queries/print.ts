@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { serialLabel } from "@/lib/print/design";
+import { fetchAll } from "./fetch-all";
 
 /** PRT-10: printed batches of an event with their counts, plus places left per ticket type. */
 export async function getPrintOverview(eventId: string) {
@@ -11,14 +12,30 @@ export async function getPrintOverview(eventId: string) {
       .select("id, label, prefix, first_serial, quantity, created_at, download_count, last_downloaded_at, ticket_type_id, ticket_types!inner ( name, price_paisa )")
       .eq("event_id", eventId)
       .order("created_at", { ascending: false }),
-    supabase.from("tickets").select("batch_id, status").eq("event_id", eventId).eq("source", "printed"),
+    (async () => {
+      // PostgREST returns at most 1000 rows per request – page through big batches
+      const all: { batch_id: string | null; status: string; sale_status: string | null }[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data } = await supabase
+          .from("tickets")
+          .select("batch_id, status, sale_status")
+          .eq("event_id", eventId)
+          .eq("source", "printed")
+          .order("serial_no")
+          .range(from, from + 999);
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      return { data: all };
+    })(),
     supabase.from("ticket_types").select("id, name, price_paisa, quantity, sort_order").eq("event_id", eventId).order("sort_order"),
     supabase.rpc("event_availability", { p_event_id: eventId }),
   ]);
-  const counts = new Map<string, { valid: number; used: number; voided: number }>();
+  const counts = new Map<string, { valid: number; used: number; voided: number; sold: number }>();
   for (const t of tickets ?? []) {
     if (!t.batch_id) continue;
-    const c = counts.get(t.batch_id) ?? { valid: 0, used: 0, voided: 0 };
+    const c = counts.get(t.batch_id) ?? { valid: 0, used: 0, voided: 0, sold: 0 };
+    if (t.sale_status === "sold" || t.sale_status === "comp") c.sold++;
     if (t.status === "checked_in") c.used++;
     else if (t.status === "cancelled") c.voided++;
     else c.valid++;
@@ -30,7 +47,7 @@ export async function getPrintOverview(eventId: string) {
       ...b,
       firstLabel: serialLabel(b.prefix, b.first_serial),
       lastLabel: serialLabel(b.prefix, b.first_serial + b.quantity - 1),
-      counts: counts.get(b.id) ?? { valid: 0, used: 0, voided: 0 },
+      counts: counts.get(b.id) ?? { valid: 0, used: 0, voided: 0, sold: 0 },
     })),
     types: (types ?? []).map((t) => ({ ...t, remaining: remaining.get(t.id) ?? 0 })),
   };
@@ -47,11 +64,14 @@ export async function getPrintBatch(eventId: string, batchId: string) {
       .eq("id", batchId)
       .eq("event_id", eventId)
       .maybeSingle(),
-    supabase
-      .from("tickets")
-      .select("id, code, serial_no, status, holder_name, holder_phone, checked_in_at, checked_in_by, cancelled_at")
-      .eq("batch_id", batchId)
-      .order("serial_no"),
+    fetchAll((from, to) =>
+      supabase
+        .from("tickets")
+        .select("id, code, serial_no, status, holder_name, holder_phone, checked_in_at, checked_in_by, cancelled_at, sale_status, sale_method, sale_source, print_sellers ( name )")
+        .eq("batch_id", batchId)
+        .order("serial_no")
+        .range(from, to),
+    ),
   ]);
   if (!batch) return null;
   const scannerIds = [...new Set((tickets ?? []).map((t) => t.checked_in_by).filter((x): x is string => Boolean(x)))];

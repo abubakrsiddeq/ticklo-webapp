@@ -38,6 +38,8 @@ const FRIENDLY: Record<string, string> = {
   INVALID_ROLE: "Please choose a valid role.",
   INVALID_EMAIL: "Please enter a valid email address.",
   RATE_LIMITED: "Too many attempts. Please wait a few minutes and try again.",
+  INVALID_DESIGN: "The ticket design is missing the QR code or the TickLO logo.",
+  SETTLED: "This seller's account is closed. Reopen it first.",
 };
 
 interface ErrorLike {

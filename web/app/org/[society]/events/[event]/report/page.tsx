@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { PrintButton } from "@/components/print-button";
 import { requireOrgEvent } from "@/lib/auth";
 import { getEventReport } from "@/lib/queries/report";
+import { getPrintSales } from "@/lib/queries/print-sales";
+import { methodLabel } from "@/lib/print/sales";
 import { formatDateTime, formatPKR, formatShortDateTime } from "@/lib/format";
 import { serverNow } from "@/lib/time";
 
@@ -13,7 +15,8 @@ export const metadata: Metadata = { title: "Event report" };
 export default async function ReportPage({ params }: { params: Promise<{ society: string; event: string }> }) {
   const { society, event: eventSlug } = await params;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/report`);
-  const r = await getEventReport(event.id);
+  const [r, ps] = await Promise.all([getEventReport(event.id), getPrintSales(event.id)]);
+  const paper = ps.summary.totals;
 
   return (
     <div className="grid gap-6">
@@ -33,16 +36,26 @@ export default async function ReportPage({ params }: { params: Promise<{ society
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
-          <div className="text-sm text-muted-foreground">Collected</div>
-          <div className="font-heading text-2xl font-bold text-navy">{formatPKR(r.total)}</div>
+          <div className="text-sm text-muted-foreground">Collected{paper.printed ? " (online + paper received)" : ""}</div>
+          <div className="font-heading text-2xl font-bold text-navy">{formatPKR(r.total + paper.cash)}</div>
+          {paper.printed ? (
+            <div className="text-xs text-muted-foreground">
+              Online {formatPKR(r.total)} · Paper {formatPKR(paper.cash)}
+            </div>
+          ) : null}
         </div>
         <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
           <div className="text-sm text-muted-foreground">Approved orders</div>
           <div className="font-heading text-2xl font-bold text-navy">{r.orders.length}</div>
         </div>
         <div className="rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
-          <div className="text-sm text-muted-foreground">Tickets</div>
-          <div className="font-heading text-2xl font-bold text-navy">{r.tickets}</div>
+          <div className="text-sm text-muted-foreground">Tickets sold</div>
+          <div className="font-heading text-2xl font-bold text-navy">{r.tickets + paper.sold}</div>
+          {paper.printed ? (
+            <div className="text-xs text-muted-foreground">
+              {r.tickets} online · {paper.sold} paper{paper.comp ? ` · ${paper.comp} free passes` : ""}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -99,34 +112,56 @@ export default async function ReportPage({ params }: { params: Promise<{ society
         </div>
       </section>
 
-      {r.printed.length ? (
-        <section>
-          <h3 className="mb-1 font-semibold text-navy">Printed (paper) tickets</h3>
-          <p className="mb-2 text-sm text-muted-foreground">Sold for cash by your team – not included in “Collected”. Face value = printed (not voided) × price.</p>
+      {ps.summary.totals.printed ? (
+        <section className="grid gap-2">
+          <h3 className="font-semibold text-navy">Printed (paper) tickets</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Sold", `${ps.summary.totals.sold} of ${ps.summary.totals.printed}`],
+              ["Sales value", formatPKR(ps.summary.totals.expected)],
+              ["Money received", formatPKR(ps.summary.totals.cash)],
+              ["Still with sellers", formatPKR(ps.summary.totals.outstanding)],
+            ].map(([k, v]) => (
+              <div key={k} className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06]">
+                <div className="text-sm text-muted-foreground">{k}</div>
+                <div className="font-heading text-xl font-bold text-navy">{v}</div>
+              </div>
+            ))}
+          </div>
           <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-secondary/60 text-left text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Ticket type</th>
-                  <th className="px-4 py-2 text-right font-medium">Printed</th>
-                  <th className="px-4 py-2 text-right font-medium">Used at gate</th>
-                  <th className="px-4 py-2 text-right font-medium">Voided</th>
-                  <th className="px-4 py-2 text-right font-medium">Face value</th>
+                  <th className="px-3 py-2 font-medium">Seller</th>
+                  <th className="px-3 py-2 text-right font-medium">Given</th>
+                  <th className="px-3 py-2 text-right font-medium">Returned</th>
+                  <th className="px-3 py-2 text-right font-medium">Free</th>
+                  <th className="px-3 py-2 text-right font-medium">Sold</th>
+                  <th className="px-3 py-2 text-right font-medium">Should hand over</th>
+                  <th className="px-3 py-2 text-right font-medium">Received</th>
+                  <th className="px-3 py-2 text-right font-medium">Difference</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {r.printed.map((p) => (
-                  <tr key={p.name}>
-                    <td className="px-4 py-2">{p.name}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{p.printed}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{p.used}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{p.voided}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{formatPKR(p.faceValue, { freeLabel: "Free" })}</td>
+                {ps.summary.sellers.map((s) => (
+                  <tr key={s.id ?? "org"}>
+                    <td className="px-3 py-2">{s.name}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{s.given}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{s.returned}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{s.comp}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{s.sold}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatPKR(s.expected)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatPKR(s.cash)}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums ${s.difference < 0 ? "text-destructive" : ""}`}>{formatPKR(s.difference)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="text-sm text-muted-foreground">
+            By payment: {ps.summary.totals.byMethod.map((m) => `${methodLabel(m.method === "unknown" ? null : m.method)} ${m.count} (${formatPKR(m.amount)})`).join(" · ") || "–"}
+            {ps.summary.totals.printingCost ? ` · Printing cost ${formatPKR(ps.summary.totals.printingCost)}` : ""}
+          </p>
         </section>
       ) : null}
 

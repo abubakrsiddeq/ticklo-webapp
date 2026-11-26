@@ -16,7 +16,12 @@ export interface EventStats {
   approved_orders: number;
   collected_paisa: number;
   printed_tickets?: number;
-  by_type: { ticket_type_id: string; name: string; price_paisa: number; quantity: number; sold: number; held: number; printed?: number; checked_in: number }[];
+  online_tickets?: number;
+  printed_sold?: number;
+  printed_comp?: number;
+  printed_revenue_paisa?: number;
+  printed_cash_paisa?: number;
+  by_type: { ticket_type_id: string; name: string; price_paisa: number; quantity: number; sold: number; held: number; printed?: number; printed_sold?: number; checked_in: number }[];
 }
 
 function Stat({ icon: Icon, label, value, sub, href }: { icon: typeof Ticket; label: string; value: string; sub?: string; href?: string }) {
@@ -67,6 +72,9 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
   }, [eventId]);
 
   const capPct = stats.capacity ? Math.round((stats.total_tickets / stats.capacity) * 100) : 0;
+  // Printed tickets count as sold only once a seller sold them (or the gate scanned them) – D-041
+  const sold = stats.online_tickets !== undefined ? stats.online_tickets + (stats.printed_sold ?? 0) : stats.total_tickets;
+  const collected = Number(stats.collected_paisa) + Number(stats.printed_cash_paisa ?? 0);
   const inPct = stats.total_tickets ? Math.round((stats.checked_in / stats.total_tickets) * 100) : 0;
 
   return (
@@ -80,10 +88,18 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
         <Stat
           icon={Ticket}
           label="Tickets sold"
-          value={String(stats.total_tickets)}
-          sub={`${capPct}% of ${stats.capacity} capacity${stats.printed_tickets ? ` · ${stats.printed_tickets} printed` : ""}`}
+          value={String(sold)}
+          sub={
+            stats.printed_tickets
+              ? `${stats.online_tickets ?? 0} online · ${stats.printed_sold ?? 0} paper${stats.printed_comp ? ` · ${stats.printed_comp} free passes` : ""}`
+              : `${capPct}% of ${stats.capacity} capacity`
+          }
         />
-        <Stat icon={Banknote} label="Collected" value={formatPKR(stats.collected_paisa)} sub={`${stats.approved_orders} approved online orders${stats.printed_tickets ? " (cash for printed tickets not included)" : ""}`} />
+        <Stat icon={Banknote} label="Collected" value={formatPKR(collected)} sub={
+            stats.printed_tickets
+              ? `Online ${formatPKR(stats.collected_paisa)} · Paper ${formatPKR(stats.printed_cash_paisa ?? 0)} received of ${formatPKR(stats.printed_revenue_paisa ?? 0)} sold`
+              : `${stats.approved_orders} approved orders`
+          } />
         <Stat icon={Users} label="Checked in" value={`${stats.checked_in}/${stats.total_tickets}`} sub={`${inPct}% arrived`} />
       </div>
       <div className="grid gap-2 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
@@ -103,7 +119,7 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
                 <th className="px-4 py-2 font-medium">Ticket type</th>
                 <th className="px-4 py-2 text-right font-medium">Sold</th>
                 <th className="px-4 py-2 text-right font-medium">On hold</th>
-                <th className="px-4 py-2 text-right font-medium">Printed</th>
+                <th className="px-4 py-2 text-right font-medium">Paper sold</th>
                 <th className="px-4 py-2 text-right font-medium">Left</th>
                 <th className="px-4 py-2 text-right font-medium">Checked in</th>
               </tr>
@@ -116,7 +132,7 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.sold}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.held}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{t.printed ?? 0}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{t.printed ? `${t.printed_sold ?? 0}/${t.printed}` : 0}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{Math.max(0, t.quantity - t.sold - t.held - (t.printed ?? 0))}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.checked_in}</td>
                 </tr>

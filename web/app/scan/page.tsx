@@ -39,6 +39,12 @@ export default async function ScanHomePage({ searchParams }: { searchParams: Pro
               </li>
             ))}
           </ul>
+          <p className="mt-6 text-center text-sm text-slate-300">
+            Selling paper tickets?{" "}
+            <Link href="/sell" className="font-semibold text-brand-light hover:underline">
+              Open the Sell screen
+            </Link>
+          </p>
         </>
       ) : (
         <div className="flex flex-col items-center gap-3 py-16 text-center">

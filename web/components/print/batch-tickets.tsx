@@ -21,6 +21,8 @@ export interface BatchTicketRow {
   phone: string | null;
   checkedIn: string | null;
   checkedInBy: string | null;
+  sale: string; // "In stock", "Sold · Cash", "Free pass", "Returned"
+  seller: string | null;
 }
 
 /** PRT-08: who has which printed ticket, and who came in. */
@@ -66,11 +68,12 @@ export function BatchTickets({ orgSlug, rows, canEdit }: { orgSlug: string; rows
         </div>
       </div>
       <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
-        <table className="w-full min-w-[600px] text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-secondary/60 text-left text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">Serial</th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Sale</th>
               <th className="px-3 py-2 font-medium">Buyer</th>
               <th className="px-3 py-2 font-medium">Check-in</th>
             </tr>
@@ -80,7 +83,11 @@ export function BatchTickets({ orgSlug, rows, canEdit }: { orgSlug: string; rows
               <tr key={r.id}>
                 <td className="px-3 py-2 font-mono font-semibold text-navy">{r.serial}</td>
                 <td className="px-3 py-2">
-                  <StatusBadge status={r.status} label={r.status === "valid" ? "Not used" : r.status === "cancelled" ? "Voided" : undefined} />
+                  <StatusBadge status={r.status} label={r.status === "valid" ? "Not used" : r.status === "cancelled" ? (r.sale === "Returned" ? "Returned" : "Voided") : undefined} />
+                </td>
+                <td className="px-3 py-2">
+                  <div className="text-navy">{r.sale}</div>
+                  {r.seller ? <div className="text-xs text-muted-foreground">{r.seller}</div> : null}
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">

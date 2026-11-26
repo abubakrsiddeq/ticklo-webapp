@@ -1,11 +1,13 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { serialLabel } from "@/lib/print/design";
+import { fetchAll } from "./fetch-all";
 
 /** ORG-09: attendees of an event (organizers only – RLS). Printed tickets (PRT-10) have no order. */
 export async function listAttendees(eventId: string) {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await fetchAll((from, to) =>
+    supabase
     .from("tickets")
     .select(
       `id, code, holder_name, holder_phone, status, checked_in_at, checkin_method, created_at, checked_in_by, source, serial_no,
@@ -14,7 +16,10 @@ export async function listAttendees(eventId: string) {
        print_batches ( prefix )`,
     )
     .eq("event_id", eventId)
-    .order("holder_name");
+    .order("holder_name")
+    .order("id")
+    .range(from, to),
+  );
   const rows = data ?? [];
   // Names of the people who checked tickets in (ORG-13 log with scanner name)
   const scannerIds = [...new Set(rows.map((r) => r.checked_in_by).filter((x): x is string => Boolean(x)))];

@@ -1,12 +1,13 @@
 import { formatTime } from "@/lib/format";
 
 export interface ScanResponse {
-  result: "ok" | "already_used" | "expired_code" | "wrong_event" | "invalid" | "not_found" | "cancelled" | "not_allowed";
+  result: "ok" | "already_used" | "expired_code" | "wrong_event" | "invalid" | "not_found" | "cancelled" | "not_allowed" | "not_sold";
   holder_name?: string;
   ticket_type?: string;
   requires_student_card?: boolean;
   checked_in_at?: string;
   serial?: string | null; // printed (paper) tickets – PRT-09
+  returned?: boolean; // printed ticket given back unsold (D-041)
 }
 
 export interface ScanView {
@@ -38,7 +39,17 @@ export function describeScan(r: ScanResponse): ScanView {
     case "wrong_event":
       return { ok: false, title: "Not valid here", subtitle: "This ticket is for a different event." };
     case "cancelled":
-      return { ok: false, title: "Invalid", subtitle: r.serial ? `Paper ticket ${r.serial} was voided (lost or stolen).` : "This ticket is cancelled." };
+      return {
+        ok: false,
+        title: "Invalid",
+        subtitle: r.serial
+          ? r.returned
+            ? `Paper ticket ${r.serial} was returned unsold – it is not valid.`
+            : `Paper ticket ${r.serial} was voided (lost or stolen).`
+          : "This ticket is cancelled.",
+      };
+    case "not_sold":
+      return { ok: false, title: "Not sold", subtitle: `Paper ticket ${r.serial ?? ""} was never sold. Send the guest to the ticket desk or seller.` };
     case "not_allowed":
       return { ok: false, title: "Not allowed", subtitle: "You are not a scanner for this event right now." };
     default:

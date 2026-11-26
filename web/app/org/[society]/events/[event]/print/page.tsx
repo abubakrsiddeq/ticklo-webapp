@@ -9,6 +9,7 @@ import { requireOrgEvent } from "@/lib/auth";
 import { getPrintOverview } from "@/lib/queries/print";
 import { formatPKR, formatShortDateTime } from "@/lib/format";
 import { serverNow } from "@/lib/time";
+import { PrintSubnav } from "@/components/print/print-subnav";
 
 export const metadata: Metadata = { title: "Printed tickets" };
 
@@ -31,6 +32,7 @@ export default async function PrintedTicketsPage({ params }: { params: Promise<{
 
   return (
     <div className="grid gap-6">
+      <PrintSubnav base={base} eventId={event.id} active="batches" />
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="grid gap-1">
@@ -68,7 +70,8 @@ export default async function PrintedTicketsPage({ params }: { params: Promise<{
             <li className="flex gap-3 rounded-xl bg-secondary/60 p-3">
               <ScanLine className="size-5 shrink-0 text-brand-strong" aria-hidden />
               <span>
-                <b className="text-navy">Scan.</b> Volunteers scan them at /scan. Lost tickets? Void them here and they won&apos;t get in.
+                <b className="text-navy">Sell &amp; scan.</b> Give ranges to sellers, track sales and cash on Sales &amp; cash. Volunteers scan at /scan; lost
+                tickets can be voided.
               </span>
             </li>
           </ol>
@@ -124,6 +127,7 @@ export default async function PrintedTicketsPage({ params }: { params: Promise<{
                       {b.quantity} × {b.ticket_types.name} · {formatPKR(b.ticket_types.price_paisa, { freeLabel: "Free" })} · created {formatShortDateTime(b.created_at)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Pill tone="info">{b.counts.sold} sold / free</Pill>
                       <Pill tone="success">{b.counts.valid} not used</Pill>
                       <Pill tone="neutral">{b.counts.used} used</Pill>
                       {b.counts.voided ? <Pill tone="danger">{b.counts.voided} voided</Pill> : null}

@@ -183,6 +183,21 @@ Event dashboard → **Printed tickets** tab.
   checked that the logo cannot be resized in the editor. 17 print unit tests, 11 DB tests.
 - Migration `20261126001100_brand_fixed_size.sql` applied to TICkLO (2026-11-26) and checked.
 
+## Change 2026-11-26: printed ticket sales and cash (D-041)
+- SAL-01 Sellers (team member or outside name/phone) and serial ranges.
+- SAL-02/03 Mark sold / free pass by range (organizer) or by scanning the QR on the Sell screen
+  (`/sell`, sellers' phones), with payment method and optional buyer.
+- SAL-04 Returns (ticket dead, place back on sale), undo sale.
+- SAL-05/06 Money received entries per seller, difference, close/reopen account.
+- SAL-07 Gate: unmarked printed ticket → counted as sold; optional "valid only after sale" →
+  "Not sold"; returned ticket → "returned unsold".
+- SAL-08/09 Dashboard, report, Sales & cash page, CSV; printing cost and net.
+- Fixed: lists of more than 1000 tickets (2000-ticket batch PDF, batch list, attendees) were cut
+  at 1000 by the Supabase API – now paged.
+- Tests: 6 DB tests (incl. 50 printed / 40 sold / 38 used / 10 returned / Rs 78,000), 4 unit tests.
+  Not yet clicked through in a real browser against Supabase.
+- **Needs:** apply migration `20261126001200_printed_sales.sql` to TICkLO.
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -197,8 +212,8 @@ Event dashboard → **Printed tickets** tab.
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (67 tests).
-- **Unit tests:** `cd web && npm test` (44 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (73 tests).
+- **Unit tests:** `cd web && npm test` (48 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -233,6 +248,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261126001200_printed_sales.sql`** to TICkLO (printed sales, D-041).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.

@@ -333,3 +333,32 @@ where every ticket has its own QR; at the gate they scan like online tickets and
   opened (`normalizeDesign`). Enforced in the browser, the server action and Postgres
   (migration `20261126001100_brand_fixed_size.sql`).
 - Gallery thumbnails render only when visible and one at a time (100 designs on a phone).
+
+## D-041 Printed ticket sales and cash (owner request, 2026-11-26)
+Problem: printed tickets were counted, but nothing said which were sold or where the money was.
+- **Printed ≠ sold.** Each printed ticket has a sale status: in stock / sold / free pass /
+  returned (plus voided). Only sold tickets count as "Tickets sold" and as revenue; free passes
+  get in but bring no money. A sold ticket that is voided later (buyer lost it) still counts as
+  paid.
+- **Sellers** per event: a team member (sells on their own phone via `/sell/<event>`) or an
+  outside person with just name + phone (organizer records their sales). Serial ranges are given
+  to sellers; only unsold tickets move between sellers.
+- **Three ways a sale is known:** the seller scans the QR on the Sell screen and taps the payment
+  method (cash / JazzCash / EasyPaisa / bank / card / other); the organizer marks a range; or the
+  gate scans a ticket nobody marked → counted as sold automatically ("found at the gate", price
+  = ticket price, method unknown) and charged to that seller.
+- **Returned** (unsold, given back) tickets stop working at the gate and their places go back on
+  sale. **Undo sale** exists for mistakes (not for tickets already used).
+- **Settlement per seller:** should hand over = sold × price; money received is a list of entries
+  (several handovers, minus amount to correct a mistake); difference shown in red/green; "Close
+  account" locks that seller's tickets and money until reopened. A warning shows if a ticket of a
+  closed account is scanned later.
+- **"Valid only after sale"** is an option per batch (default off): the gate answers "Not sold"
+  for unsold tickets, so stolen stock is worthless. Off by default because sellers then need
+  internet for every sale.
+- **Printing cost** per batch (optional) → net amount on Sales & cash and the report.
+- Dashboard: "Tickets sold" = online + paper sold; "Collected" = online approved + paper money
+  received (paper sales value shown next to it). Report and a CSV show the seller-by-seller account.
+- All sale and money actions are Postgres functions (organizer or that seller only, audit log).
+- While building this, the 1000-row limit of the Supabase API was found to cut big batches (PDF,
+  batch list, attendee list): those lists now page through all rows (`lib/queries/fetch-all.ts`).

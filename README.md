@@ -30,7 +30,8 @@ hosting. Free tiers only.
 5. At the gate a volunteer opens `/scan` on their phone and scans. Each ticket works once.
 6. For cash sales on the spot, the organizer makes **printed tickets** (event → Printed tickets):
    pick a template, edit it, choose how many, download the print-ready PDF. Every paper ticket has
-   its own QR + serial and is scanned the same way (D-039).
+   its own QR + serial and is scanned the same way (D-039). Sellers get serial ranges and mark
+   sales on their phone at `/sell`; Sales & cash shows each seller's account (D-041).
 
 All money/ticket rules live in Postgres functions (atomic, shared with the future Flutter app);
 QR signing lives in an Edge Function so the key never leaves Supabase.

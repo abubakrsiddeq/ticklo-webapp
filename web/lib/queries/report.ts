@@ -47,26 +47,7 @@ export async function getEventReport(eventId: string) {
       byType.set(i.ticket_types.name, t);
     }
   }
-  // PRT-10: printed (paper) tickets – sold for cash outside TickLO, so not in "Collected"
-  const { data: printedRows } = await supabase
-    .from("tickets")
-    .select("status, ticket_types!inner ( name, price_paisa )")
-    .eq("event_id", eventId)
-    .eq("source", "printed");
-  const printedMap = new Map<string, { name: string; printed: number; used: number; voided: number; faceValue: number }>();
-  for (const t of printedRows ?? []) {
-    const p = printedMap.get(t.ticket_types.name) ?? { name: t.ticket_types.name, printed: 0, used: 0, voided: 0, faceValue: 0 };
-    if (t.status === "cancelled") p.voided++;
-    else {
-      p.printed++;
-      p.faceValue += t.ticket_types.price_paisa;
-      if (t.status === "checked_in") p.used++;
-    }
-    printedMap.set(t.ticket_types.name, p);
-  }
-
   return {
-    printed: [...printedMap.values()],
     orders,
     total,
     tickets,

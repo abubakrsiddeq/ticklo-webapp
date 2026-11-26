@@ -8,11 +8,14 @@ import { requireOrgEvent } from "@/lib/auth";
 import { getPrintBatch } from "@/lib/queries/print";
 import { printValues } from "@/lib/print/values";
 import { parseDesign } from "@/lib/print/design";
-import { formatPKR, formatShortDateTime, formatTime } from "@/lib/format";
+import { formatPKR, formatShortDateTime, formatTime, paisaToRupeesInput } from "@/lib/format";
 import { DownloadPdf } from "@/components/print/download-pdf";
 import { DesignThumb } from "@/components/print/design-thumb";
 import { TicketFonts } from "@/components/print/ticket-fonts";
 import { BatchTickets, VoidRangeForm } from "@/components/print/batch-tickets";
+import { BatchOptionsForm } from "@/components/print/sales/batch-options";
+import { PrintSubnav } from "@/components/print/print-subnav";
+import { methodLabel } from "@/lib/print/sales";
 
 export const metadata: Metadata = { title: "Printed ticket batch" };
 
@@ -42,8 +45,9 @@ export default async function PrintBatchPage({
   return (
     <div className="grid gap-6">
       <TicketFonts />
+      <PrintSubnav base={base} eventId={event.id} active="batches" />
       <Link href={base} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline">
-        <ArrowLeft className="size-4" aria-hidden /> Printed tickets
+        <ArrowLeft className="size-4" aria-hidden /> All batches
       </Link>
 
       {isNew ? (
@@ -122,9 +126,35 @@ export default async function PrintBatchPage({
             phone: t.holder_phone,
             checkedIn: t.checked_in_at ? formatTime(t.checked_in_at) : null,
             checkedInBy: t.checkedInByName,
+            sale:
+              t.sale_status === "sold"
+                ? `Sold · ${t.sale_source === "scan" && !t.sale_method ? "found at gate" : methodLabel(t.sale_method)}`
+                : t.sale_status === "comp"
+                  ? "Free pass"
+                  : t.sale_status === "returned"
+                    ? "Returned"
+                    : "In stock",
+            seller: t.print_sellers?.name ?? null,
           }))}
         />
       </section>
+
+      {editable ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Batch settings</CardTitle>
+            <CardDescription>Sellers, sales and money are on Sales &amp; cash.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BatchOptionsForm
+              orgSlug={org.slug}
+              batchId={batch.id}
+              requireSale={batch.require_sale}
+              printingCost={batch.printing_cost_paisa ? paisaToRupeesInput(Number(batch.printing_cost_paisa)) : ""}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {editable ? (
         <Card>
