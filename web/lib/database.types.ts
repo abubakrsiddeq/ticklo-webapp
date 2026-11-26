@@ -4,6 +4,71 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      ambassador_applications: {
+        Row: {
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          event_id: string;
+          id: string;
+          message: string | null;
+          seller_id: string | null;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          event_id: string;
+          id?: string;
+          message?: string | null;
+          seller_id?: string | null;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          event_id?: string;
+          id?: string;
+          message?: string | null;
+          seller_id?: string | null;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_applications_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ambassador_applications_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ambassador_applications_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ambassador_applications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_log: {
         Row: {
           action: string;
@@ -37,6 +102,55 @@ export type Database = {
             foreignKeyName: "audit_log_actor_id_fkey";
             columns: ["actor_id"];
             isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      campus_ambassadors: {
+        Row: {
+          active: boolean;
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          university_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          university_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          university_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "campus_ambassadors_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campus_ambassadors_university_id_fkey";
+            columns: ["university_id"];
+            isOneToOne: false;
+            referencedRelation: "universities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campus_ambassadors_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -428,12 +542,16 @@ export type Database = {
           created_at: string;
           decided_at: string | null;
           decided_by: string | null;
+          discount_paisa: number;
           event_id: string;
           hold_expires_at: string | null;
           id: string;
+          promo_code_id: string | null;
           ref_code: string;
+          referral_source: string | null;
           reject_reason: string | null;
           requires_student_card: boolean;
+          seller_id: string | null;
           status: Database["public"]["Enums"]["order_status"];
           submitted_at: string | null;
           ticket_count: number;
@@ -449,12 +567,16 @@ export type Database = {
           created_at?: string;
           decided_at?: string | null;
           decided_by?: string | null;
+          discount_paisa?: number;
           event_id: string;
           hold_expires_at?: string | null;
           id?: string;
+          promo_code_id?: string | null;
           ref_code: string;
+          referral_source?: string | null;
           reject_reason?: string | null;
           requires_student_card?: boolean;
+          seller_id?: string | null;
           status: Database["public"]["Enums"]["order_status"];
           submitted_at?: string | null;
           ticket_count: number;
@@ -470,12 +592,16 @@ export type Database = {
           created_at?: string;
           decided_at?: string | null;
           decided_by?: string | null;
+          discount_paisa?: number;
           event_id?: string;
           hold_expires_at?: string | null;
           id?: string;
+          promo_code_id?: string | null;
           ref_code?: string;
+          referral_source?: string | null;
           reject_reason?: string | null;
           requires_student_card?: boolean;
+          seller_id?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           submitted_at?: string | null;
           ticket_count?: number;
@@ -496,6 +622,20 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "orders_promo_code_id_fkey";
+            columns: ["promo_code_id"];
+            isOneToOne: false;
+            referencedRelation: "promo_codes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "orders_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
             referencedColumns: ["id"];
           },
           {
@@ -616,6 +756,8 @@ export type Database = {
           logo_url: string | null;
           name: string;
           proof_path: string | null;
+          referred_at: string | null;
+          referred_by: string | null;
           review_note: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -634,6 +776,8 @@ export type Database = {
           logo_url?: string | null;
           name: string;
           proof_path?: string | null;
+          referred_at?: string | null;
+          referred_by?: string | null;
           review_note?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -652,6 +796,8 @@ export type Database = {
           logo_url?: string | null;
           name?: string;
           proof_path?: string | null;
+          referred_at?: string | null;
+          referred_by?: string | null;
           review_note?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -669,6 +815,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "organizations_referred_by_fkey";
+            columns: ["referred_by"];
+            isOneToOne: false;
+            referencedRelation: "campus_ambassadors";
+            referencedColumns: ["user_id"];
           },
           {
             foreignKeyName: "organizations_reviewed_by_fkey";
@@ -975,8 +1128,10 @@ export type Database = {
           created_by: string | null;
           event_id: string;
           id: string;
+          joined_via: string;
           name: string;
           phone: string | null;
+          ref_code: string;
           settled_at: string | null;
           settled_by: string | null;
           updated_at: string;
@@ -987,8 +1142,10 @@ export type Database = {
           created_by?: string | null;
           event_id: string;
           id?: string;
+          joined_via?: string;
           name: string;
           phone?: string | null;
+          ref_code: string;
           settled_at?: string | null;
           settled_by?: string | null;
           updated_at?: string;
@@ -999,8 +1156,10 @@ export type Database = {
           created_by?: string | null;
           event_id?: string;
           id?: string;
+          joined_via?: string;
           name?: string;
           phone?: string | null;
+          ref_code?: string;
           settled_at?: string | null;
           settled_by?: string | null;
           updated_at?: string;
@@ -1093,6 +1252,75 @@ export type Database = {
           },
         ];
       };
+      promo_codes: {
+        Row: {
+          active: boolean;
+          code: string;
+          created_at: string;
+          created_by: string | null;
+          discount_type: string;
+          discount_value: number;
+          ends_at: string | null;
+          event_id: string;
+          id: string;
+          max_uses: number | null;
+          min_tickets: number;
+          note: string | null;
+          starts_at: string | null;
+          ticket_type_ids: string[] | null;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          created_by?: string | null;
+          discount_type: string;
+          discount_value: number;
+          ends_at?: string | null;
+          event_id: string;
+          id?: string;
+          max_uses?: number | null;
+          min_tickets?: number;
+          note?: string | null;
+          starts_at?: string | null;
+          ticket_type_ids?: string[] | null;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          discount_type?: string;
+          discount_value?: number;
+          ends_at?: string | null;
+          event_id?: string;
+          id?: string;
+          max_uses?: number | null;
+          min_tickets?: number;
+          note?: string | null;
+          starts_at?: string | null;
+          ticket_type_ids?: string[] | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "promo_codes_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "promo_codes_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       rate_limits: {
         Row: {
           hits: number;
@@ -1110,6 +1338,141 @@ export type Database = {
           window_start?: string;
         };
         Relationships: [
+        ];
+      };
+      referral_clicks: {
+        Row: {
+          clicks: number;
+          day: string;
+          seller_id: string;
+        };
+        Insert: {
+          clicks?: number;
+          day: string;
+          seller_id: string;
+        };
+        Update: {
+          clicks?: number;
+          day?: string;
+          seller_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referral_clicks_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      referral_payouts: {
+        Row: {
+          amount_paisa: number;
+          created_at: string;
+          created_by: string | null;
+          event_id: string;
+          id: string;
+          note: string | null;
+          seller_id: string;
+        };
+        Insert: {
+          amount_paisa?: number;
+          created_at?: string;
+          created_by?: string | null;
+          event_id: string;
+          id?: string;
+          note?: string | null;
+          seller_id: string;
+        };
+        Update: {
+          amount_paisa?: number;
+          created_at?: string;
+          created_by?: string | null;
+          event_id?: string;
+          id?: string;
+          note?: string | null;
+          seller_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referral_payouts_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "referral_payouts_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "referral_payouts_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      referral_settings: {
+        Row: {
+          applications_open: boolean;
+          credit_on: string;
+          discount_type: string;
+          discount_value: number;
+          event_id: string;
+          leaderboard: boolean;
+          milestones: Json;
+          reward_type: string;
+          reward_value: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          applications_open?: boolean;
+          credit_on?: string;
+          discount_type?: string;
+          discount_value?: number;
+          event_id: string;
+          leaderboard?: boolean;
+          milestones?: Json;
+          reward_type?: string;
+          reward_value?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          applications_open?: boolean;
+          credit_on?: string;
+          discount_type?: string;
+          discount_value?: number;
+          event_id?: string;
+          leaderboard?: boolean;
+          milestones?: Json;
+          reward_type?: string;
+          reward_value?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referral_settings_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "referral_settings_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
         ];
       };
       ticket_templates: {
@@ -1403,6 +1766,15 @@ export type Database = {
         };
         Returns: string;
       };
+      add_referral_payout: {
+        Args: {
+          p_event_id: string | null;
+          p_seller_id: string | null;
+          p_amount_paisa: number | null;
+          p_note?: string | null;
+        };
+        Returns: string;
+      };
       admin_delete_university: {
         Args: {
           p_id: string | null;
@@ -1450,6 +1822,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      admin_save_campus_ambassador: {
+        Args: {
+          p_user_id: string | null;
+          p_code: string | null;
+          p_university_id: string | null;
+          p_active: boolean | null;
+        };
+        Returns: undefined;
+      };
       admin_save_university: {
         Args: {
           p_id: string | null;
@@ -1483,6 +1864,91 @@ export type Database = {
         };
         Returns: undefined;
       };
+      ambassador_applications_for: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          id: string;
+          user_id: string;
+          full_name: string;
+          email: string;
+          phone: string;
+          university: string;
+          message: string;
+          status: string;
+          created_at: string;
+          past_events: number;
+          past_tickets: number;
+        }[];
+      };
+      ambassador_rows: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          seller_id: string;
+          name: string;
+          phone: string;
+          user_id: string;
+          ref_code: string;
+          joined_via: string;
+          settled_at: string;
+          clicks: number;
+          pending_tickets: number;
+          online_orders: number;
+          online_tickets: number;
+          online_checked_in: number;
+          online_revenue_paisa: number;
+          discount_paisa: number;
+          paper_sold: number;
+          paper_used: number;
+          paper_revenue_paisa: number;
+          credited_tickets: number;
+          credited_revenue_paisa: number;
+          reward_paisa: number;
+          paid_paisa: number;
+          max_orders_same_phone: number;
+          rank: number;
+        }[];
+      };
+      ambassador_summary: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          seller_id: string;
+          name: string;
+          phone: string;
+          user_id: string;
+          ref_code: string;
+          joined_via: string;
+          settled_at: string;
+          clicks: number;
+          pending_tickets: number;
+          online_orders: number;
+          online_tickets: number;
+          online_checked_in: number;
+          online_revenue_paisa: number;
+          discount_paisa: number;
+          paper_sold: number;
+          paper_used: number;
+          paper_revenue_paisa: number;
+          credited_tickets: number;
+          credited_revenue_paisa: number;
+          reward_paisa: number;
+          paid_paisa: number;
+          max_orders_same_phone: number;
+          rank: number;
+        }[];
+      };
+      apply_ambassador: {
+        Args: {
+          p_event_id: string | null;
+          p_message?: string | null;
+        };
+        Returns: string;
+      };
       approve_order: {
         Args: {
           p_order_id: string | null;
@@ -1514,6 +1980,24 @@ export type Database = {
         };
         Returns: undefined;
       };
+      campus_ambassador_stats: {
+        Args: {
+          p_user_id?: string | null;
+        };
+        Returns: {
+          user_id: string;
+          full_name: string;
+          email: string;
+          code: string;
+          university: string;
+          active: boolean;
+          created_at: string;
+          societies: number;
+          approved_societies: number;
+          published_events: number;
+          paid_tickets: number;
+        }[];
+      };
       can_scan_event: {
         Args: {
           p_event_id: string | null;
@@ -1541,6 +2025,8 @@ export type Database = {
           p_items: Json | null;
           p_buyer_name?: string | null;
           p_buyer_phone?: string | null;
+          p_code?: string | null;
+          p_ref?: string | null;
         };
         Returns: Json;
       };
@@ -1569,6 +2055,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      decide_ambassador_application: {
+        Args: {
+          p_application_id: string | null;
+          p_approve: boolean | null;
+        };
+        Returns: string;
+      };
       delete_print_cash: {
         Args: {
           p_entry_id: string | null;
@@ -1581,6 +2074,27 @@ export type Database = {
         };
         Returns: undefined;
       };
+      delete_promo_code: {
+        Args: {
+          p_promo_id: string | null;
+        };
+        Returns: undefined;
+      };
+      delete_referral_payout: {
+        Args: {
+          p_payout_id: string | null;
+        };
+        Returns: undefined;
+      };
+      discount_for: {
+        Args: {
+          p_items: Json | null;
+          p_type: string | null;
+          p_value: number | null;
+          p_type_ids?: string[] | null;
+        };
+        Returns: number;
+      };
       event_availability: {
         Args: {
           p_event_id: string | null;
@@ -1589,6 +2103,15 @@ export type Database = {
           ticket_type_id: string;
           remaining: number;
         }[];
+      };
+      event_code_taken: {
+        Args: {
+          p_event_id: string | null;
+          p_code: string | null;
+          p_except_seller?: string | null;
+          p_except_promo?: string | null;
+        };
+        Returns: boolean;
       };
       event_has_printed: {
         Args: {
@@ -1620,6 +2143,13 @@ export type Database = {
       };
       generate_ref_code: {
         Args: never;
+        Returns: string;
+      };
+      generate_seller_code: {
+        Args: {
+          p_event_id: string | null;
+          p_name: string | null;
+        };
         Returns: string;
       };
       generate_ticket_code: {
@@ -1716,6 +2246,42 @@ export type Database = {
         };
         Returns: number;
       };
+      my_ambassador_events: {
+        Args: never;
+        Returns: {
+          event_id: string;
+          event_name: string;
+          event_slug: string;
+          org_name: string;
+          org_slug: string;
+          starts_at: string;
+          ends_at: string;
+          event_status: Database["public"]["Enums"]["event_status"];
+          ref_code: string;
+          credited_tickets: number;
+          pending_tickets: number;
+          reward_paisa: number;
+          paid_paisa: number;
+          rank: number;
+          ambassadors: number;
+        }[];
+      };
+      my_ambassador_stats: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: Json;
+      };
+      my_campus_societies: {
+        Args: never;
+        Returns: {
+          org_name: string;
+          org_slug: string;
+          status: Database["public"]["Enums"]["org_status"];
+          referred_at: string;
+          events: number;
+        }[];
+      };
       my_print_stock: {
         Args: {
           p_event_id: string | null;
@@ -1756,7 +2322,15 @@ export type Database = {
           org_slug: string;
           starts_at: string;
           access: string;
+          has_printed: boolean;
+          ref_code: string;
         }[];
+      };
+      normalize_code: {
+        Args: {
+          p_code: string | null;
+        };
+        Returns: string;
       };
       org_role_of: {
         Args: {
@@ -1787,6 +2361,12 @@ export type Database = {
           p_device?: string | null;
         };
         Returns: Json;
+      };
+      phone_key: {
+        Args: {
+          p_phone: string | null;
+        };
+        Returns: string;
       };
       print_check_range: {
         Args: {
@@ -1834,6 +2414,12 @@ export type Database = {
         };
         Returns: number;
       };
+      promo_code_uses: {
+        Args: {
+          p_promo_id: string | null;
+        };
+        Returns: number;
+      };
       rate_limit_hit: {
         Args: {
           p_key: string | null;
@@ -1855,6 +2441,13 @@ export type Database = {
           p_layout?: string | null;
         };
         Returns: undefined;
+      };
+      referral_preview: {
+        Args: {
+          p_event_id: string | null;
+          p_code: string | null;
+        };
+        Returns: Json;
       };
       reject_order: {
         Args: {
@@ -1921,6 +2514,37 @@ export type Database = {
         };
         Returns: string;
       };
+      save_promo_code: {
+        Args: {
+          p_event_id: string | null;
+          p_promo_id: string | null;
+          p_code: string | null;
+          p_discount_type: string | null;
+          p_discount_value: number | null;
+          p_max_uses: number | null;
+          p_min_tickets: number | null;
+          p_ticket_type_ids: string[] | null;
+          p_starts_at: string | null;
+          p_ends_at: string | null;
+          p_active: boolean | null;
+          p_note?: string | null;
+        };
+        Returns: string;
+      };
+      save_referral_settings: {
+        Args: {
+          p_event_id: string | null;
+          p_reward_type: string | null;
+          p_reward_value: number | null;
+          p_discount_type: string | null;
+          p_discount_value: number | null;
+          p_credit_on: string | null;
+          p_leaderboard: boolean | null;
+          p_applications_open: boolean | null;
+          p_milestones: Json | null;
+        };
+        Returns: undefined;
+      };
       scanner_attendees: {
         Args: {
           p_event_id: string | null;
@@ -1946,6 +2570,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      set_org_referral: {
+        Args: {
+          p_org_id: string | null;
+          p_code: string | null;
+        };
+        Returns: boolean;
+      };
       set_print_batch_options: {
         Args: {
           p_batch_id: string | null;
@@ -1962,6 +2593,20 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_promo_code_active: {
+        Args: {
+          p_promo_id: string | null;
+          p_active: boolean | null;
+        };
+        Returns: undefined;
+      };
+      set_seller_code: {
+        Args: {
+          p_seller_id: string | null;
+          p_code: string | null;
+        };
+        Returns: string;
+      };
       settle_print_seller: {
         Args: {
           p_seller_id: string | null;
@@ -1974,6 +2619,12 @@ export type Database = {
           p_user_id: string | null;
         };
         Returns: boolean;
+      };
+      short_name: {
+        Args: {
+          p_name: string | null;
+        };
+        Returns: string;
       };
       submit_event: {
         Args: {
@@ -1999,6 +2650,13 @@ export type Database = {
           p_ticket_type_id: string | null;
         };
         Returns: number;
+      };
+      track_referral_click: {
+        Args: {
+          p_event_id: string | null;
+          p_code: string | null;
+        };
+        Returns: undefined;
       };
       try_uuid: {
         Args: {

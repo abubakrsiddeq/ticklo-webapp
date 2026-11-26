@@ -383,3 +383,48 @@ Problem: the Sell screen had no link anywhere (only a small one under /scan).
   `perform_check_in` now returns `gate_sold`, `record_gate_sale` fills in the method (only the
   person who just scanned it, within 15 minutes, not for closed seller accounts). The Edge
   Function passes the new fields through – no redeploy needed. Migration `…001300_gate_sales`.
+
+## D-043 Ambassadors, referral links, promo codes and rewards (owner request, 2026-11-27)
+Owner asked for the full ambassador system ("sab kar do"): all three phases in one go.
+- **One person = one seller row.** Ambassadors are the D-041 sellers (`print_sellers`), so one
+  person has one code and one account for paper AND online sales. Every seller gets a code made
+  from their first name (`ALI`, `ALI2`…), changeable by the organizer (3–16 letters/digits,
+  unique per event, never the same as a promo code of that event).
+- **Link and code.** `/e/<society>/<event>?ref=ALI` is remembered for **7 days** in a cookie per
+  event; a code typed at checkout wins over the link. Unknown links are ignored silently, an
+  unknown typed code is an error. The order stores `seller_id` + `referral_source` (link/code) at
+  creation and it never changes. Closed (settled) ambassadors get no new bookings.
+- **Credit** counts only for **approved** orders (default) – rejected/expired/cancelled orders
+  drop out on their own because all numbers are computed live. Organizer option: credit only
+  tickets **scanned at the gate** (fake bookings become worthless). Paper tickets count when sold
+  (or sold + scanned in that mode). Free passes never count.
+- **No self-referral:** no credit when the buyer is the ambassador's account or has the same phone
+  (last 10 digits compared, so 0300… = +92300…). Typing your own code is an error; your own link
+  is silently ignored.
+- **Rewards are calculated, never paid, by TickLO** (TickLO holds no money – same as D-041):
+  none / fixed rupees per ticket / whole percent of the money the ambassador brought, plus up to
+  10 milestones ("10 tickets → Free ticket"). The society records payouts (amount, or 0 with a
+  note like "VIP pass"); "Due" = reward − paid.
+- **Discounts.** Ambassador link/code can give the buyer a discount (event setting). Promo codes:
+  fixed rupees off **each ticket** (never below 0) or whole percent; optional max uses (held, in
+  review and approved orders count; expired holds free the use), dates, ticket types, minimum
+  tickets (group deals). **One discount per order – the bigger one**; when the ambassador
+  discount is bigger the promo code is not recorded as used. 100% off → free order → tickets at
+  once (PAY-12). Used codes cannot be deleted, only turned off. `order_items.unit_price_paisa`
+  stays the list price; `orders.discount_paisa` holds the discount and `total_paisa` what is paid.
+- **Clicks** are counted per ambassador per day (one row per day – free tier), once per browser per
+  day, rate-limited per IP. They are only a hint, never money.
+- **Fraud hints:** "N orders from the same phone" shown when one phone has 3+ orders for one
+  ambassador.
+- **Leaderboard** (default on, organizer can hide): ambassadors see the top 10 as "First L." and
+  their own rank; phone numbers are never shown to other ambassadors.
+- **Applications** (off by default): "Become an ambassador" on the event page → organizer approves
+  → the student becomes a seller with their own account even if not in the team (they can then
+  also sell paper tickets the organizer gives them). Organizers see the applicant's record at
+  other events (events, tickets brought).
+- **Ambassador screen** lives in the Sell area (`/sell/<event>/promote`), so the existing entry
+  points (header "Sell", banner, post-login landing) work; events without paper tickets show only
+  this screen. `/me/ambassador` lists all events + totals.
+- **TickLO campus ambassadors** (platform level): admins give a user a code; a society owner can
+  add that code once within 30 days of registering (also on the register form). Admin page shows
+  societies brought, approved, events published and paid tickets sold.

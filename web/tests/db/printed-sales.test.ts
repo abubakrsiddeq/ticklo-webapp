@@ -161,7 +161,7 @@ describe("printed ticket sales (SAL-01 .. SAL-08)", () => {
     const u = await createUser(c);
     const ev2 = await createEvent(c, [{ price: 0, quantity: 5 }]);
     await book(c, u.id, ev2.eventId, items([ev2.typeIds[0], 1]));
-    const t = await c.query("select sale_status, seller_id from public.tickets t join public.orders o on o.id = t.order_id where o.user_id = $1", [u.id]);
+    const t = await c.query("select t.sale_status, t.seller_id from public.tickets t join public.orders o on o.id = t.order_id where o.user_id = $1", [u.id]);
     expect(t.rows[0]).toEqual({ sale_status: null, seller_id: null });
   });
 
