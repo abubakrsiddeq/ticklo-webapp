@@ -204,7 +204,7 @@ Event dashboard → **Printed tickets** tab.
   screen, camera auto-start, WhatsApp link + QR per seller, home-screen shortcut, gate-sale switch
   in the scanner. 1 DB test (gate sale), 1 unit test (WhatsApp link). Not clicked through in a
   real browser yet.
-- **Needs:** apply migration `20261126001300_gate_sales.sql` to TICkLO.
+- Migration `20261126001300_gate_sales.sql` applied to TICkLO (2026-11-27) and checked.
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -256,7 +256,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261126001300_gate_sales.sql`** to TICkLO (gate sales, D-042).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.
