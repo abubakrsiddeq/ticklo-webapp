@@ -4,6 +4,7 @@
  * numbers on screen always match Postgres (`discount_for`, `ambassador_rows`).
  */
 import { formatPKR } from "./format";
+import { whatsappNumber } from "./phone";
 
 export const REF_PARAM = "ref";
 export const REF_DAYS = 7;
@@ -95,6 +96,22 @@ export function shareMessage(p: { eventName: string; when: string; url: string; 
     `Code: *${p.code}*`,
   ];
   return lines.join("\n");
+}
+
+/** Organizer → ambassador: "here is your link and code" (opens WhatsApp with their number). */
+export function ambassadorInviteWhatsApp(p: { name: string; phone: string | null; eventName: string; link: string; code: string; dashboardUrl: string | null }): string {
+  const text = [
+    `Assalam o Alaikum ${p.name}! Aap ${p.eventName} ke ambassador hain 🎉`,
+    "",
+    `Aap ka link: ${p.link}`,
+    `Aap ka code: ${p.code}`,
+    "",
+    "Is link se jo bhi ticket book karega woh aap ke naam count hoga.",
+    p.dashboardUrl ? `Apni sales aur rank yahan dekhein (TickLO par login karke): ${p.dashboardUrl}` : null,
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+  return `https://wa.me/${whatsappNumber(p.phone)}?text=${encodeURIComponent(text)}`;
 }
 
 export const whatsappShareUrl = (text: string) => `https://wa.me/?text=${encodeURIComponent(text)}`;

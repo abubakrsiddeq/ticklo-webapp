@@ -54,21 +54,25 @@ export function SellerDialog({
   team,
   seller,
   trigger,
+  addLabel = "Add seller",
 }: {
   orgSlug: string;
   eventId: string;
   team: TeamOption[];
   seller?: { id: string; name: string; phone: string | null; userId: string | null };
   trigger: "add" | "edit";
+  addLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // D-043: an ambassador who joined by application uses their own account but is not in the team
+  const ownAccount = seller?.userId && !team.some((t) => t.user_id === seller.userId) ? seller.userId : null;
   const [userId, setUserId] = useState(seller?.userId ?? "");
   const { pending, run } = useAction();
   return (
     <>
       {trigger === "add" ? (
         <Button variant="brand" onClick={() => setOpen(true)}>
-          <Plus /> Add seller
+          <Plus /> {addLabel}
         </Button>
       ) : (
         <Button size="icon-sm" variant="ghost" aria-label={`Edit ${seller?.name}`} onClick={() => setOpen(true)}>
@@ -87,14 +91,15 @@ export function SellerDialog({
             }}
           >
             <DialogHeader>
-              <DialogTitle>{seller ? "Edit seller" : "Add seller"}</DialogTitle>
+              <DialogTitle>{seller ? `Edit ${seller.name}` : addLabel}</DialogTitle>
               <DialogDescription>
                 A team member can mark sales on their own phone (Sell screen). For an outside seller, just write their name – you mark their sales and returns here.
               </DialogDescription>
             </DialogHeader>
             <FormField id="seller-user" label="Team member (optional)" hint="Only people in your society team can log in to sell.">
               <NativeSelect id="seller-user" name="userId" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">— Outside seller (no account) —</option>
+                <option value="">— Outside person (no account) —</option>
+                {ownAccount ? <option value={ownAccount}>{seller?.name} (own account)</option> : null}
                 {team.map((t) => (
                   <option key={t.user_id} value={t.user_id}>
                     {t.name}

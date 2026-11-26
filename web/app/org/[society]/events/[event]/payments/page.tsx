@@ -41,7 +41,8 @@ export default async function PaymentsPage({
     .from("orders")
     .select(
       `id, ref_code, status, total_paisa, ticket_count, buyer_name, buyer_phone, buyer_email, created_at, submitted_at,
-       hold_expires_at, reject_reason, requires_student_card,
+       hold_expires_at, reject_reason, requires_student_card, discount_paisa, referral_source,
+       print_sellers ( name, ref_code ), promo_codes ( code ),
        order_items ( quantity, ticket_types!inner ( name ) ),
        payment_proofs ( id, status, transaction_id, sender_name, screenshot_path, student_card_path, created_at,
          is_possible_duplicate, duplicate_order_ids, duplicate_reasons, reject_reason,
@@ -132,6 +133,23 @@ export default async function PaymentsPage({
                       <dd className="font-bold text-navy">{formatPKR(o.total_paisa, { freeLabel: "Free" })}</dd>
                       <dt className="text-muted-foreground">Tickets</dt>
                       <dd>{o.order_items.map((i) => `${i.quantity}× ${i.ticket_types.name}`).join(", ")}</dd>
+                      {Number(o.discount_paisa) > 0 ? (
+                        <>
+                          <dt className="text-muted-foreground">Discount</dt>
+                          <dd>
+                            −{formatPKR(Number(o.discount_paisa))}
+                            {o.promo_codes ? <span className="ml-1 font-mono text-xs">({o.promo_codes.code})</span> : o.print_sellers ? <span className="ml-1 text-xs">(ambassador)</span> : null}
+                          </dd>
+                        </>
+                      ) : null}
+                      {o.print_sellers ? (
+                        <>
+                          <dt className="text-muted-foreground">Ambassador</dt>
+                          <dd>
+                            {o.print_sellers.name} <span className="font-mono text-xs text-muted-foreground">{o.print_sellers.ref_code} · {o.referral_source === "code" ? "code" : "link"}</span>
+                          </dd>
+                        </>
+                      ) : null}
                       <dt className="text-muted-foreground">Buyer</dt>
                       <dd>
                         {o.buyer_name} · {formatPhone(o.buyer_phone)}

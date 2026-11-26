@@ -8,7 +8,8 @@ export async function getEventReport(eventId: string) {
   const { data } = await supabase
     .from("orders")
     .select(
-      `id, ref_code, buyer_name, buyer_phone, total_paisa, ticket_count, approved_at, created_at,
+      `id, ref_code, buyer_name, buyer_phone, total_paisa, ticket_count, approved_at, created_at, discount_paisa,
+       print_sellers ( name, ref_code ), promo_codes ( code ),
        order_items ( quantity, unit_price_paisa, ticket_types!inner ( name ) ),
        payment_proofs ( status, transaction_id, created_at, payment_accounts ( id, kind, bank_name, account_number ) )`,
     )
@@ -33,8 +34,10 @@ export async function getEventReport(eventId: string) {
   const byType = new Map<string, { tickets: number; amount: number }>();
   let total = 0;
   let tickets = 0;
+  let discount = 0; // D-043: byType shows list prices; discounts are taken off the total
   for (const o of orders) {
     total += Number(o.total_paisa);
+    discount += Number(o.discount_paisa ?? 0);
     tickets += o.ticket_count;
     const a = byAccount.get(o.accountKey) ?? { name: o.accountName, orders: 0, amount: 0 };
     a.orders += 1;
@@ -51,6 +54,7 @@ export async function getEventReport(eventId: string) {
     orders,
     total,
     tickets,
+    discount,
     byAccount: [...byAccount.values()].sort((a, b) => b.amount - a.amount),
     byType: [...byType.entries()].map(([name, v]) => ({ name, ...v })),
   };

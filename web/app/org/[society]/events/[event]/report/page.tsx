@@ -5,6 +5,8 @@ import { PrintButton } from "@/components/print-button";
 import { requireOrgEvent } from "@/lib/auth";
 import { getEventReport } from "@/lib/queries/report";
 import { getPrintSales } from "@/lib/queries/print-sales";
+import { getAmbassadorPage } from "@/lib/queries/ambassadors";
+import { discountLabel, rewardDue } from "@/lib/referrals";
 import { methodLabel } from "@/lib/print/sales";
 import { formatDateTime, formatPKR, formatShortDateTime } from "@/lib/format";
 import { serverNow } from "@/lib/time";
@@ -15,7 +17,7 @@ export const metadata: Metadata = { title: "Event report" };
 export default async function ReportPage({ params }: { params: Promise<{ society: string; event: string }> }) {
   const { society, event: eventSlug } = await params;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/report`);
-  const [r, ps] = await Promise.all([getEventReport(event.id), getPrintSales(event.id)]);
+  const [r, ps, amb] = await Promise.all([getEventReport(event.id), getPrintSales(event.id), getAmbassadorPage(event.id)]);
   const paper = ps.summary.totals;
 
   return (
@@ -107,10 +109,61 @@ export default async function ReportPage({ params }: { params: Promise<{ society
                   <td className="px-4 py-2 text-right tabular-nums">{formatPKR(t.amount)}</td>
                 </tr>
               ))}
+              {r.discount ? (
+                <tr>
+                  <td className="px-4 py-2 text-muted-foreground">Discounts (promo &amp; ambassador codes)</td>
+                  <td />
+                  <td className="px-4 py-2 text-right tabular-nums text-destructive">−{formatPKR(r.discount)}</td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
       </section>
+
+      {amb.rows.length || amb.promos.length ? (
+        <section className="grid gap-2">
+          <h3 className="font-semibold text-navy">Ambassadors &amp; promo codes</h3>
+          {amb.rows.length ? (
+            <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead className="bg-secondary/60 text-left text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">#</th>
+                    <th className="px-3 py-2 font-medium">Ambassador</th>
+                    <th className="px-3 py-2 text-right font-medium">Tickets</th>
+                    <th className="px-3 py-2 text-right font-medium">Money brought</th>
+                    <th className="px-3 py-2 text-right font-medium">Reward</th>
+                    <th className="px-3 py-2 text-right font-medium">Due</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {amb.rows.map((a) => (
+                    <tr key={a.seller_id}>
+                      <td className="px-3 py-2 tabular-nums">{a.rank}</td>
+                      <td className="px-3 py-2">
+                        {a.name} <span className="font-mono text-xs text-muted-foreground">{a.ref_code}</span>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">{a.credited_tickets}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPKR(a.credited_revenue_paisa)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPKR(a.reward_paisa)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPKR(rewardDue(a.reward_paisa, a.paid_paisa))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {amb.promos.length ? (
+            <p className="text-sm text-muted-foreground">
+              {amb.promos
+                .filter((p) => p.approved)
+                .map((p) => `${p.code} (${discountLabel(p.discount_type, p.discount_value)}): ${p.approved} orders, ${formatPKR(p.discount_paisa)} off`)
+                .join(" · ") || "No paid orders used a promo code yet."}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {ps.summary.totals.printed ? (
         <section className="grid gap-2">

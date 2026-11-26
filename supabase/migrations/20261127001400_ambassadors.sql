@@ -1253,6 +1253,65 @@ begin
 end;
 $$;
 
+-- Sellers who joined by application keep their own account when the organizer
+-- edits their name/phone (they are not team members). Otherwise as D-041.
+create or replace function public.save_print_seller(
+  p_event_id uuid,
+  p_seller_id uuid,
+  p_name text,
+  p_phone text default null,
+  p_user_id uuid default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event public.events := public.print_staff_event(p_event_id);
+  v_name text := nullif(btrim(coalesce(p_name, '')), '');
+  v_phone text := nullif(btrim(coalesce(p_phone, '')), '');
+  v_keeps_own boolean := false;
+  v_id uuid;
+begin
+  if p_user_id is not null then
+    v_keeps_own := p_seller_id is not null and exists (
+      select 1 from public.print_sellers s where s.id = p_seller_id and s.event_id = p_event_id and s.user_id = p_user_id
+    );
+    if not v_keeps_own and not exists (select 1 from public.organization_members m where m.org_id = v_event.org_id and m.user_id = p_user_id) then
+      raise exception using message = 'TL:NOT_A_MEMBER', detail = 'Only people in your team can sell with their own account. Add outside sellers by name.';
+    end if;
+    if v_name is null then
+      select coalesce(p.full_name, p.email) into v_name from public.profiles p where p.id = p_user_id;
+    end if;
+  end if;
+  if v_name is null or char_length(v_name) > 80 then
+    raise exception using message = 'TL:INVALID_ITEMS', detail = 'Give the seller a name (up to 80 characters).';
+  end if;
+  if v_phone is not null and char_length(v_phone) > 20 then
+    raise exception using message = 'TL:INVALID_ITEMS', detail = 'Phone number is too long.';
+  end if;
+
+  if p_seller_id is null then
+    insert into public.print_sellers (event_id, user_id, name, phone, created_by)
+    values (p_event_id, p_user_id, v_name, v_phone, auth.uid())
+    returning id into v_id;
+    perform public.audit('print_seller.create', 'event', p_event_id::text, jsonb_build_object('seller_id', v_id, 'name', v_name));
+  else
+    update public.print_sellers set name = v_name, phone = v_phone, user_id = p_user_id
+    where id = p_seller_id and event_id = p_event_id
+    returning id into v_id;
+    if v_id is null then
+      raise exception using message = 'TL:NOT_FOUND', detail = 'Seller not found.';
+    end if;
+  end if;
+  return v_id;
+exception
+  when unique_violation then
+    raise exception using message = 'TL:INVALID_ITEMS', detail = 'This person is already a seller for this event.';
+end;
+$$;
+
 -- A seller with online orders or rewards cannot be deleted (extends D-041)
 create or replace function public.delete_print_seller(p_seller_id uuid)
 returns void

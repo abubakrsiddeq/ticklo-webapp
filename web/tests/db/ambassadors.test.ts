@@ -328,6 +328,11 @@ describe("applications and the ambassador's own view (AMB-05, AMB-11, AMB-13)", 
     expect(sellerId).toBeTruthy();
     const row = (await c.query("select joined_via, ref_code, user_id from public.print_sellers where id = $1", [sellerId])).rows[0];
     expect(row).toMatchObject({ joined_via: "application", ref_code: "SANA", user_id: stu.id });
+    // the organizer can edit their name/phone and they keep their own account (not a team member)
+    await org(() => rpc(c, "save_print_seller", [eventId, sellerId, "Sana T", "03001231234", stu.id], ["uuid", "uuid", "text", "text", "uuid"]));
+    // …but cannot attach that outside account to a new seller row
+    const ev2 = await createEvent(c, [{ price: 100000 }]);
+    await expectTL(org(() => rpc(c, "save_print_seller", [ev2.eventId, null, "Sana", null, stu.id], ["uuid", "uuid", "text", "text", "uuid"])), "NOT_A_MEMBER");
 
     // the event shows up in the Sell area even without paper tickets
     const sellEvents = await asUser(c, stu.id, () => c.query("select * from public.my_sell_events()"));

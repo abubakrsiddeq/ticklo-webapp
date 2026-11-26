@@ -3,6 +3,7 @@
  * on the sales page, the report and the CSV are always the same (unit-tested).
  */
 import { serialLabel } from "./design";
+import { whatsappNumber } from "../phone";
 
 export const SALE_METHODS = [
   { key: "cash", label: "Cash" },
@@ -238,7 +239,5 @@ export function parseSerial(v: string | null | undefined): number | null {
  */
 export function sellerWhatsAppLink(opts: { name: string; phone: string | null; eventName: string; sellUrl: string }): string {
   const text = `Assalam o Alaikum ${opts.name}! ${opts.eventName} ke tickets bechne ke liye ye link kholein (TickLO par login karke): ${opts.sellUrl}\n\nTicket ka QR scan karein → Cash / JazzCash / EasyPaisa → Sold.`;
-  const digits = (opts.phone ?? "").replace(/[\s\-().+]/g, "");
-  const intl = /^03\d{9}$/.test(digits) ? `92${digits.slice(1)}` : /^(00)?923\d{9}$/.test(digits) ? digits.replace(/^00/, "") : /^[1-9]\d{7,14}$/.test(digits) ? digits : "";
-  return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${whatsappNumber(opts.phone)}?text=${encodeURIComponent(text)}`;
 }
