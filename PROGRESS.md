@@ -25,7 +25,7 @@ If a session stops, resume from the first unchecked milestone below.
       serial, print-ready PDF, void/buyer records, scanner + reports. Migration `…001000`.
 - [x] **M12 Ambassadors (D-043)** – referral links + codes, promo codes and discounts, rewards
       and milestones, leaderboard, organizer tab, ambassador screen, applications, campus
-      ambassadors. Migration `…001400` (**not applied to TICkLO yet**).
+      ambassadors. Migration `…001400` applied to TICkLO (2026-11-27).
 
 ## Done (by requirement ID)
 
@@ -244,8 +244,13 @@ Event dashboard → **Ambassadors** tab; ambassadors use **Sell → My link & ra
   credit approved vs gate, rewards, payouts, same-phone flag, settings, applications, own view,
   campus ambassadors) and 8 unit tests (discount maths, labels, milestones, share text).
   `npm run check` passes (typecheck, lint, 57 unit tests, production build); 86 DB tests pass.
-- **Not yet clicked through in a real browser** and the migration is **not applied to TICkLO**
-  (see "Needs from Abubakar").
+- Migration `20261127001400_ambassadors.sql` applied to TICkLO (2026-11-27) in one transaction
+  (D-034 method, recorded in the migration history) and checked: 6 new tables with RLS, new
+  `create_order` (only one version), grants as intended, existing orders untouched; advisors show
+  only the expected "can execute" warnings (3 new public ones are on purpose: link preview,
+  click count, event ambassador info).
+- **Not yet clicked through in a real browser.** Hostinger still runs the old web build – it
+  keeps working; deploy the new build to switch the feature on.
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -301,11 +306,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127001400_ambassadors.sql` to TICkLO** (same D-034 method as before),
-  **first**, then redeploy the web app on Hostinger. Order matters: the current live web keeps
-  working with the new migration (the new `create_order` arguments are optional), but the new
-  web build without the migration would break booking. No new env vars, no Edge Function
-  redeploy.
+- **Deploy the new web build on Hostinger** to switch on ambassadors and promo codes
+  (migration `…001400` is already applied to TICkLO; no new env vars, no Edge Function
+  redeploy). Then try checks #14–17 under "How to test".
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.
