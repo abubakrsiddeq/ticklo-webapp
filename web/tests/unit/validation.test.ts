@@ -13,6 +13,7 @@ const validEvent = {
   capacity: "300",
   visibility: "public",
   max_tickets_per_order: "5",
+  format: "single",
 };
 
 describe("shared zod schemas (NFR-05)", () => {
@@ -22,6 +23,12 @@ describe("shared zod schemas (NFR-05)", () => {
     expect(bad.success).toBe(false);
     expect(bad.error?.issues[0].path).toEqual(["ends_at"]);
     expect(eventSchema.safeParse({ ...validEvent, max_tickets_per_order: "50" }).success).toBe(false);
+    // FES-15: the kind of event is required and limited to the three formats
+    expect(eventSchema.safeParse({ ...validEvent, format: "festival" }).success).toBe(true);
+    expect(eventSchema.safeParse({ ...validEvent, format: "party" }).success).toBe(false);
+    const { format: _f, ...noFormat } = validEvent;
+    void _f;
+    expect(eventSchema.safeParse(noFormat).success).toBe(false);
   });
 
   it("validates ticket types (price in rupees, 0 = free)", () => {
