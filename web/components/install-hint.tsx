@@ -47,7 +47,7 @@ export function InstallHint() {
   };
   return (
     <div className="flex items-start gap-3 rounded-xl bg-navy p-4 text-white">
-      <Smartphone className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />
+      <Smartphone className="mt-0.5 size-5 shrink-0 text-brand-light" aria-hidden />
       <div className="flex-1 text-sm">
         <p className="font-semibold">Open your tickets like an app</p>
         {mode === "ios" ? (

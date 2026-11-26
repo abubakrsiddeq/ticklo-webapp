@@ -20,7 +20,7 @@ export default async function HomePage() {
               <ShieldCheck className="size-4" aria-hidden /> Verified society events
             </p>
             <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
-              University events, <span className="text-brand">one tap</span> away.
+              University events, <span className="text-brand-light">one tap</span> away.
             </h1>
             <p className="mt-3 text-lg text-slate-200">{TAGLINE}</p>
           </div>

@@ -7,6 +7,7 @@ Ticketing and gate verification for events at Pakistani universities.
 |---|---|
 | `web/` | Next.js 16 web app: public event pages, booking with manual bank/wallet payments, My tickets with rotating QR, organizer dashboard, web scanner, admin panel |
 | `supabase/` | Postgres migrations (schema, RLS, business logic), seed data, Edge Functions (QR signing + scan verification), auth email templates |
+| `brand/` | Official logo, app icon, social media artwork and brand guidelines (see `brand/README.md`) |
 | `PROGRESS.md` | What is built (by requirement ID), what is left, how to test |
 | `DECISIONS.md` | Every decision taken where the requirements were open |
 

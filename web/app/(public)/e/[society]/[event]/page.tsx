@@ -36,13 +36,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       description,
       url,
       type: "website",
-      images: event.poster_url ? [{ url: event.poster_url, alt: `${event.name} poster` }] : undefined,
+      images: event.poster_url
+        ? [{ url: event.poster_url, alt: `${event.name} poster` }]
+        : [{ url: "/brand/ticklo-og.png", width: 1200, height: 630, alt: "TickLO" }],
     },
     twitter: {
       card: event.poster_url ? "summary_large_image" : "summary",
       title: event.name,
       description,
-      images: event.poster_url ? [event.poster_url] : undefined,
+      images: [event.poster_url ?? "/brand/ticklo-og.png"],
     },
   };
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Body, Button, Container, Head, Hr, Html, Preview, Section, Text } from "@react-email/components";
+import { Body, Button, Container, Head, Hr, Html, Img, Preview, Section, Text } from "@react-email/components";
+import { absoluteUrl } from "@/lib/site";
 
 // TickLO brand colours (NFR-12). Green text/buttons use the darker shade for contrast.
 export const NAVY = "#0B1F3A";
@@ -16,9 +17,14 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
       <Body style={{ backgroundColor: "#F3F5F8", fontFamily: fontStack, margin: 0, padding: "24px 0" }}>
         <Container style={{ maxWidth: 560, margin: "0 auto", backgroundColor: "#ffffff", borderRadius: 12, overflow: "hidden" }}>
           <Section style={{ backgroundColor: NAVY, padding: "20px 28px" }}>
-            <Text style={{ color: "#ffffff", fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.5px" }}>
-              Tick<span style={{ color: GREEN }}>LO</span>
-            </Text>
+            {/* Official white logo for dark backgrounds (brand/logo/ticklo-logo-on-dark.png) */}
+            <Img
+              src={absoluteUrl("/brand/ticklo-logo-on-dark.png")}
+              alt="TickLO"
+              width={150}
+              height={35}
+              style={{ display: "block", color: "#ffffff", fontSize: 22, fontWeight: 700 }}
+            />
           </Section>
           <Section style={{ padding: "28px" }}>{children}</Section>
           <Hr style={{ borderColor: "#E5E7EB", margin: 0 }} />

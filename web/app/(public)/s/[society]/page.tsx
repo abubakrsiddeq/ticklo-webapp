@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     title: data.org.name,
     description: data.org.about?.slice(0, 160) ?? `Events by ${data.org.name} on TickLO`,
     alternates: { canonical: absoluteUrl(orgPath(data.org.slug)) },
-    openGraph: { title: data.org.name, images: data.org.logo_url ? [{ url: data.org.logo_url }] : undefined },
+    openGraph: { title: data.org.name, images: [{ url: data.org.logo_url ?? "/brand/ticklo-og.png" }] },
   };
 }
 

@@ -1,29 +1,66 @@
+import Image from "next/image";
 import Link from "next/link";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
 import { cn } from "@/lib/utils";
 
-export function LogoMark({ className }: { className?: string }) {
+// Official TickLO artwork from /brand (see brand/README.md).
+// Brand rule: never smaller than 120 px wide on screen; don't stretch or recolour.
+
+type Variant = "light" | "dark";
+
+/** Full logo (ticket mark + wordmark). `light` for white/light backgrounds, `dark` for navy/photos. */
+export function Logo({
+  className,
+  href = "/",
+  variant = "light",
+  height = 32,
+  priority = true,
+}: {
+  className?: string;
+  href?: string | null;
+  variant?: Variant;
+  /** Rendered height in px (width follows the logo's aspect ratio). */
+  height?: number;
+  priority?: boolean;
+}) {
+  const asset = variant === "dark" ? BRAND_ASSETS.logoOnDark : BRAND_ASSETS.logo;
+  const width = Math.max(120, Math.round((asset.width / asset.height) * height));
+  const img = (
+    <Image
+      src={asset.src}
+      alt="TickLO"
+      width={width}
+      height={Math.round((width * asset.height) / asset.width)}
+      priority={priority}
+      className="h-auto select-none"
+      style={{ width, maxWidth: "100%" }}
+    />
+  );
+  if (!href) return <span className={cn("inline-flex items-center", className)}>{img}</span>;
   return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8", className)}>
-      <rect width="32" height="32" rx="8" fill="#0B1F3A" />
-      <path
-        d="M7 11.5a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v9a2 2 0 0 0-2 2H9a2 2 0 0 0-2-2z"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path d="m12.5 16 2.5 2.5 4.5-5" fill="none" stroke="#0F9D58" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <Link href={href} className={cn("inline-flex shrink-0 items-center", className)} aria-label="TickLO home">
+      {img}
+    </Link>
   );
 }
 
-export function Logo({ className, href = "/" }: { className?: string; href?: string }) {
+/** The ticket mark on its own (for compact spots). */
+export function LogoMark({ className, variant = "light", size = 32 }: { className?: string; variant?: Variant; size?: number }) {
+  const asset = variant === "dark" ? BRAND_ASSETS.markOnDark : BRAND_ASSETS.mark;
+  const height = Math.round((size * asset.height) / asset.width);
+  return <Image src={asset.src} alt="" aria-hidden width={size} height={height} className={cn("h-auto select-none", className)} style={{ width: size }} />;
+}
+
+/** The green app icon (profile picture style). */
+export function AppIcon({ className, size = 48 }: { className?: string; size?: number }) {
   return (
-    <Link href={href} className={cn("flex items-center gap-2 font-heading text-xl font-bold text-navy", className)} aria-label="TickLO home">
-      <LogoMark />
-      <span>
-        Tick<span className="text-brand-strong">LO</span>
-      </span>
-    </Link>
+    <Image
+      src={BRAND_ASSETS.appIcon.src}
+      alt=""
+      aria-hidden
+      width={size}
+      height={size}
+      className={cn("rounded-[22%] select-none", className)}
+    />
   );
 }

@@ -16,6 +16,8 @@
   --color-navy-soft: #13305A;
   --color-brand: #0F9D58;
   --color-brand-strong: #0B7D47;
+  /* Light green: "LO" and accents on navy/dark backgrounds only (brand sheet) */
+  --color-brand-light: #3DDC97;
   --color-brand-soft: #E7F6EE;
   --color-success: #0B7D47;
   --color-warning: #B45309;
