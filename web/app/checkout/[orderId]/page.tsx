@@ -117,6 +117,9 @@ export default async function CheckoutPage({
                   {order.ticket_count} ticket{order.ticket_count === 1 ? "" : "s"}:{" "}
                   {order.order_items.map((i) => `${i.quantity}× ${i.ticket_types.name}`).join(", ")}
                 </span>
+                {Number(order.discount_paisa) > 0 ? (
+                  <span className="text-sm font-medium text-brand-light">Discount applied: −{formatPKR(Number(order.discount_paisa))}</span>
+                ) : null}
               </div>
               <div className="rounded-xl border-2 border-brand bg-brand-soft p-3">
                 <CopyRow label="Reference code" value={order.ref_code} />

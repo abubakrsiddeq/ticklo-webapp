@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Ban, CalendarDays, CalendarPlus, Clock, MapPin } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,12 @@ import { absoluteUrl, eventPath, orgPath } from "@/lib/site";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { serverNow } from "@/lib/time";
 import { formatPhone } from "@/lib/phone";
-import { BookingWidget, type WidgetTicketType } from "./booking-widget";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/env";
+import { normalizeCode, refCookieName, rewardLabel, REF_PARAM, type DiscountType } from "@/lib/referrals";
+import { BookingWidget, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
+import { RefCapture } from "./ref-capture";
+import { AmbassadorCta } from "./ambassador-cta";
 
 type Params = { society: string; event: string };
 
@@ -49,11 +55,34 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-export default async function EventPage({ params }: { params: Promise<Params> }) {
+type AmbassadorInfo = { applications_open: boolean; reward_type: string; reward_value: number; has_milestones: boolean; my_status: "pending" | "approved" | "rejected" | "ambassador" | null };
+
+/** AMB-03: who sent this visitor (?ref=ALI, or remembered for 7 days) and is the program taking ambassadors? */
+async function referralContext(eventId: string, published: boolean, urlRef: string | null) {
+  if (!published || !isSupabaseConfigured) return { referral: null, fromUrl: false, info: null };
+  const jar = await cookies();
+  const code = urlRef ?? normalizeCode(jar.get(refCookieName(eventId))?.value);
+  const supabase = await createClient();
+  const [preview, info] = await Promise.all([
+    code && code.length <= 16 ? supabase.rpc("referral_preview", { p_event_id: eventId, p_code: code }) : Promise.resolve({ data: null }),
+    supabase.rpc("event_ambassador_info", { p_event_id: eventId }),
+  ]);
+  const p = preview.data as null | { kind: string | null; valid: boolean; code: string; name?: string; discount_type?: DiscountType; discount_value?: number };
+  const referral: WidgetReferral | null =
+    p && p.valid && p.kind === "ambassador"
+      ? { code: p.code, name: p.name ?? null, discountType: p.discount_type ?? "none", discountValue: p.discount_value ?? 0 }
+      : null;
+  return { referral, fromUrl: Boolean(urlRef && referral), info: (info.data as AmbassadorInfo | null) ?? null };
+}
+
+export default async function EventPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { society, event: eventSlug } = await params;
+  const sp = await searchParams;
   const [data, user] = await Promise.all([getEventPage(society, eventSlug), getCurrentUser()]);
   if (!data) notFound();
   const { event, org, ticketTypes } = data;
+  const urlRef = normalizeCode(typeof sp[REF_PARAM] === "string" ? sp[REF_PARAM] : null);
+  const { referral, fromUrl, info } = await referralContext(event.id, event.status === "published", urlRef);
 
   const now = serverNow();
   const started = new Date(event.starts_at).getTime() <= now;
@@ -99,8 +128,12 @@ export default async function EventPage({ params }: { params: Promise<Params> })
       : null;
   const uni = org.universities;
 
+  const ambassadorPerk = info ? rewardLabel(info.reward_type, info.reward_value) ?? (info.has_milestones ? "earn rewards" : null) : null;
+  const showAmbassador = Boolean(info && !cancelled && !ended && (info.applications_open || info.my_status === "ambassador" || info.my_status === "pending"));
+
   return (
     <article className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+      {fromUrl && referral ? <RefCapture eventId={event.id} code={referral.code} /> : null}
       {cancelled ? (
         <Alert variant="destructive" className="mb-6">
           <Ban />
@@ -194,10 +227,20 @@ export default async function EventPage({ params }: { params: Promise<Params> })
             loggedIn={Boolean(user)}
             loginHref={`/login?next=${encodeURIComponent(pagePath)}`}
             needs={needs}
+            referral={referral}
           />
           <p className="mt-3 text-center text-xs text-muted-foreground">
             You pay {org.name} directly by bank transfer or wallet. TickLO charges no fees.
           </p>
+          {showAmbassador && info ? (
+            <AmbassadorCta
+              eventId={event.id}
+              loggedIn={Boolean(user)}
+              loginHref={`/login?next=${encodeURIComponent(pagePath)}`}
+              status={info.my_status}
+              perk={ambassadorPerk ? (ambassadorPerk.startsWith("Rs") || /^\d/.test(ambassadorPerk) ? `earn ${ambassadorPerk}` : ambassadorPerk) : null}
+            />
+          ) : null}
         </aside>
       </div>
     </article>

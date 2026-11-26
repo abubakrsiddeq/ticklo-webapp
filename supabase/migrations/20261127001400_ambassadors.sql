@@ -1407,6 +1407,29 @@ begin
 end;
 $$;
 
+-- Event page: is the program taking applications, and where do I stand?
+create or replace function public.event_ambassador_info(p_event_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'applications_open', coalesce((select r.applications_open from public.referral_settings r where r.event_id = p_event_id), false),
+    'reward_type', coalesce((select r.reward_type from public.referral_settings r where r.event_id = p_event_id), 'none'),
+    'reward_value', coalesce((select r.reward_value from public.referral_settings r where r.event_id = p_event_id), 0),
+    'has_milestones', coalesce((select jsonb_array_length(r.milestones) > 0 from public.referral_settings r where r.event_id = p_event_id), false),
+    'my_status', case
+      when auth.uid() is null then null
+      when exists (select 1 from public.print_sellers s where s.event_id = p_event_id and s.user_id = auth.uid()) then 'ambassador'
+      else (select a.status from public.ambassador_applications a where a.event_id = p_event_id and a.user_id = auth.uid())
+    end
+  )
+  from public.events e
+  where e.id = p_event_id and e.status = 'published';
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Ambassadors can open the Sell area even when the event has no paper tickets
 -- (D-042 entry points). Return type changes → drop first.
@@ -1587,6 +1610,7 @@ to service_role;
 revoke execute on function
   public.referral_preview(uuid, text),
   public.track_referral_click(uuid, text),
+  public.event_ambassador_info(uuid),
   public.create_order(uuid, jsonb, text, text, text, text),
   public.ambassador_summary(uuid),
   public.my_ambassador_stats(uuid),
@@ -1612,7 +1636,8 @@ from public, anon;
 -- Anyone (also logged out) can see what a link/code gives and count a link open
 grant execute on function
   public.referral_preview(uuid, text),
-  public.track_referral_click(uuid, text)
+  public.track_referral_click(uuid, text),
+  public.event_ambassador_info(uuid)
 to anon, authenticated, service_role;
 
 grant execute on function

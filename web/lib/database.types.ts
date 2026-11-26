@@ -2095,6 +2095,12 @@ export type Database = {
         };
         Returns: number;
       };
+      event_ambassador_info: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: Json;
+      };
       event_availability: {
         Args: {
           p_event_id: string | null;

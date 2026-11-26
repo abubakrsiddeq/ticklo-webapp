@@ -67,6 +67,9 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ or
             <div className="flex justify-between gap-2"><span className="text-muted-foreground">Order</span><span className="font-mono font-semibold">{order.ref_code}</span></div>
             <div className="flex justify-between gap-2"><span className="text-muted-foreground">Tickets</span><span>{order.order_items.map((i) => `${i.quantity}× ${i.ticket_types.name}`).join(", ")}</span></div>
             <div className="flex justify-between gap-2"><span className="text-muted-foreground">Amount</span><span className="font-semibold">{formatPKR(order.total_paisa, { freeLabel: "Free" })}</span></div>
+            {Number(order.discount_paisa) > 0 ? (
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">Discount</span><span className="text-brand-strong">−{formatPKR(Number(order.discount_paisa))}</span></div>
+            ) : null}
             {order.submitted_at ? (
               <div className="flex justify-between gap-2"><span className="text-muted-foreground">Screenshot sent</span><span>{formatDateTime(order.submitted_at)}</span></div>
             ) : null}

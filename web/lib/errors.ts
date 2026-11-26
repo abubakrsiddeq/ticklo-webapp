@@ -40,6 +40,12 @@ const FRIENDLY: Record<string, string> = {
   RATE_LIMITED: "Too many attempts. Please wait a few minutes and try again.",
   INVALID_DESIGN: "The ticket design is missing the QR code or the TickLO logo.",
   SETTLED: "This seller's account is closed. Reopen it first.",
+  INVALID_CODE: "This code is not valid for this event.",
+  OWN_CODE: "You cannot use your own ambassador code.",
+  CODE_TAKEN: "This code is already used for this event. Try another one.",
+  APPLICATIONS_CLOSED: "This event is not taking ambassador applications.",
+  ALREADY_APPLIED: "You have already applied for this event.",
+  ALREADY_AMBASSADOR: "You are already an ambassador for this event.",
 };
 
 interface ErrorLike {
