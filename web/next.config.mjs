@@ -1,9 +1,10 @@
-import type { NextConfig } from "next";
-
+// Plain ESM (not next.config.ts): loading a TypeScript config needs the native
+// SWC binary, which cannot run on Hostinger's build server (old glibc).
 // Allow next/image to optimise posters and logos served from Supabase Storage.
 // The hostname comes from the public Supabase URL so it works for any project.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
+/** @type {NonNullable<import("next").NextConfig["images"]>["remotePatterns"]} */
+const remotePatterns = [
   { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
   { protocol: "http", hostname: "127.0.0.1", port: "54321", pathname: "/storage/v1/object/public/**" },
   { protocol: "http", hostname: "localhost", port: "54321", pathname: "/storage/v1/object/public/**" },
@@ -12,7 +13,7 @@ if (supabaseUrl) {
   try {
     const u = new URL(supabaseUrl);
     remotePatterns.push({
-      protocol: u.protocol.replace(":", "") as "http" | "https",
+      protocol: /** @type {"http" | "https"} */ (u.protocol.replace(":", "")),
       hostname: u.hostname,
       port: u.port || undefined,
       pathname: "/storage/v1/object/public/**",
@@ -24,7 +25,8 @@ if (supabaseUrl) {
 
 // Server Actions compare the browser's Origin with the host the server sees.
 // Behind Hostinger's proxy those can differ, so the public site host is allowed explicitly.
-const allowedOrigins: string[] = [];
+/** @type {string[]} */
+const allowedOrigins = [];
 try {
   const site = process.env.NEXT_PUBLIC_SITE_URL;
   if (site) allowedOrigins.push(new URL(site).host);
@@ -32,7 +34,8 @@ try {
   // ignore malformed URL
 }
 
-const nextConfig: NextConfig = {
+/** @type {import("next").NextConfig} */
+const nextConfig = {
   // Cache Components is intentionally OFF: almost every TickLO page reads the
   // Supabase session cookie, so classic dynamic rendering is simpler and safer.
   // See DECISIONS.md (D-003).
@@ -71,14 +74,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
   },
 };
 

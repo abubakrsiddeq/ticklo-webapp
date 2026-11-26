@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -13,10 +13,13 @@
     "db:reset-local": "../scripts/db-reset-local.sh",
     "db:types": "node scripts/gen-db-types.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "smoke:remote": "node scripts/smoke-remote.mjs"
+    "smoke:remote": "node scripts/smoke-remote.mjs",
+    "build:turbopack": "next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",
+    "@img/sharp-wasm32": "^0.35.5",
+    "@next/swc-wasm-nodejs": "^16.4.6",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.3.1",
     "@supabase/ssr": "^0.12.7",
@@ -42,7 +45,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@tailwindcss/turbopack": "4.3.3",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.20.7",
     "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.6",

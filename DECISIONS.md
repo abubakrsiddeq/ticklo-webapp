@@ -207,3 +207,18 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
 - Supabase free tier refuses custom auth email templates while the default email provider is
   used. The templates stay in `supabase/templates` (commented out in `config.toml`); after
   Resend SMTP is configured, uncomment them and run `supabase config push`.
+
+## D-036 Building on Hostinger (old glibc)
+- Hostinger's build server has glibc < 2.29; Next 16's native SWC/Turbopack binary needs
+  glibc 2.30, so `next build` failed ("Failed to load next.config.ts").
+- Production builds now use `next build --webpack` with Next's WebAssembly compiler
+  (`@next/swc-wasm-nodejs`, installed as a dependency so nothing is downloaded at build time).
+  Turbopack has no WASM version, which is why Webpack is used for builds.
+- `next.config.ts` → `next.config.mjs` (a TypeScript config needs the native compiler to load).
+- Tailwind runs through PostCSS (`postcss.config.mjs`, `@tailwindcss/postcss`) instead of the
+  Turbopack-only loader; works for Webpack builds and Turbopack `next dev`.
+- `@img/sharp-wasm32` is installed so sharp (uploads + `next/image`) falls back to WebAssembly if
+  its native libvips (needs glibc 2.28) cannot load. Tailwind's oxide/lightningcss binaries only
+  need glibc 2.14, so they work natively.
+- Verified locally with `NEXT_TEST_WASM=1 npm run build` (forces the WASM compiler), then served
+  against the live Supabase project.

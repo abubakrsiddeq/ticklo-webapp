@@ -52,7 +52,7 @@ Without Supabase settings the app shows a "needs its Supabase settings" page.
 | Command | What it does |
 |---|---|
 | `npm run dev` | Development server |
-| `npm run build` / `npm start` | Production build / server |
+| `npm run build` / `npm start` | Production build (Webpack + WASM compiler, see D-036) / server |
 | `npm run typecheck` | TypeScript (strict) |
 | `npm run lint` | ESLint (incl. React Compiler rules) |
 | `npm test` | Unit tests (QR tokens, money/time, validation, helpers) |
