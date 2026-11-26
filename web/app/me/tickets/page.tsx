@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { Poster } from "@/components/poster";
+import { InstallHint } from "@/components/install-hint";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/queries/orders";
@@ -95,6 +96,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
   return (
     <div className="grid gap-6">
       <h1 className="text-3xl font-bold text-navy">My tickets</h1>
+      {upcoming.length ? <InstallHint /> : null}
       {sp.password === "updated" ? (
         <Alert>
           <AlertDescription>Your password was updated.</AlertDescription>

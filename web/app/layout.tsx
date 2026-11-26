@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import { isSupabaseConfigured, publicEnv } from "@/lib/env";
 import { SITE_NAME, TAGLINE } from "@/lib/site";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-full flex-col">
         <TooltipProvider>{isSupabaseConfigured ? children : <SetupNotice />}</TooltipProvider>
         <Toaster />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

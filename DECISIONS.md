@@ -104,3 +104,91 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
 - Supabase Auth already rate-limits sign-in/sign-up per IP. On top of that our server
   actions use a small Postgres-backed limiter (`rate_limit_hit`) for login, signup,
   password reset, payment proof submission and invites.
+
+## D-016 Brand green and contrast (NFR-10 vs NFR-12)
+- White text on the logo green #0F9D58 is only ~3.4:1 (fails WCAG AA for normal text). Buttons
+  and green text use a darker shade `#0B7D47` ("brand-strong", ~5.3:1); #0F9D58 is kept for
+  large accents, icons and the logo.
+
+## D-017 Per-ticket links (TKT-05)
+- Every ticket has its own page and QR (`/me/tickets/<id>`) with a "Ticket link" share button.
+  The link only opens for the logged-in owner ("login ke saath"); giving a ticket to a friend's
+  account would be ticket transfer, which is out of scope for v1. Friends are shown each QR
+  separately from the buyer's phone.
+
+## D-018 Who decides payments
+- Only the event's organizers (owner/member) approve or reject payments. Admins see
+  everything, handle disputes, contact the organizer, suspend fraud accounts and can cancel an
+  event, but do not approve payments themselves (money goes to the society, not TickLO).
+
+## D-019 Editing published events
+- Organizers can edit a published event's details (time, venue, description, poster) without
+  re-approval in v1; ticket type rules (D-011) still apply. Every change is visible on the
+  public page at once. Revisit if abused.
+
+## D-020 Report as PDF (ORG-12)
+- The report page is print-friendly; "Print / save as PDF" uses the browser. CSV is a real
+  download. No server-side PDF library (keeps the Hostinger build light).
+
+## D-021 Offline at the gate (SCN-09)
+- Offline scanning is out of scope (Flutter app). When the scanner goes offline it shows a big
+  red banner and the manual list, which is cached on the phone for name/code lookup; the actual
+  check-in still needs internet so a ticket can never be used twice.
+
+## D-022 Scheduled jobs
+- Hold expiry: pg_cron inside Supabase every minute (`expire_stale_orders`). Availability
+  ignores expired holds even if the cron is late.
+- Reminder emails (EML-04), proof clean-up (NFR-15) and a hold-expiry fallback are HTTP
+  endpoints under `/api/cron/*`, protected by `CRON_SECRET`, called by Hostinger cron jobs.
+
+## D-023 Email budget (Resend free plan: 100/day)
+- "New screenshot to review" (EML-08) goes only to the society owner, not every member.
+- Each recipient gets a separate email (no shared To: lists) so addresses stay private.
+
+## D-024 Auth email links
+- Supabase Auth templates in `supabase/templates` use `token_hash` links to `/auth/confirm`,
+  which work even if the email is opened on another device. The default Supabase templates also
+  work (same-browser PKCE code flow).
+
+## D-025 Account deletion (AUTH-08)
+- "Request account deletion" sets a flag that admins see on the overview and users pages; the
+  admin deletes the user in the Supabase dashboard after checking open orders (societies may need
+  past order records).
+
+## D-026 Proof retention (NFR-15, open question)
+- `/api/cron/cleanup-proofs` deletes payment screenshots and student card photos N days after
+  the event, where N = `PROOF_RETENTION_DAYS`. Until the period is decided the variable is unset
+  and nothing is deleted.
+
+## D-027 Which account the student paid into
+- When several accounts are shown, the upload form asks which one the money went to. This makes
+  the report "payment account ke hisaab se" (ORG-12) possible and helps organizers find the
+  transfer in the right statement.
+
+## D-028 Database types without Docker
+- `supabase gen types` needs Docker, so `web/scripts/gen-db-types.mjs` generates
+  `web/lib/database.types.ts` in the same format from a local Postgres with the migrations
+  applied. With a hosted project the official command can replace it.
+
+## D-029 Universities
+- Universities have an email domain field (ADM-07) for future use; it is not used to verify
+  students (AUTH-05).
+
+## D-030 Cancelling an event
+- Valid tickets → cancelled, unpaid orders → expired, orders under review → rejected with reason
+  "Event cancelled". Everyone with an approved order or a payment under review is emailed.
+
+## D-031 Stable links
+- Society and event slugs are generated from the name at creation and do not change when the
+  name is edited, so shared WhatsApp/Instagram links never break.
+
+## D-032 Live data without Supabase locally
+- The local environment has no Docker, so the full stack (Auth, PostgREST, Storage, Realtime,
+  Edge Functions) could not be run here. All SQL is covered by DB tests on a real Postgres
+  with a Supabase stub; the app passes type-check, lint, unit tests and production build. The
+  first run against a real Supabase project is listed as a manual check in PROGRESS.md.
+
+## D-033 Name on each ticket
+- All tickets of an order carry the buyer's name (the doc has no per-ticket attendee names and
+  ticket transfer is out of scope). Gate volunteers see the ticket type and code too, and the
+  holder can show each ticket's QR separately (TKT-05).

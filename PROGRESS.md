@@ -19,8 +19,8 @@ If a session stops, resume from the first unchecked milestone below.
 - [x] **M7 Organizer dashboard** – society register, events, ticket types, payment accounts,
       team, payments review, live dashboard, attendees, scanners, cancel, report.
 - [x] **M8 Web scanner** – `/scan`, camera scan, results, offline warning, manual list.
-- [ ] **M9 Admin panel** – approvals, orders/disputes, fraud list, users, universities, logs.
-- [ ] **M10 "Should" items + polish** – PWA, reminders, final README.
+- [x] **M9 Admin panel** – approvals, orders/disputes, fraud list, users, universities, logs.
+- [x] **M10 "Should" items + polish** – PWA, reminders, cron endpoints, unit tests, final README.
 
 ## Done (by requirement ID)
 
@@ -99,18 +99,76 @@ If a session stops, resume from the first unchecked milestone below.
   SCN-06 atomic (DB), SCN-07 auto-close after 2 s, SCN-08 live count, SCN-09 big offline
   banner + manual list (cached for lookup), SCN-10 every scan logged with device label.
 
-## Left to do
-See unchecked milestones above.
+### Admin panel (M9)
+- ADM-01 pending societies with details + proof (signed link) → approve/reject with reason +
+  email, ADM-02 pending events (preview link, ticket types) → approve/reject + email (EML-07),
+  ADM-03 order search by order ID / reference / email / phone / name + full order history
+  (proofs with images and hashes, tickets, scans, audit entries), ADM-04 disputes (open list,
+  resolve with note, organizer contacts), ADM-05 fraud page (duplicate flags + accounts with 3+
+  rejections, suspend), ADM-06 users (search, suspend/restore incl. Supabase Auth ban,
+  AUTH-09), ADM-07 universities add/edit/delete, ADM-08 audit log (every admin action) +
+  email log with failed emails, ADM-09 weekly overview, AUTH-08 deletion requests list.
+
+### "Should" items + polish (M10)
+- TKT-06 PWA: manifest (opens My tickets), icons, minimal service worker (offline page only,
+  never caches tickets), iOS/Android "add to home screen" hint.
+- EML-04 reminders via `/api/cron/reminders`; `/api/cron/expire-holds` fallback;
+  `/api/cron/cleanup-proofs` for NFR-15 (off until `PROOF_RETENTION_DAYS` is decided);
+  `/api/health`.
+- 25 unit tests (QR, money/time, phone, slugs, safe redirects, CSV, scanner wording, schemas).
+
+## Requirement coverage
+Every **Must**, **Should** and **Could** in the requirements doc is implemented. Details and
+deviations: `DECISIONS.md`.
+
+## Left to do / known gaps
+1. **First run against a real Supabase project** (could not be done here: no Docker, and
+   downloading a local PostgREST binary was not permitted). All SQL is tested on real Postgres;
+   the web app type-checks, lints and builds, but the pages have not yet been clicked through
+   against live Auth/PostgREST/Storage/Realtime/Edge Functions. Expect small fixes on first run.
+2. Visual check on real phones (Android Chrome, iPhone Safari) at 360 px, especially the
+   camera scanner and the live QR page.
+3. Privacy policy and terms are drafts (open question: who writes them).
+4. Open questions from the doc are still open: pilot society/date, review time limit for
+   organizers, screenshot retention period, domain + sender address.
 
 ## How to test
+
+### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db`.
-- Unit tests: `cd web && npm test`.
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (51 tests).
+- **Unit tests:** `cd web && npm test` (25 tests).
+- **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
+- **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
+
+### Manual – acceptance criteria walkthrough (staging with `seed.sql`)
+Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3 first.
+
+| # | Acceptance criterion | How to check |
+|---|---|---|
+| 1 | Signup with any email, login from an event page returns there | Log out → open `/e/lums-music-society/winter-gala-2026` → "Log in to book" → sign up with a Gmail address → confirm email → you land back on the event page |
+| 2 | Society registers, admin approves, owner adds accounts, invites member | As student: `/org/new` → as `admin@`: `/admin/approvals` approve → as owner: Payment accounts → add; Team → invite an email |
+| 3 | Event with free + paid types, admin approves, share link opens | Owner: New event → add "Free" (0) and "Paid" types → select account → Submit → admin approves → open the share link logged out |
+| 4 | Paid booking → accounts + reference → upload → approve → My tickets + email; free ticket instant | `student@` books VIP → checkout shows amount/ref/accounts → upload any screenshot + TID → `organizer@` → event → Payments → Approve → student sees ticket; book "General (Free)" → tickets immediately |
+| 5 | No screenshot in 60 min → expired + stock back; rejected → new screenshot | Book, wait 60 min (or in SQL: `update orders set hold_expires_at = now() where ref_code='TL-…'`) → page shows expired, availability restored; reject an order → student uploads again |
+| 6 | Same screenshot/TID → "Possible duplicate"; double Approve → tickets once | Two students upload the same file/TID → red banner on the second; click Approve twice quickly → one set of tickets (also covered by DB tests) |
+| 7 | Scan: first green, second "Already used" | `scanner@` → `/scan` on a phone → scan the student's live QR twice |
+| 8 | Screenshot of the QR after 60 s → red "Not valid here" | Take a screenshot of the QR, wait 61 s, scan it |
+| 9 | Two phones scan at once → one green | Two scanners scan the same QR together (DB test proves the atomic update) |
+| 10 | Dashboard check-ins update live; attendee CSV downloads | Keep the event dashboard open while scanning; Attendees → Download CSV |
+| 11 | Report shows approved orders and collected amount | Event → Report (print to PDF or CSV) |
+| 12 | Other society's dashboard / someone else's ticket → "Not allowed" | As `student@` open `/org/lums-music-society` and another user's `/me/tickets/<id>` |
+| 13 | All pages fine at 360 px | Chrome DevTools device mode 360×740 |
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- A Supabase project (URL, anon key, service role key) – staging and production.
-- `QR_SIGNING_SECRET` set as an Edge Function secret (any long random string).
-- Resend API key (+ a verified sending domain) and SMTP for Supabase Auth emails.
+- Supabase projects (staging + production): URL, anon key, service role key → `web/.env.local`
+  and Hostinger env vars; then run the migrations (README 2.1).
+- `QR_SIGNING_SECRET` and `CRON_SECRET` as Edge Function secrets; same `CRON_SECRET` in the web
+  app env.
+- Resend API key + a verified sending domain (`EMAIL_FROM`), and Resend SMTP in Supabase Auth.
 - Google OAuth client ID/secret (Supabase → Authentication → Providers → Google).
+- Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
+- Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
+  limit, privacy/terms author, pilot society).
