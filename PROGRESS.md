@@ -174,8 +174,8 @@ Event dashboard → **Printed tickets** tab.
 - Verified: 11 DB tests + 16 unit tests; templates, PDFs (A4 + press) and the editor were driven
   in headless Chrome – every QR in the PDF decodes to its own T2 token, QR can't be deleted or
   dragged off the ticket, undo works.
-- **Needs:** apply migration `20261126001000_printed_tickets.sql` to TICkLO (see below). No new
-  env vars; the Edge Functions need no redeploy (scan-verify passes the new `serial` through).
+- Migration applied to TICkLO (2026-11-26). No new env vars; the Edge Functions need no
+  redeploy (scan-verify passes the new `serial` through). Hostinger needs the new web build.
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -227,9 +227,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261126001000_printed_tickets.sql` to the TICkLO project** – the Printed
-  tickets tab fails until then (`supabase db push`, D-034). Then try it: event → Printed tickets →
-  New → pick a template → Create 4 → Download PDF (A4) → print one page at 100 % → scan.
+- ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
+  on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
+  Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.
 - ~~Staging Supabase project~~ – done (TICkLO). A production project later (same steps).
 - The database password you sent was rejected by Supabase (maybe a typo – it contains "ą").
   Not needed right now, but reset it (Dashboard → Project Settings → Database → Reset
@@ -242,9 +242,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 - Resend API key + a verified sending domain (`EMAIL_FROM`), and Resend SMTP in Supabase Auth.
 - Google OAuth client ID/secret (Supabase → Authentication → Providers → Google).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
-- **Apply migration `20261126000900_admin_roles.sql` to the TICkLO project** – the role buttons
-  fail until then: `supabase db push` (or `supabase db query --linked -f` + record the version,
-  D-034). Your own admin account is already created; change its temporary password after login.
 - Optional speed-up: the Supabase project is in Seoul. When creating the production project,
   pick **Mumbai (ap-south-1)** – every database query gets ~2x faster from Pakistan (D-038).
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
