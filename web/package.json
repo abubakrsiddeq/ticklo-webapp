@@ -12,7 +12,8 @@
     "test:db": "vitest run --config vitest.db.config.mts",
     "db:reset-local": "../scripts/db-reset-local.sh",
     "db:types": "node scripts/gen-db-types.mjs",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "smoke:remote": "node scripts/smoke-remote.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",

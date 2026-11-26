@@ -111,6 +111,14 @@ describe("Row Level Security (NFR-04, NFR-07, NFR-15)", () => {
     expect((await asUser(c, u.id, () => c.query(q, [SEED.bankAccount]))).rowCount).toBe(1);
   });
 
+  it("does not let users ask about someone else's scanner access", async () => {
+    const mine = await asUser(c, SEED.scanner, () => rpc<boolean>(c, "can_scan_event", [SEED.gala, SEED.scanner], ["uuid", "uuid"]));
+    expect(mine).toBe(true);
+    const probe = await asUser(c, SEED.student, () => rpc<boolean>(c, "can_scan_event", [SEED.gala, SEED.scanner], ["uuid", "uuid"]));
+    expect(probe).toBe(false);
+    await expect(asAnon(c, () => rpc(c, "org_role_of", [SEED.org, SEED.organizer], ["uuid", "uuid"]))).rejects.toThrow(/permission denied/);
+  });
+
   it("only shows audit and email logs to admins", async () => {
     expect((await asUser(c, SEED.organizer, () => c.query("select * from public.audit_log"))).rowCount).toBe(0);
     await expect(asAnon(c, () => c.query("select * from public.audit_log"))).rejects.toThrow(/permission denied/);

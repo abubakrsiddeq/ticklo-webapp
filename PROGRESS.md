@@ -121,11 +121,28 @@ If a session stops, resume from the first unchecked milestone below.
 Every **Must**, **Should** and **Could** in the requirements doc is implemented. Details and
 deviations: `DECISIONS.md`.
 
+## Staging Supabase project – connected (2026-11-26)
+Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
+- 8 migrations applied (19 tables, all with RLS; 60 functions; pg_cron hold expiry every
+  minute; realtime on orders/tickets/checkins; 6 storage buckets + policies) and recorded in
+  the CLI migration history. `seed.sql` loaded (5 test accounts, 15 universities, events).
+- Edge Functions `ticket-token`, `scan-verify`, `release-holds` deployed; secrets
+  `QR_SIGNING_SECRET` and `CRON_SECRET` set.
+- Auth: redirect URLs for localhost, 8-character passwords. Site URL is `http://localhost:3000`
+  until the domain exists. Google provider off until credentials exist.
+- `web/.env.local` written (not in git) – `cd web && npm run dev` runs against staging.
+- **Live end-to-end test passes 24/24** (`cd web && npm run smoke:remote`): real login, free
+  ticket, signed QR from the Edge Function, scan OK → "Already used", forged QR rejected,
+  paid order + private upload + duplicate-safe approval, signed URLs, live stats, privacy.
+- **All 33 pages load per role against live data** (anon, student, organizer, scanner, admin)
+  with correct "Not allowed" redirects and no server errors.
+- `supabase db advisors`: only expected warnings remain (signed-in users can execute the
+  RPC functions, which check permissions themselves; leaked-password protection is an
+  account setting).
+
 ## Left to do / known gaps
-1. **First run against a real Supabase project** (could not be done here: no Docker, and
-   downloading a local PostgREST binary was not permitted). All SQL is tested on real Postgres;
-   the web app type-checks, lints and builds, but the pages have not yet been clicked through
-   against live Auth/PostgREST/Storage/Realtime/Edge Functions. Expect small fixes on first run.
+1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
+   verified, the interactive UI has not been driven by a browser yet.
 2. Visual check on real phones (Android Chrome, iPhone Safari) at 360 px, especially the
    camera scanner and the live QR page.
 3. Privacy policy and terms are drafts (open question: who writes them).
@@ -170,10 +187,15 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- Supabase projects (staging + production): URL, anon key, service role key → `web/.env.local`
-  and Hostinger env vars; then run the migrations (README 2.1).
-- `QR_SIGNING_SECRET` and `CRON_SECRET` as Edge Function secrets; same `CRON_SECRET` in the web
-  app env.
+- ~~Staging Supabase project~~ – done (TICkLO). A production project later (same steps).
+- The database password you sent was rejected by Supabase (maybe a typo – it contains "ą").
+  Not needed right now, but reset it (Dashboard → Project Settings → Database → Reset
+  password) and keep it in a password manager; it was shared in chat.
+- Turn on "Leaked password protection" (Authentication → Sign In / Providers → Email) if your
+  plan allows it.
+- Supabase's built-in email sends only ~2 emails per hour, so new signups/password resets will
+  be slow until Resend SMTP is set up (then uncomment the email templates in `config.toml` and
+  run `supabase config push`).
 - Resend API key + a verified sending domain (`EMAIL_FROM`), and Resend SMTP in Supabase Auth.
 - Google OAuth client ID/secret (Supabase → Authentication → Providers → Google).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).

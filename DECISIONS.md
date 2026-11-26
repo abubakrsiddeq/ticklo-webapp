@@ -192,3 +192,18 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
 - All tickets of an order carry the buyer's name (the doc has no per-ticket attendee names and
   ticket transfer is out of scope). Gate volunteers see the ticket type and code too, and the
   holder can show each ticket's QR separately (TKT-05).
+
+## D-034 Applying migrations to the hosted project
+- The database password given for the TICkLO project was rejected, so migrations and the seed
+  were applied with `supabase db query --linked -f <file>` (Management API, uses the logged-in
+  CLI account – no DB password). The versions were then recorded in
+  `supabase_migrations.schema_migrations` exactly like `supabase db push` does, so future
+  `db push` runs only new migrations.
+- Migration `0800_hardening` came from `supabase db advisors`: RLS policies use
+  `(select auth.uid())` (evaluated once per query), logged-out visitors can execute only the
+  three helpers their policies need, and `can_scan_event` only answers about the caller.
+
+## D-035 Auth email templates on the free tier
+- Supabase free tier refuses custom auth email templates while the default email provider is
+  used. The templates stay in `supabase/templates` (commented out in `config.toml`); after
+  Resend SMTP is configured, uncomment them and run `supabase config push`.
