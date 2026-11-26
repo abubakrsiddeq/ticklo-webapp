@@ -43,6 +43,7 @@ export default async function PaymentsPage({
       `id, ref_code, status, total_paisa, ticket_count, buyer_name, buyer_phone, buyer_email, created_at, submitted_at,
        hold_expires_at, reject_reason, requires_student_card, discount_paisa, referral_source,
        print_sellers ( name, ref_code ), promo_codes ( code ),
+       team_registrations ( team_name, member_count, event_sessions!inner ( name ) ),
        order_items ( quantity, ticket_types!inner ( name ) ),
        payment_proofs ( id, status, transaction_id, sender_name, screenshot_path, student_card_path, created_at,
          is_possible_duplicate, duplicate_order_ids, duplicate_reasons, reject_reason,
@@ -142,6 +143,19 @@ export default async function PaymentsPage({
                           </dd>
                         </>
                       ) : null}
+                      {(() => {
+                        // one-to-one in our types; PostgREST may still send a list for a partial unique index
+                        const raw = o.team_registrations as unknown;
+                        const team = (Array.isArray(raw) ? raw[0] : raw) as { team_name: string; member_count: number; event_sessions: { name: string } } | null;
+                        return team ? (
+                          <>
+                            <dt className="text-muted-foreground">Team</dt>
+                            <dd>
+                              🏆 {team.team_name} · {team.event_sessions.name} ({team.member_count} {team.member_count === 1 ? "member" : "members"})
+                            </dd>
+                          </>
+                        ) : null;
+                      })()}
                       {o.print_sellers ? (
                         <>
                           <dt className="text-muted-foreground">Ambassador</dt>

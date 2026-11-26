@@ -49,3 +49,15 @@ describe("sessions (D-044)", () => {
     expect(seatsLabel({ kind: "talk", capacity: null, remaining: null })).toBeNull();
   });
 });
+
+import { describeScan } from "@/lib/scan/results";
+
+describe("session scan wording (FES-06)", () => {
+  it("names the session", () => {
+    expect(describeScan({ result: "ok", holder_name: "Ali", session: "AI Workshop" }).title).toBe("OK – AI Workshop");
+    expect(describeScan({ result: "ok", holder_name: "Ali" }).title).toBe("Entry OK");
+    const wrong = describeScan({ result: "wrong_session", holder_name: "Ali", session: "Qawwali" });
+    expect(wrong).toMatchObject({ ok: false, title: "Not for this session", subtitle: "This ticket does not open Qawwali." });
+    expect(describeScan({ result: "already_used", session: "Qawwali", checked_in_at: "2026-12-14T16:00:00Z" }).subtitle).toBe("Already checked in to Qawwali.");
+  });
+});

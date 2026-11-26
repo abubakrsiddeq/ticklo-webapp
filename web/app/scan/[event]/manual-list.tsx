@@ -21,7 +21,7 @@ interface Row {
   serial: string | null;
 }
 
-const cacheKey = (eventId: string) => `ticklo-attendees-${eventId}`;
+const cacheKey = (eventId: string, sessionId?: string | null) => `ticklo-attendees-${eventId}${sessionId ? `-${sessionId}` : ""}`;
 
 /**
  * ORG-13 / SCN-09: find a student by name or ticket code and check them in by
@@ -30,12 +30,14 @@ const cacheKey = (eventId: string) => `ticklo-attendees-${eventId}`;
  */
 export function ManualList({
   eventId,
+  sessionId = null,
   open,
   onOpenChange,
   online,
   onCheckedIn,
 }: {
   eventId: string;
+  sessionId?: string | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   online: boolean;
@@ -48,11 +50,15 @@ export function ManualList({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await createClient().rpc("scanner_attendees", { p_event_id: eventId });
+    // D-044: a session's list shows who has a ticket for it, "used" = checked in to this session
+    const { data: raw, error } = sessionId
+      ? await createClient().rpc("scanner_session_attendees", { p_session_id: sessionId })
+      : await createClient().rpc("scanner_attendees", { p_event_id: eventId });
+    const data = sessionId && raw ? (raw as Row[]).map((r) => ({ ...r, status: r.checked_in_at ? ("checked_in" as const) : ("valid" as const) })) : raw;
     setLoading(false);
     if (error || !data) {
       try {
-        const cached = localStorage.getItem(cacheKey(eventId));
+        const cached = localStorage.getItem(cacheKey(eventId, sessionId));
         if (cached) setRows(JSON.parse(cached) as Row[]);
       } catch {
         /* no cache */
@@ -62,11 +68,11 @@ export function ManualList({
     }
     setRows(data as Row[]);
     try {
-      localStorage.setItem(cacheKey(eventId), JSON.stringify(data));
+      localStorage.setItem(cacheKey(eventId, sessionId), JSON.stringify(data));
     } catch {
       /* storage full */
     }
-  }, [eventId]);
+  }, [eventId, sessionId]);
 
   useEffect(() => {
     if (!open) return;
@@ -91,7 +97,9 @@ export function ManualList({
   async function checkIn(r: Row) {
     if (!window.confirm(`Check in ${r.holder_name} (${r.ticket_type})?${r.requires_student_card ? "\nCheck their student card first." : ""}`)) return;
     setBusy(r.ticket_id);
-    const { data, error } = await createClient().rpc("manual_check_in", { p_ticket_id: r.ticket_id, p_device: `${deviceLabel()} (manual)` });
+    const { data, error } = sessionId
+      ? await createClient().rpc("manual_session_check_in", { p_ticket_id: r.ticket_id, p_session_id: sessionId, p_device: `${deviceLabel()} (manual)` })
+      : await createClient().rpc("manual_check_in", { p_ticket_id: r.ticket_id, p_device: `${deviceLabel()} (manual)` });
     setBusy(null);
     if (error) {
       toast.error("Could not check in – check your internet.");

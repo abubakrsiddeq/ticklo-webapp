@@ -52,9 +52,9 @@ const approve = async (userId: string, orderId: string) => {
 const ticketsOf = async (orderId: string) =>
   (await c.query("select id, holder_name from public.tickets where order_id = $1 order by holder_name", [orderId])).rows as { id: string; holder_name: string }[];
 
-const scanSession = (ticketId: string, sessionId: string, actor = SEED.organizer) =>
+const scanSession = (ticketId: string, sessionId: string, actor: string = SEED.organizer) =>
   asService(c, () => rpc<{ result: string; checked_in_at?: string; session?: string }>(c, "session_check_in", [ticketId, sessionId, actor, "scan", "t"], ["uuid", "uuid", "uuid", "checkin_method", "text"]));
-const scanMain = (ticketId: string, eventId: string, actor = SEED.organizer) =>
+const scanMain = (ticketId: string, eventId: string, actor: string = SEED.organizer) =>
   asService(c, () => rpc<{ result: string }>(c, "perform_check_in", [ticketId, eventId, actor, "scan", "t"], ["uuid", "uuid", "uuid", "checkin_method", "text"]));
 
 const register = (userId: string, sessionId: string, team: string, members: { name: string }[], answers: unknown = null) =>

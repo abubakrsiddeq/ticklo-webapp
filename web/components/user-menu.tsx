@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone } from "lucide-react";
+import { CalendarDays, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ export function UserMenu(props: {
   canScan: boolean;
   canSell?: boolean;
   isAmbassador?: boolean;
+  managesSessions?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -81,6 +82,13 @@ export function UserMenu(props: {
           <DropdownMenuItem asChild>
             <Link href="/sell" className="min-h-11">
               <Ticket /> Sell tickets
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {props.managesSessions ? (
+          <DropdownMenuItem asChild>
+            <Link href="/manage" className="min-h-11">
+              <ClipboardList /> My sessions
             </Link>
           </DropdownMenuItem>
         ) : null}

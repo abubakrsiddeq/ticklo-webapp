@@ -1512,6 +1512,68 @@ begin
 end;
 $$;
 
+-- Main-entry list for scanners: "used" means main entry used (entry_at), so a
+-- ticket scanned only at a workshop can still be let in at the gate by hand
+create or replace function public.scanner_attendees(p_event_id uuid)
+returns table (
+  ticket_id uuid,
+  code text,
+  holder_name text,
+  ticket_type text,
+  requires_student_card boolean,
+  status public.ticket_status,
+  checked_in_at timestamptz,
+  serial text
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not (public.can_scan_event(p_event_id, auth.uid()) or public.is_event_staff(p_event_id)) then
+    raise exception using message = 'TL:FORBIDDEN', detail = 'You are not a scanner for this event.';
+  end if;
+  return query
+    select t.id, t.code, t.holder_name, tt.name, tt.requires_student_card,
+           case when t.status = 'checked_in' and t.entry_at is null then 'valid'::public.ticket_status else t.status end,
+           t.entry_at,
+           public.print_serial_label(pb.prefix, t.serial_no)
+    from public.tickets t
+    join public.ticket_types tt on tt.id = t.ticket_type_id
+    left join public.print_batches pb on pb.id = t.batch_id
+    where t.event_id = p_event_id and t.status <> 'cancelled'
+    order by t.holder_name, t.serial_no nulls first, t.code;
+end;
+$$;
+
+-- Live count on the scanner for a session: checked in / tickets that open it
+create or replace function public.session_counts(p_session_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_session public.event_sessions;
+begin
+  select * into v_session from public.event_sessions where id = p_session_id;
+  if not found or not (public.can_scan_session(p_session_id, auth.uid()) or public.can_manage_session(p_session_id, auth.uid())) then
+    raise exception using message = 'TL:FORBIDDEN', detail = 'Not allowed.';
+  end if;
+  return jsonb_build_object(
+    'checked_in', (select count(*) from public.session_checkins c where c.session_id = p_session_id),
+    'total_tickets', (
+      select count(*) from public.tickets t
+      where t.event_id = v_session.event_id and t.status in ('valid', 'checked_in')
+        and public.session_grants(t.ticket_type_id, p_session_id)
+        and not (t.source = 'printed' and t.sale_status = 'returned')
+    )
+  );
+end;
+$$;
+
 -- Organizer: limit a scanner to some sessions (null/empty = whole event)
 create or replace function public.set_scanner_sessions(p_event_id uuid, p_user_id uuid, p_session_ids uuid[])
 returns void
@@ -2173,6 +2235,7 @@ revoke execute on function
   public.my_scan_sessions(uuid),
   public.my_scan_events(),
   public.scanner_session_attendees(uuid),
+  public.session_counts(uuid),
   public.set_scanner_sessions(uuid, uuid, uuid[]),
   public.add_session_manager(uuid, uuid),
   public.remove_session_manager(uuid, uuid),
@@ -2205,6 +2268,7 @@ grant execute on function
   public.my_scan_sessions(uuid),
   public.my_scan_events(),
   public.scanner_session_attendees(uuid),
+  public.session_counts(uuid),
   public.set_scanner_sessions(uuid, uuid, uuid[]),
   public.add_session_manager(uuid, uuid),
   public.remove_session_manager(uuid, uuid),

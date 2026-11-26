@@ -7,6 +7,8 @@ import { getEventReport } from "@/lib/queries/report";
 import { getPrintSales } from "@/lib/queries/print-sales";
 import { getAmbassadorPage } from "@/lib/queries/ambassadors";
 import { discountLabel, rewardDue } from "@/lib/referrals";
+import { createClient } from "@/lib/supabase/server";
+import { kindEmoji } from "@/lib/sessions";
 import { methodLabel } from "@/lib/print/sales";
 import { formatDateTime, formatPKR, formatShortDateTime } from "@/lib/format";
 import { serverNow } from "@/lib/time";
@@ -17,7 +19,13 @@ export const metadata: Metadata = { title: "Event report" };
 export default async function ReportPage({ params }: { params: Promise<{ society: string; event: string }> }) {
   const { society, event: eventSlug } = await params;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/report`);
-  const [r, ps, amb] = await Promise.all([getEventReport(event.id), getPrintSales(event.id), getAmbassadorPage(event.id)]);
+  const supabase = await createClient();
+  const [r, ps, amb, { data: sessionStats }] = await Promise.all([
+    getEventReport(event.id),
+    getPrintSales(event.id),
+    getAmbassadorPage(event.id),
+    supabase.rpc("session_stats", { p_event_id: event.id }),
+  ]);
   const paper = ps.summary.totals;
 
   return (
@@ -120,6 +128,36 @@ export default async function ReportPage({ params }: { params: Promise<{ society
           </table>
         </div>
       </section>
+
+      {sessionStats?.length ? (
+        <section className="grid gap-2">
+          <h3 className="font-semibold text-navy">Sessions</h3>
+          <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead className="bg-secondary/60 text-left text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Session</th>
+                  <th className="px-3 py-2 text-right font-medium">Tickets / teams</th>
+                  <th className="px-3 py-2 text-right font-medium">Seats</th>
+                  <th className="px-3 py-2 text-right font-medium">Checked in</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {sessionStats.map((x) => (
+                  <tr key={x.session_id}>
+                    <td className="px-3 py-2">
+                      {kindEmoji(x.kind)} {x.name} <span className="text-xs text-muted-foreground">· {formatShortDateTime(x.starts_at)}</span>
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{x.kind === "competition" ? `${x.teams_paid} teams` : x.tickets}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "—"}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{x.checked_in}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {amb.rows.length || amb.promos.length ? (
         <section className="grid gap-2">

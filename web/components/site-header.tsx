@@ -10,11 +10,12 @@ import { isSupabaseConfigured } from "@/lib/env";
 
 async function loadMenuData(userId: string) {
   const supabase = await createClient();
-  const [{ data: memberships }, { data: scanEvents }, { data: sellEvents }, { data: campus }] = await Promise.all([
+  const [{ data: memberships }, { data: scanEvents }, { data: sellEvents }, { data: campus }, { count: managed }] = await Promise.all([
     supabase.from("organization_members").select("role, organizations!inner ( slug, name, status )").eq("user_id", userId),
     supabase.rpc("my_scan_events"),
     supabase.rpc("my_sell_events"),
     supabase.from("campus_ambassadors").select("user_id").eq("user_id", userId).maybeSingle(),
+    supabase.from("session_managers").select("session_id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   const orgs: UserMenuOrg[] = (memberships ?? [])
     .filter((m) => m.role !== "scanner")
@@ -22,7 +23,8 @@ async function loadMenuData(userId: string) {
   // Sellers of printed tickets get a "Sell" link (D-042)
   // D-043: ambassadors (event or TickLO campus) get "My ambassador page"
   const isAmbassador = Boolean(campus) || (sellEvents ?? []).some((e) => e.ref_code);
-  return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador };
+  // D-044: session managers get "My sessions"
+  return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador, managesSessions: (managed ?? 0) > 0 };
 }
 
 const shellClass =
@@ -86,6 +88,7 @@ async function SiteHeaderContent() {
               canScan={menu.canScan}
               canSell={menu.canSell}
               isAmbassador={menu.isAmbassador}
+              managesSessions={menu.managesSessions}
             />
           ) : (
             <>

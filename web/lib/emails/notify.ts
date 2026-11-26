@@ -13,6 +13,7 @@ import EventCancelledEmail from "@/emails/event-cancelled";
 import ReviewDecisionEmail from "@/emails/review-decision";
 import TeamInviteEmail from "@/emails/team-invite";
 import EventReminderEmail from "@/emails/event-reminder";
+import TeamDecisionEmail from "@/emails/team-decision";
 
 // High-level notifications. Each loads what it needs with the service role
 // (after the caller has already done the permission check) and never throws.
@@ -305,4 +306,44 @@ export async function sendDueEventReminders(): Promise<{ events: number; emails:
     );
   }
   return { events: due?.length ?? 0, emails };
+}
+
+/** FES-11: tell the team lead the organizer accepted / declined their team */
+export async function notifyTeamDecision(registrationId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("team_registrations")
+      .select(
+        `id, team_name, status, reject_reason, member_count, session_id,
+         profiles!team_registrations_user_id_fkey ( full_name, email ),
+         event_sessions!inner ( name, fee_mode ),
+         events!inner ( name )`,
+      )
+      .eq("id", registrationId)
+      .maybeSingle();
+    if (!data?.profiles?.email || (data.status !== "approved" && data.status !== "rejected")) return;
+    const { data: fee } = await admin.from("ticket_types").select("price_paisa").eq("registration_session_id", data.session_id).maybeSingle();
+    const price = fee?.price_paisa ?? 0;
+    const total = data.event_sessions.fee_mode === "per_member" ? price * data.member_count : price;
+    const approved = data.status === "approved";
+    await sendEmail({
+      to: data.profiles.email,
+      subject: `${data.team_name}: ${approved ? "accepted" : "not accepted"} – ${data.event_sessions.name}`,
+      template: "team-decision",
+      related: { type: "team_registration", id: data.id },
+      react: TeamDecisionEmail({
+        name: firstName(data.profiles.full_name),
+        teamName: data.team_name,
+        competition: data.event_sessions.name,
+        eventName: data.events.name,
+        approved,
+        reason: data.reject_reason,
+        feeText: total ? formatPKR(total) : "Free",
+        url: absoluteUrl("/me/tickets#teams"),
+      }),
+    });
+  } catch (e) {
+    console.error("notifyTeamDecision failed", e);
+  }
 }

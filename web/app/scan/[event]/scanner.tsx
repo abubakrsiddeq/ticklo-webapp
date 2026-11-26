@@ -11,6 +11,7 @@ import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedba
 import { deviceLabel } from "@/lib/scan/device";
 import { formatPKR } from "@/lib/format";
 import { ManualList } from "./manual-list";
+import { scanSessionToken } from "../actions";
 
 type CameraState = "idle" | "starting" | "on" | "denied" | "no_camera" | "unsupported" | "error";
 
@@ -23,7 +24,23 @@ const GATE_METHODS = [
   { key: "easypaisa", label: "EasyPaisa" },
 ] as const;
 
-export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }: { eventId: string; eventName: string; scannerName: string; hasPrinted?: boolean }) {
+export function Scanner({
+  eventId,
+  eventName,
+  scannerName,
+  hasPrinted = false,
+  session = null,
+  canSwitch = false,
+}: {
+  eventId: string;
+  eventName: string;
+  scannerName: string;
+  hasPrinted?: boolean;
+  /** D-044: scanning one festival session instead of main entry */
+  session?: { id: string; name: string } | null;
+  canSwitch?: boolean;
+}) {
+  const sessionId = session?.id ?? null;
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
@@ -64,9 +81,11 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
 
   // SCN-08: live count (realtime + polling fallback)
   const refreshCount = useCallback(async () => {
-    const { data } = await createClient().rpc("event_stats", { p_event_id: eventId });
+    const { data } = sessionId
+      ? await createClient().rpc("session_counts", { p_session_id: sessionId })
+      : await createClient().rpc("event_stats", { p_event_id: eventId });
     if (data) setCount(data as unknown as { checked_in: number; total_tickets: number });
-  }, [eventId]);
+  }, [eventId, sessionId]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -117,10 +136,20 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
       recentRef.current.set(text, now);
       setChecking(true);
       try {
-        const { data, error } = await createClient().functions.invoke<ScanResponse>("scan-verify", {
-          body: { token: text, event_id: eventId, device: deviceLabel() },
-        });
-        if (error || !data?.result) throw error ?? new Error("No result");
+        let data: ScanResponse | null = null;
+        if (sessionId) {
+          // FES-06: session scans are verified by the web server (same QR secret)
+          const res = await scanSessionToken(eventId, sessionId, text, deviceLabel());
+          if ("error" in res) throw new Error(res.error);
+          data = res;
+        } else {
+          const r = await createClient().functions.invoke<ScanResponse>("scan-verify", {
+            body: { token: text, event_id: eventId, device: deviceLabel() },
+          });
+          if (r.error) throw r.error;
+          data = r.data;
+        }
+        if (!data?.result) throw new Error("No result");
         setOnline(true);
         const view = describeScan(data);
         if (data.result === "ok" && data.gate_sold) {
@@ -149,7 +178,7 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
         setChecking(false);
       }
     },
-    [eventId, refreshCount, showResult],
+    [eventId, sessionId, refreshCount, showResult],
   );
 
   useEffect(() => {
@@ -204,6 +233,7 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
       <div className="flex items-center justify-between gap-3 px-4 pb-3">
         <div className="min-w-0">
           <p className="truncate font-semibold">{eventName}</p>
+          {session ? <p className="truncate text-sm font-semibold text-brand-light">Session: {session.name}</p> : canSwitch ? <p className="text-sm font-semibold text-brand-light">Main entry</p> : null}
           <p className="text-xs text-slate-300">Scanner: {scannerName}</p>
         </div>
         {/* SCN-08 live count */}
@@ -299,6 +329,11 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
         <Button variant="secondary" onClick={() => setShowList(true)}>
           <ListChecks /> Manual check-in
         </Button>
+        {canSwitch ? (
+          <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+            <Link href={`/scan/${eventId}?pick=1`}>Change session</Link>
+          </Button>
+        ) : null}
         <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
           <Link href="/scan?list=1">Change event</Link>
         </Button>
@@ -328,7 +363,7 @@ export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }:
         </button>
       ) : null}
 
-      <ManualList eventId={eventId} open={showList} onOpenChange={setShowList} online={online} onCheckedIn={refreshCount} />
+      <ManualList sessionId={sessionId} eventId={eventId} open={showList} onOpenChange={setShowList} online={online} onCheckedIn={refreshCount} />
     </div>
   );
 }

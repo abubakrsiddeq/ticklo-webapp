@@ -1,7 +1,7 @@
 import { formatTime } from "@/lib/format";
 
 export interface ScanResponse {
-  result: "ok" | "already_used" | "expired_code" | "wrong_event" | "invalid" | "not_found" | "cancelled" | "not_allowed" | "not_sold";
+  result: "ok" | "already_used" | "expired_code" | "wrong_event" | "invalid" | "not_found" | "cancelled" | "not_allowed" | "not_sold" | "wrong_session";
   holder_name?: string;
   ticket_type?: string;
   requires_student_card?: boolean;
@@ -11,6 +11,7 @@ export interface ScanResponse {
   ticket_id?: string;
   gate_sold?: boolean; // this scan counted an unsold paper ticket as sold (D-042)
   sale_price_paisa?: number | null;
+  session?: string; // festival session name (D-044)
 }
 
 export interface ScanView {
@@ -28,14 +29,26 @@ const withSerial = (r: ScanResponse) => (r.serial ? `${r.ticket_type ?? ""} · P
 export function describeScan(r: ScanResponse): ScanView {
   switch (r.result) {
     case "ok":
-      return { ok: true, title: "Entry OK", name: r.holder_name, ticketType: withSerial(r), card: r.requires_student_card };
+      return { ok: true, title: r.session ? `OK – ${r.session}` : "Entry OK", name: r.holder_name, ticketType: withSerial(r), card: r.requires_student_card };
+    case "wrong_session":
+      return {
+        ok: false,
+        title: "Not for this session",
+        name: r.holder_name,
+        ticketType: withSerial(r),
+        subtitle: `This ticket does not open ${r.session ?? "this session"}.`,
+      };
     case "already_used":
       return {
         ok: false,
         title: `Already used${r.checked_in_at ? ` at ${formatTime(r.checked_in_at)}` : ""}`,
         name: r.holder_name,
         ticketType: withSerial(r),
-        subtitle: r.serial ? "This paper ticket was scanned before – it may be a copy." : "This ticket was checked in before.",
+        subtitle: r.session
+          ? `Already checked in to ${r.session}.`
+          : r.serial
+            ? "This paper ticket was scanned before – it may be a copy."
+            : "This ticket was checked in before.",
       };
     case "expired_code":
       return { ok: false, title: "Not valid here", subtitle: "QR code expired – ask for the live ticket screen, not a screenshot." };
@@ -54,7 +67,7 @@ export function describeScan(r: ScanResponse): ScanView {
     case "not_sold":
       return { ok: false, title: "Not sold", subtitle: `Paper ticket ${r.serial ?? ""} was never sold. Send the guest to the ticket desk or seller.` };
     case "not_allowed":
-      return { ok: false, title: "Not allowed", subtitle: "You are not a scanner for this event right now." };
+      return { ok: false, title: "Not allowed", subtitle: r.session ? "You can't scan this session." : "You are not a scanner for this event right now." };
     default:
       return { ok: false, title: "Invalid", subtitle: "Not a TickLO ticket, or the code is damaged." };
   }

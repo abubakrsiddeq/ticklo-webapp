@@ -3133,6 +3133,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      session_counts: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: Json;
+      };
       session_grants: {
         Args: {
           p_ticket_type_id: string | null;
