@@ -13,7 +13,10 @@ export default async function ScanEventPage({ params }: { params: Promise<{ even
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("can_scan_event", { p_event_id: eventId, p_user_id: user.id });
   if (!allowed) redirect("/not-allowed");
-  const { data: event } = await supabase.from("events").select("id, name, venue, starts_at, ends_at").eq("id", eventId).maybeSingle();
+  const [{ data: event }, { data: hasPrinted }] = await Promise.all([
+    supabase.from("events").select("id, name, venue, starts_at, ends_at").eq("id", eventId).maybeSingle(),
+    supabase.rpc("event_has_printed", { p_event_id: eventId }),
+  ]);
   if (!event) redirect("/scan");
-  return <Scanner eventId={event.id} eventName={event.name} scannerName={user.profile.full_name ?? user.email} />;
+  return <Scanner eventId={event.id} eventName={event.name} scannerName={user.profile.full_name ?? user.email} hasPrinted={Boolean(hasPrinted)} />;
 }

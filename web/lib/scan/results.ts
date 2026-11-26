@@ -8,6 +8,9 @@ export interface ScanResponse {
   checked_in_at?: string;
   serial?: string | null; // printed (paper) tickets – PRT-09
   returned?: boolean; // printed ticket given back unsold (D-041)
+  ticket_id?: string;
+  gate_sold?: boolean; // this scan counted an unsold paper ticket as sold (D-042)
+  sale_price_paisa?: number | null;
 }
 
 export interface ScanView {

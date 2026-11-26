@@ -231,3 +231,14 @@ export function parseSerial(v: string | null | undefined): number | null {
   const m = /(\d+)\s*$/.exec(String(v ?? "").trim());
   return m ? Number(m[1]) : null;
 }
+
+/**
+ * WhatsApp link that sends a seller their Sell-screen link (D-042). Without a
+ * (valid) phone number WhatsApp asks whom to send it to.
+ */
+export function sellerWhatsAppLink(opts: { name: string; phone: string | null; eventName: string; sellUrl: string }): string {
+  const text = `Assalam o Alaikum ${opts.name}! ${opts.eventName} ke tickets bechne ke liye ye link kholein (TickLO par login karke): ${opts.sellUrl}\n\nTicket ka QR scan karein → Cash / JazzCash / EasyPaisa → Sold.`;
+  const digits = (opts.phone ?? "").replace(/[\s\-().+]/g, "");
+  const intl = /^03\d{9}$/.test(digits) ? `92${digits.slice(1)}` : /^(00)?923\d{9}$/.test(digits) ? digits.replace(/^00/, "") : /^[1-9]\d{7,14}$/.test(digits) ? digits : "";
+  return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`;
+}

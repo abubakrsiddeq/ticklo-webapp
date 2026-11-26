@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, Download, Lock, Printer, Smartphone } from "lucide-react";
+import { AlertTriangle, Download, Lock, MessageCircle, Printer, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/copy-button";
@@ -8,7 +8,8 @@ import { Pill } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getPrintSales } from "@/lib/queries/print-sales";
-import { methodLabel } from "@/lib/print/sales";
+import { methodLabel, sellerWhatsAppLink } from "@/lib/print/sales";
+import QRCode from "qrcode";
 import { formatPKR, formatShortDateTime } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
 import { PrintSubnav } from "@/components/print/print-subnav";
@@ -52,6 +53,7 @@ export default async function PrintSalesPage({ params }: { params: Promise<{ soc
   const sellerNames = new Map(summary.sellers.map((s) => [s.id, s.name]));
   const editable = event.status !== "cancelled";
   const sellUrl = absoluteUrl(`/sell/${event.id}`);
+  const sellQr = await QRCode.toDataURL(sellUrl, { margin: 1, width: 320, errorCorrectionLevel: "M", color: { dark: "#0B1F3A", light: "#FFFFFF" } });
   const net = t.cash - t.printingCost;
 
   return (
@@ -100,9 +102,19 @@ export default async function PrintSalesPage({ params }: { params: Promise<{ soc
                   scanned at the gate without a sale are counted as sold automatically.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded-lg bg-secondary px-3 py-2.5 text-sm">{sellUrl}</code>
-                <CopyButton value={sellUrl} label="Sell link" />
+              <CardContent className="grid gap-3">
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg bg-secondary px-3 py-2.5 text-sm">{sellUrl}</code>
+                  <CopyButton value={sellUrl} label="Sell link" />
+                </div>
+                <div className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sellQr} alt="QR code that opens the Sell screen" className="size-28 rounded-lg ring-1 ring-navy/10" />
+                  <p className="text-sm text-muted-foreground">
+                    At the desk: sellers point their phone camera at this code to open the Sell screen. Or send each seller the link on WhatsApp (button on
+                    their card).
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -164,6 +176,13 @@ export default async function PrintSalesPage({ params }: { params: Promise<{ soc
                       ) : null}
                       {editable ? (
                         <div className="flex flex-wrap gap-2">
+                          {s.id && s.userId ? (
+                            <Button asChild size="sm" variant="outline" className="border-[#25D366] text-[#128C4B]">
+                              <a href={sellerWhatsAppLink({ name: s.name, phone: s.phone, eventName: event.name, sellUrl })} target="_blank" rel="noopener noreferrer">
+                                <MessageCircle /> Send link on WhatsApp
+                              </a>
+                            </Button>
+                          ) : null}
                           <CashDialog orgSlug={org.slug} eventId={event.id} sellerId={s.id} sellerName={s.name} disabled={settled} />
                           {s.id ? <SettleButton orgSlug={org.slug} sellerId={s.id} settled={settled} owes={s.difference < 0 ? rs(-s.difference) : null} /> : null}
                         </div>

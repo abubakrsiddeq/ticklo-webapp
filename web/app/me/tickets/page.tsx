@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SellerBanner } from "@/components/print/seller-banner";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, MapPin, Ticket } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -97,6 +98,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="grid gap-6">
+      <SellerBanner />
       <div>
         <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Your wallet</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">My tickets</h1>

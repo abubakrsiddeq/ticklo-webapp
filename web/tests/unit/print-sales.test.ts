@@ -70,3 +70,13 @@ describe("printed sales hisaab (D-041)", () => {
     expect(verifyStaticTicketToken("hello", secret)).toBeNull();
   });
 });
+
+import { sellerWhatsAppLink } from "@/lib/print/sales";
+describe("seller WhatsApp link (D-042)", () => {
+  it("uses the Pakistani number in international form and the sell link", () => {
+    const l = sellerWhatsAppLink({ name: "Ali", phone: "0300-1234567", eventName: "Qawwali Night", sellUrl: "https://ticklo.pk/sell/x" });
+    expect(l.startsWith("https://wa.me/923001234567?text=")).toBe(true);
+    expect(decodeURIComponent(l)).toContain("https://ticklo.pk/sell/x");
+    expect(sellerWhatsAppLink({ name: "A", phone: null, eventName: "E", sellUrl: "u" }).startsWith("https://wa.me/?text=")).toBe(true);
+  });
+});

@@ -199,6 +199,13 @@ Event dashboard → **Printed tickets** tab.
 - Migration `20261126001200_printed_sales.sql` applied to TICkLO (2026-11-26) and checked; the 50
   printed tickets already there are now "in stock".
 
+## Change 2026-11-27: easy access to the Sell screen + gate sales (D-042)
+- Header "Sell" + menu item, seller banner (home, My tickets), post-login landing on the Sell
+  screen, camera auto-start, WhatsApp link + QR per seller, home-screen shortcut, gate-sale switch
+  in the scanner. 1 DB test (gate sale), 1 unit test (WhatsApp link). Not clicked through in a
+  real browser yet.
+- **Needs:** apply migration `20261126001300_gate_sales.sql` to TICkLO.
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -213,8 +220,8 @@ Event dashboard → **Printed tickets** tab.
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (73 tests).
-- **Unit tests:** `cd web && npm test` (48 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (74 tests).
+- **Unit tests:** `cd web && npm test` (49 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -249,6 +256,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261126001300_gate_sales.sql`** to TICkLO (gate sales, D-042).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.

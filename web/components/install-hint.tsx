@@ -9,14 +9,18 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 /** TKT-06: invite students to add TickLO to their home screen. */
-export function InstallHint() {
+export function InstallHint({
+  title = "Open your tickets like an app",
+  note,
+  storageKey = "ticklo-install-dismissed",
+}: { title?: string; note?: string; storageKey?: string } = {}) {
   const [mode, setMode] = useState<"none" | "ios" | "android">("none");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     let dismissed = false;
     try {
-      dismissed = localStorage.getItem("ticklo-install-dismissed") === "1";
+      dismissed = localStorage.getItem(storageKey) === "1";
     } catch {
       /* ignore */
     }
@@ -34,12 +38,12 @@ export function InstallHint() {
       if (t) clearTimeout(t);
       window.removeEventListener("beforeinstallprompt", onPrompt);
     };
-  }, []);
+  }, [storageKey]);
 
   if (mode === "none") return null;
   const dismiss = () => {
     try {
-      localStorage.setItem("ticklo-install-dismissed", "1");
+      localStorage.setItem(storageKey, "1");
     } catch {
       /* ignore */
     }
@@ -49,7 +53,8 @@ export function InstallHint() {
     <div className="flex items-start gap-3 rounded-xl bg-navy p-4 text-white">
       <Smartphone className="mt-0.5 size-5 shrink-0 text-brand-light" aria-hidden />
       <div className="flex-1 text-sm">
-        <p className="font-semibold">Open your tickets like an app</p>
+        <p className="font-semibold">{title}</p>
+        {note ? <p className="text-slate-200">{note}</p> : null}
         {mode === "ios" ? (
           <p className="text-slate-200">In Safari, tap Share → &ldquo;Add to Home Screen&rdquo;.</p>
         ) : (

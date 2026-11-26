@@ -7,6 +7,7 @@ import { Camera, CameraOff, CheckCircle2, Gift, Loader2, XCircle } from "lucide-
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InstallHint } from "@/components/install-hint";
 import { formatPKR } from "@/lib/format";
 import { compressSerials, SALE_METHODS } from "@/lib/print/sales";
 import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedback";
@@ -108,6 +109,12 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
 
   useEffect(() => () => controlsRef.current?.stop(), []);
 
+  // Open the camera straight away – the seller came here to scan (D-042)
+  useEffect(() => {
+    const t = setTimeout(() => void startCamera(), 0);
+    return () => clearTimeout(t);
+  }, [startCamera]);
+
   const finish = (view: { ok: boolean; title: string; sub?: string }) => {
     if (view.ok) successFeedback();
     else failureFeedback();
@@ -124,6 +131,7 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
 
   const confirmSale = () =>
     start(async () => {
+      unlockAudio();
       if (!token) return;
       const res = await sellByToken(eventId, token, { method, comp, buyerName, buyerPhone });
       if (!res.ok || !res.data) {
@@ -157,29 +165,6 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
         </div>
       </div>
 
-      {/* Payment method for the next sale */}
-      <div className="grid gap-2">
-        <p className="text-sm text-slate-300">Next sale is paid by</p>
-        <div className="flex flex-wrap gap-2">
-          {QUICK_METHODS.map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => {
-                setMethod(m.key);
-                setComp(false);
-              }}
-              className={cn("rounded-full px-3 py-2 text-sm font-semibold", !comp && method === m.key ? "bg-brand text-navy" : "bg-white/10 text-white")}
-            >
-              {m.label}
-            </button>
-          ))}
-          <button type="button" onClick={() => setComp(true)} className={cn("flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold", comp ? "bg-amber-300 text-navy" : "bg-white/10 text-white")}>
-            <Gift className="size-4" aria-hidden /> Free pass
-          </button>
-        </div>
-      </div>
-
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-black">
         <video ref={videoRef} className="size-full object-cover" muted playsInline autoPlay aria-label="Camera preview" />
         {camera !== "on" ? (
@@ -210,6 +195,29 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
         )}
       </div>
 
+      {/* Payment method for the next sale */}
+      <div className="grid gap-2">
+        <p className="text-sm text-slate-300">Next sale is paid by</p>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_METHODS.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => {
+                setMethod(m.key);
+                setComp(false);
+              }}
+              className={cn("rounded-full px-3 py-2 text-sm font-semibold", !comp && method === m.key ? "bg-brand text-navy" : "bg-white/10 text-white")}
+            >
+              {m.label}
+            </button>
+          ))}
+          <button type="button" onClick={() => setComp(true)} className={cn("flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold", comp ? "bg-amber-300 text-navy" : "bg-white/10 text-white")}>
+            <Gift className="size-4" aria-hidden /> Free pass
+          </button>
+        </div>
+      </div>
+
       {/* Sell by serial numbers */}
       <form
         className="grid gap-2 rounded-2xl bg-white/5 p-3"
@@ -238,6 +246,14 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
           {comp ? "Give free passes" : `Mark sold (${SALE_METHODS.find((m) => m.key === method)?.label})`}
         </Button>
       </form>
+
+      <div className="text-navy">
+        <InstallHint
+          title="Put the Sell screen on your home screen"
+          note="Add TickLO to your home screen. Then press and hold the icon → “Sell tickets”."
+          storageKey="ticklo-sell-install-dismissed"
+        />
+      </div>
 
       {mine.inStock.length ? (
         <details className="rounded-2xl bg-white/5 p-3 text-sm">

@@ -362,3 +362,24 @@ Problem: printed tickets were counted, but nothing said which were sold or where
 - All sale and money actions are Postgres functions (organizer or that seller only, audit log).
 - While building this, the 1000-row limit of the Supabase API was found to cut big batches (PDF,
   batch list, attendee list): those lists now page through all rows (`lib/queries/fetch-all.ts`).
+
+## D-042 Sellers find the scanner in one or two taps (owner request, 2026-11-27)
+Problem: the Sell screen had no link anywhere (only a small one under /scan).
+- **Header "Sell"** link and **"Sell tickets"** in the account menu for anyone who can sell
+  printed tickets for a live event (sellers and organizers).
+- **Banner** on the home page and My tickets for sellers (not organizers): "You sell tickets for
+  … – N left – Open scanner".
+- **After login** (password or Google, when no other page was asked for) a seller whose event is
+  today/tomorrow (starts within 36 h) lands straight on the Sell screen; several events → list.
+- **Sell screen opens the camera at once**; payment buttons sit right under the camera.
+- **Sales & cash:** each seller with an account has "Send link on WhatsApp" (wa.me with their
+  Pakistani number turned into +92 form, ready-made Roman Urdu message); the card also shows a QR
+  code of the Sell link for the desk.
+- **Home screen:** manifest shortcut "Sell tickets" (long-press the app icon) and an "add to home
+  screen" hint on the Sell screen.
+- **Gate sale:** the scanner shows "Gate sale: Off / Cash / JazzCash / EasyPaisa" for events with
+  printed tickets (remembered on that phone). An unsold paper ticket scanned in is recorded as
+  sold with that method and moved to the organizer's desk (the money was taken at the gate):
+  `perform_check_in` now returns `gate_sold`, `record_gate_sale` fills in the method (only the
+  person who just scanned it, within 15 minutes, not for closed seller accounts). The Edge
+  Function passes the new fields through – no redeploy needed. Migration `…001300_gate_sales`.

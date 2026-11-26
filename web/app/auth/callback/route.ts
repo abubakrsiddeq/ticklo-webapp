@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/site";
 import { publicEnv } from "@/lib/env";
+import { sellerLandingPath } from "@/lib/seller-landing";
 
 // OAuth (Google, AUTH-02) and PKCE email links land here with ?code=...
 export async function GET(request: NextRequest) {
@@ -19,7 +20,9 @@ export async function GET(request: NextRequest) {
         await supabase.auth.signOut();
         return NextResponse.redirect(`${base}/login?error=suspended`);
       }
-      return NextResponse.redirect(`${base}${next}`);
+      // Sellers with an event today/tomorrow go straight to the Sell screen (D-042)
+      const sell = next === "/" ? await sellerLandingPath(supabase).catch(() => null) : null;
+      return NextResponse.redirect(`${base}${sell ?? next}`);
     }
   }
   return NextResponse.redirect(`${base}/login?error=link&next=${encodeURIComponent(next)}`);

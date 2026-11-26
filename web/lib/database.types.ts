@@ -1590,6 +1590,12 @@ export type Database = {
           remaining: number;
         }[];
       };
+      event_has_printed: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: boolean;
+      };
       event_org_id: {
         Args: {
           p_event_id: string | null;
@@ -1835,6 +1841,13 @@ export type Database = {
           p_window_seconds: number | null;
         };
         Returns: boolean;
+      };
+      record_gate_sale: {
+        Args: {
+          p_ticket_id: string | null;
+          p_method: string | null;
+        };
+        Returns: Json;
       };
       record_print_download: {
         Args: {

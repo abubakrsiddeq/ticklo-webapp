@@ -20,6 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "My tickets", url: "/me/tickets" },
       { name: "Scan tickets", url: "/scan" },
+      { name: "Sell tickets", url: "/sell" },
     ],
   };
 }

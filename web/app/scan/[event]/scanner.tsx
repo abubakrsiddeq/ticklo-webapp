@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { describeScan, type ScanResponse, type ScanView } from "@/lib/scan/results";
 import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedback";
 import { deviceLabel } from "@/lib/scan/device";
+import { formatPKR } from "@/lib/format";
 import { ManualList } from "./manual-list";
 
 type CameraState = "idle" | "starting" | "on" | "denied" | "no_camera" | "unsupported" | "error";
@@ -16,7 +17,13 @@ type CameraState = "idle" | "starting" | "on" | "denied" | "no_camera" | "unsupp
 const RESULT_MS = 2000; // SCN-07: result closes after 2 seconds
 const SAME_CODE_COOLDOWN_MS = 5000;
 
-export function Scanner({ eventId, eventName, scannerName }: { eventId: string; eventName: string; scannerName: string }) {
+const GATE_METHODS = [
+  { key: "cash", label: "Cash" },
+  { key: "jazzcash", label: "JazzCash" },
+  { key: "easypaisa", label: "EasyPaisa" },
+] as const;
+
+export function Scanner({ eventId, eventName, scannerName, hasPrinted = false }: { eventId: string; eventName: string; scannerName: string; hasPrinted?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const busyRef = useRef(false);
@@ -29,6 +36,31 @@ export function Scanner({ eventId, eventName, scannerName }: { eventId: string; 
   const [online, setOnline] = useState(true);
   const [count, setCount] = useState<{ checked_in: number; total_tickets: number } | null>(null);
   const [showList, setShowList] = useState(false);
+  // D-042: paper tickets sold at the gate – how they are paid (null = off)
+  const [gateSale, setGateSale] = useState<string | null>(null);
+  const gateSaleRef = useRef<string | null>(null);
+  useEffect(() => {
+    gateSaleRef.current = gateSale;
+    try {
+      if (gateSale) localStorage.setItem(`ticklo-gate-sale-${eventId}`, gateSale);
+      else localStorage.removeItem(`ticklo-gate-sale-${eventId}`);
+    } catch {
+      /* private mode */
+    }
+  }, [gateSale, eventId]);
+  useEffect(() => {
+    if (!hasPrinted) return;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(`ticklo-gate-sale-${eventId}`);
+    } catch {
+      /* private mode */
+    }
+    if (saved) {
+      const t = setTimeout(() => setGateSale(saved), 0);
+      return () => clearTimeout(t);
+    }
+  }, [hasPrinted, eventId]);
 
   // SCN-08: live count (realtime + polling fallback)
   const refreshCount = useCallback(async () => {
@@ -90,7 +122,19 @@ export function Scanner({ eventId, eventName, scannerName }: { eventId: string; 
         });
         if (error || !data?.result) throw error ?? new Error("No result");
         setOnline(true);
-        showResult(describeScan(data));
+        const view = describeScan(data);
+        if (data.result === "ok" && data.gate_sold) {
+          const method = gateSaleRef.current;
+          const price = formatPKR(data.sale_price_paisa ?? 0, { freeLabel: "Free" });
+          if (method && data.ticket_id) {
+            const { data: rec } = await createClient().rpc("record_gate_sale", { p_ticket_id: data.ticket_id, p_method: method });
+            const label = GATE_METHODS.find((m) => m.key === method)?.label ?? method;
+            view.subtitle = (rec as { result?: string } | null)?.result === "ok" ? `Gate sale: collect ${price} (${label})` : `Counted as sold (${price}) – payment not recorded`;
+          } else {
+            view.subtitle = `Paper ticket was not marked sold – counted as sold (${price}).`;
+          }
+        }
+        showResult(view);
         void refreshCount();
       } catch {
         recentRef.current.delete(text); // allow retry of the same code
@@ -221,6 +265,35 @@ export function Scanner({ eventId, eventName, scannerName }: { eventId: string; 
           </div>
         ) : null}
       </div>
+
+      {hasPrinted ? (
+        <div className="mx-auto mt-4 grid w-full max-w-md gap-2 px-4">
+          <p className="text-sm text-slate-300">Selling paper tickets at the gate? Unsold ones you scan are recorded as paid by:</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Gate sale">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={gateSale === null}
+              onClick={() => setGateSale(null)}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold ${gateSale === null ? "bg-white text-navy" : "bg-white/10 text-white"}`}
+            >
+              Off
+            </button>
+            {GATE_METHODS.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                role="radio"
+                aria-checked={gateSale === m.key}
+                onClick={() => setGateSale(m.key)}
+                className={`rounded-full px-3 py-1.5 text-sm font-semibold ${gateSale === m.key ? "bg-brand text-navy" : "bg-white/10 text-white"}`}
+              >
+                Gate sale: {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mx-auto mt-4 flex w-full max-w-md flex-wrap justify-center gap-2 px-4 pb-6">
         <Button variant="secondary" onClick={() => setShowList(true)}>

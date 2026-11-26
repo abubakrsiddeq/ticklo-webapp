@@ -174,4 +174,30 @@ describe("printed ticket sales (SAL-01 .. SAL-08)", () => {
     const sellers = await asUser(c, SEED.student, () => c.query("select id from public.print_sellers where event_id = $1", [eventId]));
     expect(sellers.rowCount).toBe(0);
   });
+
+  it("records a gate sale: scan → sold with method, moved to the organizer desk (D-042)", async () => {
+    const { eventId } = await setup(3);
+    const a = await seller(eventId, "Ali");
+    await assign(eventId, a, 1, 3);
+    const tid = await ticketId(eventId, 1);
+    const res = await asService(c, () =>
+      rpc<{ result: string; gate_sold: boolean; sale_price_paisa: number }>(c, "perform_check_in", [tid, eventId, SEED.organizer, "scan", "t"], ["uuid", "uuid", "uuid", "checkin_method", "text"]),
+    );
+    expect(res).toMatchObject({ result: "ok", gate_sold: true, sale_price_paisa: 200000 });
+    // someone else can't fill in the method
+    const other = await asUser(c, SEED.member, () => rpc<{ result: string }>(c, "record_gate_sale", [tid, "cash"], ["uuid", "text"]));
+    expect(other.result).toBe("skipped");
+    const ok = await org(() => rpc<{ result: string }>(c, "record_gate_sale", [tid, "jazzcash"], ["uuid", "text"]));
+    expect(ok.result).toBe("ok");
+    const row = await c.query("select sale_method, seller_id, sale_source from public.tickets where id = $1", [tid]);
+    expect(row.rows[0]).toEqual({ sale_method: "jazzcash", seller_id: null, sale_source: "scan" });
+    // a ticket that was already sold is not a gate sale
+    await sell(SEED.organizer, eventId, 2, 2);
+    const r2 = await scan(eventId, 2);
+    expect((r2 as unknown as { gate_sold: boolean }).gate_sold).toBe(false);
+    const has = await org(() => c.query("select public.event_has_printed($1) as h", [eventId]));
+    expect(has.rows[0].h).toBe(true);
+    const no = await asUser(c, SEED.student, () => c.query("select public.event_has_printed($1) as h", [eventId]));
+    expect(no.rows[0].h).toBe(false);
+  });
 });

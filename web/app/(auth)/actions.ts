@@ -7,6 +7,7 @@ import { absoluteUrl, safeNext } from "@/lib/site";
 import { fieldErrors } from "@/lib/validation/common";
 import { loginSchema, newPasswordSchema, resetRequestSchema, signupSchema } from "@/lib/validation/auth";
 import type { ActionResult } from "@/lib/errors";
+import { sellerLandingPath } from "@/lib/seller-landing";
 
 const tooMany: ActionResult<never> = { ok: false, error: "Too many attempts. Please wait a few minutes and try again." };
 
@@ -32,7 +33,13 @@ export async function loginAction(input: unknown, next: string): Promise<ActionR
     await supabase.auth.signOut();
     return { ok: false, error: "Your account is suspended. Contact TickLO support." };
   }
-  redirect(safeNext(next, "/"));
+  const dest = safeNext(next, "/");
+  // Sellers with an event today/tomorrow go straight to the Sell screen (D-042)
+  if (dest === "/") {
+    const sell = await sellerLandingPath(supabase).catch(() => null);
+    if (sell) redirect(sell);
+  }
+  redirect(dest);
 }
 
 /** AUTH-01 signup with any email (AUTH-05); account active after the confirm link */

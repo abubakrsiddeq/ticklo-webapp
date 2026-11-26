@@ -10,14 +10,16 @@ import { isSupabaseConfigured } from "@/lib/env";
 
 async function loadMenuData(userId: string) {
   const supabase = await createClient();
-  const [{ data: memberships }, { data: scanEvents }] = await Promise.all([
+  const [{ data: memberships }, { data: scanEvents }, { data: sellEvents }] = await Promise.all([
     supabase.from("organization_members").select("role, organizations!inner ( slug, name, status )").eq("user_id", userId),
     supabase.rpc("my_scan_events"),
+    supabase.rpc("my_sell_events"),
   ]);
   const orgs: UserMenuOrg[] = (memberships ?? [])
     .filter((m) => m.role !== "scanner")
     .map((m) => ({ slug: m.organizations.slug, name: m.organizations.name, role: m.role }));
-  return { orgs, canScan: (scanEvents ?? []).length > 0 };
+  // Sellers of printed tickets get a "Sell" link (D-042)
+  return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0 };
 }
 
 const shellClass =
@@ -62,6 +64,7 @@ async function SiteHeaderContent() {
       ? { href: menu.orgs.length === 1 ? `/org/${menu.orgs[0].slug}` : "/org", label: "Dashboard" }
       : { href: "/org/new", label: "For societies" },
     ...(menu?.canScan ? [{ href: "/scan", label: "Scan" }] : []),
+    ...(menu?.canSell ? [{ href: "/sell", label: "Sell" }] : []),
   ];
 
   return (
@@ -78,6 +81,7 @@ async function SiteHeaderContent() {
               isAdmin={user.profile.is_admin}
               orgs={menu.orgs}
               canScan={menu.canScan}
+              canSell={menu.canSell}
             />
           ) : (
             <>

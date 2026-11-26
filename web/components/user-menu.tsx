@@ -35,6 +35,7 @@ export function UserMenu(props: {
   isAdmin: boolean;
   orgs: UserMenuOrg[];
   canScan: boolean;
+  canSell?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -72,6 +73,13 @@ export function UserMenu(props: {
           <DropdownMenuItem asChild>
             <Link href="/scan" className="min-h-11">
               <ScanLine /> Scan tickets
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {props.canSell ? (
+          <DropdownMenuItem asChild>
+            <Link href="/sell" className="min-h-11">
+              <Ticket /> Sell tickets
             </Link>
           </DropdownMenuItem>
         ) : null}

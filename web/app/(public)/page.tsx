@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SellerBanner } from "@/components/print/seller-banner";
 import { ArrowRight, BadgeCheck, CalendarSearch, CreditCard, QrCode, ScanLine, ShieldCheck, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventGrid } from "@/components/event-card";
@@ -59,6 +60,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <SellerBanner className="mx-auto max-w-6xl px-3 pt-4 sm:px-4" />
       {/* Hero */}
       <section className="px-3 pt-4 sm:px-4">
         <div className="bg-hero relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] text-white">
