@@ -7,6 +7,7 @@ import { NativeSelect } from "@/components/native-select";
 import { ActionButton } from "@/components/action-button";
 import { formatDateTime } from "@/lib/format";
 import { assignScanner, unassignScanner } from "@/app/org/_actions/manage";
+import { ScannerSessionsDialog } from "./scanner-sessions";
 
 // ORG-10: choose scanners for this event; access ends 6 hours after the event.
 export function ScannersCard({
@@ -15,12 +16,14 @@ export function ScannersCard({
   team,
   assigned,
   isOwner,
+  sessions = [],
 }: {
   orgSlug: string;
   eventId: string;
   team: { user_id: string; name: string; role: string }[];
-  assigned: { user_id: string; name: string; expires_at: string }[];
+  assigned: { user_id: string; name: string; expires_at: string; session_ids?: string[] | null }[];
   isOwner: boolean;
+  sessions?: { id: string; name: string }[];
 }) {
   const assignedIds = new Set(assigned.map((a) => a.user_id));
   const options = team.filter((t) => !assignedIds.has(t.user_id) && t.role !== "owner");
@@ -35,10 +38,18 @@ export function ScannersCard({
               <div>
                 <p className="font-medium text-navy">{a.name}</p>
                 <p className="text-xs text-muted-foreground">Access until {formatDateTime(a.expires_at)}</p>
+                {sessions.length ? (
+                  <p className="text-xs text-slate-700">
+                    {a.session_ids?.length ? `Only: ${sessions.filter((x) => a.session_ids!.includes(x.id)).map((x) => x.name).join(", ")}` : "Whole event (main entry + all sessions)"}
+                  </p>
+                ) : null}
               </div>
+              <div className="flex items-center">
+              {sessions.length ? <ScannerSessionsDialog orgSlug={orgSlug} eventId={eventId} userId={a.user_id} name={a.name} sessions={sessions} selected={a.session_ids ?? []} /> : null}
               <ActionButton variant="ghost" size="icon" aria-label={`Remove ${a.name}`} action={unassignScanner.bind(null, orgSlug, eventId, a.user_id)}>
                 <UserMinus />
               </ActionButton>
+              </div>
             </li>
           ))}
         </ul>

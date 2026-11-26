@@ -25,12 +25,15 @@ export default async function EditEventPage({
   const { org, event, isOwner } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/edit`);
   const supabase = await createClient();
 
-  const [{ data: types }, { data: availability }, { data: accounts }, { data: links }] = await Promise.all([
+  const [{ data: types }, { data: availability }, { data: accounts }, { data: links }, { data: sessions }, { data: access }] = await Promise.all([
     supabase.from("ticket_types").select("*").eq("event_id", event.id).order("sort_order").order("created_at"),
     supabase.rpc("event_availability", { p_event_id: event.id }),
     supabase.from("payment_accounts").select("*").eq("org_id", org.id).eq("is_active", true).order("created_at"),
     supabase.from("event_payment_accounts").select("payment_account_id").eq("event_id", event.id),
+    supabase.from("event_sessions").select("id, name, kind, pass_access").eq("event_id", event.id).order("starts_at"),
+    supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, event_sessions!inner ( event_id )").eq("event_sessions.event_id", event.id),
   ]);
+  const sessionName = new Map((sessions ?? []).map((s) => [s.id, s.name]));
   const typeIds = (types ?? []).map((t) => t.id);
   const { data: bookedRows } = typeIds.length
     ? await supabase.from("order_items").select("ticket_type_id, orders!inner ( status )").in("ticket_type_id", typeIds).neq("orders.status", "expired")
@@ -49,6 +52,9 @@ export default async function EditEventPage({
     requires_student_card: t.requires_student_card,
     booked: booked.has(t.id),
     taken: t.quantity - (remaining.get(t.id) ?? t.quantity),
+    all_sessions: t.all_sessions,
+    session_ids: (access ?? []).filter((a) => a.ticket_type_id === t.id).map((a) => a.session_id),
+    registration_for: t.registration_session_id ? (sessionName.get(t.registration_session_id) ?? "a competition") : null,
   }));
 
   const editable = event.status !== "cancelled";
@@ -106,7 +112,7 @@ export default async function EditEventPage({
           <CardDescription>Price 0 = free ticket, issued instantly.</CardDescription>
         </CardHeader>
         <CardContent>
-          <TicketTypesEditor orgSlug={org.slug} eventId={event.id} types={editorTypes} capacity={event.capacity} editable={editable} />
+          <TicketTypesEditor orgSlug={org.slug} eventId={event.id} types={editorTypes} capacity={event.capacity} editable={editable} sessions={sessions ?? []} />
         </CardContent>
       </Card>
 

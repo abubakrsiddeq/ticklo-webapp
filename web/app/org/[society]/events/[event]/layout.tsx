@@ -37,6 +37,7 @@ export default async function EventLayout({
         items={[
           { href: base, label: "Overview" },
           { href: `${base}/payments`, label: "Payments" },
+          { href: `${base}/schedule`, label: "Schedule" },
           { href: `${base}/attendees`, label: "Attendees" },
           { href: `${base}/print`, label: "Printed tickets" },
           { href: `${base}/ambassadors`, label: "Ambassadors" },

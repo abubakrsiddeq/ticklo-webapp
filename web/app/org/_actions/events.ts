@@ -282,6 +282,9 @@ export async function duplicateEvent(orgSlug: string, eventId: string): Promise<
   if (accounts?.length) {
     await supabase.from("event_payment_accounts").insert(accounts.map((a) => ({ event_id: copy.id, payment_account_id: a.payment_account_id })));
   }
+  // D-044: copy the schedule (same offset from the start) and what each ticket opens
+  const { error: sErr } = await supabase.rpc("duplicate_event_sessions", { p_from_event: src.id, p_to_event: copy.id });
+  if (sErr) console.error("duplicate sessions failed", sErr.message);
   revalidatePath(`/org/${orgSlug}`, "layout");
   redirect(`/org/${orgSlug}/events/${copy.slug}/edit?duplicated=1`);
 }

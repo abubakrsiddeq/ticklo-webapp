@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { IdCard, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { DoorOpen, IdCard, Lock, Pencil, Plus, Trophy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/action-button";
 import { formatDateTime, formatPKR, paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
 import { ticketTypeSchema, type TicketTypeInput } from "@/lib/validation/event";
 import { deleteTicketType, saveTicketType } from "@/app/org/_actions/events";
+import { AccessDialog, type AccessSession } from "./access-dialog";
 
 export interface EditorTicketType {
   id: string;
@@ -26,6 +27,10 @@ export interface EditorTicketType {
   requires_student_card: boolean;
   booked: boolean; // has non-expired orders → price & card locked (ORG-07)
   taken: number; // sold + held
+  // D-044: what the ticket opens
+  all_sessions: boolean;
+  session_ids: string[];
+  registration_for: string | null; // competition name when this is a team entry fee
 }
 
 function TypeForm({
@@ -122,15 +127,22 @@ export function TicketTypesEditor({
   types,
   capacity,
   editable,
+  sessions = [],
 }: {
   orgSlug: string;
   eventId: string;
   types: EditorTicketType[];
   capacity: number;
   editable: boolean;
+  sessions?: AccessSession[];
 }) {
   const [editing, setEditing] = useState<string | "new" | null>(types.length ? null : "new");
   const total = types.reduce((s, t) => s + t.quantity, 0);
+  const sessionName = new Map(sessions.map((s) => [s.id, s.name]));
+  const opens = (t: EditorTicketType) =>
+    t.all_sessions
+      ? `Pass – ${sessions.filter((s) => s.pass_access).map((s) => s.name).join(", ") || "main entry (no sessions in passes yet)"}`
+      : t.session_ids.map((id) => sessionName.get(id) ?? "?").join(", ");
 
   return (
     <div className="grid gap-3">
@@ -159,9 +171,21 @@ export function TicketTypesEditor({
                     <IdCard className="size-3.5" aria-hidden /> Student card required
                   </p>
                 ) : null}
+                {t.registration_for ? (
+                  <p className="flex items-center gap-1 text-xs font-medium text-brand-strong">
+                    <Trophy className="size-3.5" aria-hidden /> Team entry for {t.registration_for} – change it on the Schedule tab
+                  </p>
+                ) : sessions.length ? (
+                  <p className="flex items-start gap-1 text-xs text-slate-700">
+                    <DoorOpen className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Opens: {opens(t)}
+                  </p>
+                ) : null}
               </div>
-              {editable ? (
+              {t.registration_for ? null : editable ? (
                 <div className="flex gap-2">
+                  {sessions.length ? (
+                    <AccessDialog orgSlug={orgSlug} ticketTypeId={t.id} name={t.name} sessions={sessions} allSessions={t.all_sessions} sessionIds={t.session_ids} booked={t.booked} />
+                  ) : null}
                   <Button variant="outline" size="sm" onClick={() => setEditing(t.id)}>
                     <Pencil /> Edit
                   </Button>

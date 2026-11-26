@@ -9,6 +9,8 @@ import { requireOrgEvent } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { absoluteUrl, eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
+import { formatShortDateTime } from "@/lib/format";
+import { kindEmoji } from "@/lib/sessions";
 import { submitEvent } from "@/app/org/_actions/events";
 import { LiveStats, type EventStats } from "./live-stats";
 import { ScannersCard } from "./scanners";
@@ -20,11 +22,13 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
   const { society, event: eventSlug } = await params;
   const { org, event, isOwner } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}`);
   const supabase = await createClient();
-  const [{ data: stats }, { data: team }, { data: staff }] = await Promise.all([
+  const [{ data: stats }, { data: team }, { data: staff }, { data: sessionStats }] = await Promise.all([
     supabase.rpc("event_stats", { p_event_id: event.id }),
     supabase.rpc("org_team", { p_org_id: org.id }),
-    supabase.from("event_staff").select("user_id, expires_at").eq("event_id", event.id),
+    supabase.from("event_staff").select("user_id, expires_at, session_ids").eq("event_id", event.id),
+    supabase.rpc("session_stats", { p_event_id: event.id }),
   ]);
+  const sessions = sessionStats ?? [];
   const names = new Map((team ?? []).map((t) => [t.user_id, t.full_name ?? t.email ?? "Team member"]));
   const base = `/org/${org.slug}/events/${event.slug}`;
   const publicUrl = absoluteUrl(eventPath(org.slug, event.slug));
@@ -50,6 +54,51 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
       ) : null}
 
       {stats ? <LiveStats eventId={event.id} initial={stats as unknown as EventStats} paymentsHref={`${base}/payments`} /> : null}
+
+      {sessions.length ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <CardTitle>Sessions</CardTitle>
+                <CardDescription>Tickets, seats and check-ins per session (FES-14).</CardDescription>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`${base}/schedule`}>Schedule</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead className="text-left text-muted-foreground">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Session</th>
+                  <th className="py-2 pr-3 text-right font-medium">Tickets / teams</th>
+                  <th className="py-2 pr-3 text-right font-medium">Seats</th>
+                  <th className="py-2 text-right font-medium">Checked in</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {sessions.map((x) => (
+                  <tr key={x.session_id}>
+                    <td className="py-2 pr-3">
+                      <Link href={`/manage/${x.session_id}`} className="font-medium text-navy hover:underline">
+                        {kindEmoji(x.kind)} {x.name}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">{formatShortDateTime(x.starts_at)}</div>
+                    </td>
+                    <td className="py-2 pr-3 text-right tabular-nums">
+                      {x.kind === "competition" ? `${x.teams_paid} teams${x.teams_pending ? ` (+${x.teams_pending} waiting)` : ""}` : x.tickets}
+                    </td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "—"}</td>
+                    <td className="py-2 text-right tabular-nums">{x.checked_in}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -81,7 +130,8 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
                 eventId={event.id}
                 isOwner={isOwner}
                 team={(team ?? []).map((t) => ({ user_id: t.user_id, name: t.full_name ?? t.email ?? "Team member", role: t.role }))}
-                assigned={(staff ?? []).map((s) => ({ user_id: s.user_id, name: names.get(s.user_id) ?? "Team member", expires_at: s.expires_at }))}
+                assigned={(staff ?? []).map((s) => ({ user_id: s.user_id, name: names.get(s.user_id) ?? "Team member", expires_at: s.expires_at, session_ids: s.session_ids }))}
+                sessions={sessions.map((x) => ({ id: x.session_id, name: x.name }))}
               />
             ) : null}
             {scanWindowOpen ? (
