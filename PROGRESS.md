@@ -170,6 +170,9 @@ route (`/me/*`, `/checkout/*`, `/org/*`, `/scan`, `/admin/*`, `/invite/*`) redir
 back to 404 when the database is unreachable; React Email renders inside server code.
 
 ### Manual – acceptance criteria walkthrough (staging with `seed.sql`)
+> 2026-11-26: the TICkLO project was wiped on request – all seed users, societies, events and
+> orders deleted; only Abubakar's admin account and the 15 universities remain. The seed
+> accounts below and `npm run smoke:remote` no longer work there unless `seed.sql` is loaded again.
 Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3 first.
 
 | # | Acceptance criterion | How to check |
