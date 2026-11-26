@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus } from "lucide-react";
+import { CalendarDays, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -36,6 +36,7 @@ export function UserMenu(props: {
   orgs: UserMenuOrg[];
   canScan: boolean;
   canSell?: boolean;
+  isAmbassador?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -80,6 +81,13 @@ export function UserMenu(props: {
           <DropdownMenuItem asChild>
             <Link href="/sell" className="min-h-11">
               <Ticket /> Sell tickets
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {props.isAmbassador ? (
+          <DropdownMenuItem asChild>
+            <Link href="/me/ambassador" className="min-h-11">
+              <Megaphone /> My ambassador page
             </Link>
           </DropdownMenuItem>
         ) : null}

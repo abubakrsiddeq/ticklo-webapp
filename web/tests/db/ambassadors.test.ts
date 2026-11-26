@@ -363,8 +363,9 @@ describe("applications and the ambassador's own view (AMB-05, AMB-11, AMB-13)", 
 describe("TickLO campus ambassadors (AMB-14)", () => {
   it("lets admins name campus ambassadors and societies add their code", async () => {
     const amb = await buyer("Campus Amb");
-    await expectTL(org(() => rpc(c, "admin_save_campus_ambassador", [amb.id, "CAMPUS1", null, true], ["uuid", "text", "uuid", "bool"])), "FORBIDDEN");
-    await asUser(c, SEED.admin, () => rpc(c, "admin_save_campus_ambassador", [amb.id, "campus-1", null, true], ["uuid", "text", "uuid", "bool"]));
+    const CODE = `CAMPUS${Math.floor(Math.random() * 1e6)}`;
+    await expectTL(org(() => rpc(c, "admin_save_campus_ambassador", [amb.id, CODE, null, true], ["uuid", "text", "uuid", "bool"])), "FORBIDDEN");
+    await asUser(c, SEED.admin, () => rpc(c, "admin_save_campus_ambassador", [amb.id, CODE.toLowerCase(), null, true], ["uuid", "text", "uuid", "bool"]));
 
     const owner = await buyer("Society Owner");
     const orgId = (
@@ -376,12 +377,12 @@ describe("TickLO campus ambassadors (AMB-14)", () => {
     await c.query("insert into public.organization_members (org_id, user_id, role) values ($1, $2, 'owner')", [orgId, owner.id]);
 
     await expectTL(asUser(c, owner.id, () => rpc(c, "set_org_referral", [orgId, "WRONG"], ["uuid", "text"])), "INVALID_CODE");
-    await expectTL(asUser(c, amb.id, () => rpc(c, "set_org_referral", [orgId, "CAMPUS1"], ["uuid", "text"])), "FORBIDDEN");
-    expect(await asUser(c, owner.id, () => rpc(c, "set_org_referral", [orgId, "campus1"], ["uuid", "text"]))).toBe(true);
-    await expectTL(asUser(c, owner.id, () => rpc(c, "set_org_referral", [orgId, "CAMPUS1"], ["uuid", "text"])), "INVALID_STATE");
+    await expectTL(asUser(c, amb.id, () => rpc(c, "set_org_referral", [orgId, CODE], ["uuid", "text"])), "FORBIDDEN");
+    expect(await asUser(c, owner.id, () => rpc(c, "set_org_referral", [orgId, CODE.toLowerCase()], ["uuid", "text"]))).toBe(true);
+    await expectTL(asUser(c, owner.id, () => rpc(c, "set_org_referral", [orgId, CODE], ["uuid", "text"])), "INVALID_STATE");
 
     const stats = await asUser(c, SEED.admin, () => c.query("select * from public.campus_ambassador_stats(null)"));
-    expect(stats.rows.find((r) => r.user_id === amb.id)).toMatchObject({ code: "CAMPUS1", societies: 1, approved_societies: 0 });
+    expect(stats.rows.find((r) => r.user_id === amb.id)).toMatchObject({ code: CODE, societies: 1, approved_societies: 0 });
     const own = await asUser(c, amb.id, () => c.query("select * from public.my_campus_societies()"));
     expect(own.rows[0]).toMatchObject({ org_name: "Amb Test Society" });
     await expect(asUser(c, owner.id, () => c.query("select * from public.campus_ambassador_stats(null)"))).rejects.toThrow(/TL:FORBIDDEN/);

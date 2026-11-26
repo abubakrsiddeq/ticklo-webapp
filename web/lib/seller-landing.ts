@@ -12,7 +12,7 @@ const SOON_MS = 36 * 3600 * 1000;
 export async function sellerLandingPath(supabase: Client): Promise<string | null> {
   const { data } = await supabase.rpc("my_sell_events");
   const now = Date.now();
-  const soon = (data ?? []).filter((e) => e.access === "seller" && new Date(e.starts_at).getTime() - now < SOON_MS);
+  const soon = (data ?? []).filter((e) => e.access === "seller" && e.has_printed && new Date(e.starts_at).getTime() - now < SOON_MS);
   if (soon.length === 1) return `/sell/${soon[0].event_id}`;
   if (soon.length > 1) return "/sell?list=1";
   return null;

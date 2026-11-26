@@ -10,16 +10,19 @@ import { isSupabaseConfigured } from "@/lib/env";
 
 async function loadMenuData(userId: string) {
   const supabase = await createClient();
-  const [{ data: memberships }, { data: scanEvents }, { data: sellEvents }] = await Promise.all([
+  const [{ data: memberships }, { data: scanEvents }, { data: sellEvents }, { data: campus }] = await Promise.all([
     supabase.from("organization_members").select("role, organizations!inner ( slug, name, status )").eq("user_id", userId),
     supabase.rpc("my_scan_events"),
     supabase.rpc("my_sell_events"),
+    supabase.from("campus_ambassadors").select("user_id").eq("user_id", userId).maybeSingle(),
   ]);
   const orgs: UserMenuOrg[] = (memberships ?? [])
     .filter((m) => m.role !== "scanner")
     .map((m) => ({ slug: m.organizations.slug, name: m.organizations.name, role: m.role }));
   // Sellers of printed tickets get a "Sell" link (D-042)
-  return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0 };
+  // D-043: ambassadors (event or TickLO campus) get "My ambassador page"
+  const isAmbassador = Boolean(campus) || (sellEvents ?? []).some((e) => e.ref_code);
+  return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador };
 }
 
 const shellClass =
@@ -82,6 +85,7 @@ async function SiteHeaderContent() {
               orgs={menu.orgs}
               canScan={menu.canScan}
               canSell={menu.canSell}
+              isAmbassador={menu.isAmbassador}
             />
           ) : (
             <>
