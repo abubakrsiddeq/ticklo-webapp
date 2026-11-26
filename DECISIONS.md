@@ -495,3 +495,11 @@ and guide the rest from that.
 - The Schedule tab is shown only for festival/competition events (or events that already have
   sessions) and is called "Competition" for competition events. Labels and hints in the event
   form follow the format (e.g. "Festival starts (first day)").
+
+## D-046 Societies page in the header (owner request, 2026-11-27)
+- Header (desktop, mobile menu, loading skeleton) and footer get **Societies** next to Events →
+  `/societies`: every **approved** society (TickLO-verified), A–Z, search by name, filter by
+  university, tab "With upcoming events". Cards show logo, name, society/department, university,
+  about (3 lines) and the number of upcoming public events, and open the existing society page
+  `/s/<society>`. 24 per page with "Show more"; a "Register your society" call to action at the end.
+- Pending/rejected societies never show (same rule as the society page). No migration needed.

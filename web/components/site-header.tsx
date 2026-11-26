@@ -48,7 +48,12 @@ export function SiteHeaderShell() {
     <header className="no-print sticky top-0 z-50 px-3 pt-3 sm:px-4">
       <div className={shellClass}>
         <Logo height={30} />
-        <HeaderNav items={[{ href: "/events", label: "Events" }]} />
+        <HeaderNav
+          items={[
+            { href: "/events", label: "Events" },
+            { href: "/societies", label: "Societies" },
+          ]}
+        />
         <div className="flex items-center gap-1.5 pr-1" aria-hidden>
           <span className="size-9 animate-pulse rounded-full bg-secondary" />
         </div>
@@ -64,6 +69,7 @@ async function SiteHeaderContent() {
 
   const items: NavItem[] = [
     { href: "/events", label: "Events" },
+    { href: "/societies", label: "Societies" },
     ...(user ? [{ href: "/me/tickets", label: "My tickets" }] : []),
     menu?.orgs.length
       ? { href: menu.orgs.length === 1 ? `/org/${menu.orgs[0].slug}` : "/org", label: "Dashboard" }

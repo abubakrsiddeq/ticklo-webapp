@@ -9,6 +9,7 @@ const COLUMNS = [
     title: "Students",
     links: [
       { href: "/events", label: "Browse events" },
+      { href: "/societies", label: "Societies" },
       { href: "/me/tickets", label: "My tickets" },
       { href: "/signup", label: "Create account" },
     ],

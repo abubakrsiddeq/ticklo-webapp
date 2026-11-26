@@ -65,6 +65,45 @@ export const listUniversities = cache(async () => {
   return data ?? [];
 });
 
+export interface SocietyListFilters {
+  q?: string;
+  universityId?: string;
+  active?: boolean; // only societies with upcoming public events
+  limit?: number;
+  offset?: number;
+}
+
+/** Societies directory (D-046): approved societies, with their upcoming public events count. */
+export async function listPublicSocieties(filters: SocietyListFilters = {}) {
+  const supabase = await createClient();
+  const nowIso = new Date().toISOString();
+  const limit = filters.limit ?? 24;
+  const offset = filters.offset ?? 0;
+  let query = supabase
+    .from("organizations")
+    .select(
+      `id, slug, name, logo_url, about, type, universities ( name, short_name, city ),
+       upcoming:events${filters.active ? "!inner" : ""} ( id )`,
+      { count: "exact" },
+    )
+    .eq("status", "approved")
+    .in("upcoming.status", ["published"])
+    .eq("upcoming.visibility", "public")
+    .gte("upcoming.ends_at", nowIso)
+    .order("name", { ascending: true });
+  const q = cleanSearch(filters.q);
+  if (q) query = query.ilike("name", `%${q}%`);
+  if (filters.universityId) query = query.eq("university_id", filters.universityId);
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
+  if (error) console.error("listPublicSocieties", error.message);
+  return {
+    societies: (data ?? []).map(({ upcoming, ...o }) => ({ ...o, upcomingCount: Array.isArray(upcoming) ? upcoming.length : 0 })),
+    total: count ?? 0,
+  };
+}
+
+export type SocietyCardData = Awaited<ReturnType<typeof listPublicSocieties>>["societies"][number];
+
 /** EVT-03: everything the public event page needs. Works for link-only events too. */
 export const getEventPage = cache(async (orgSlug: string, eventSlug: string) => {
   const supabase = await createClient();
