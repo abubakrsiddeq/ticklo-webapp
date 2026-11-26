@@ -142,6 +142,13 @@ deviations: `DECISIONS.md`.
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
+### Smoke test already done (production build, placeholder Supabase URL)
+`next start` + curl on 29 routes: all public pages return 200 (home, events, login, signup,
+reset, privacy, terms, offline, manifest, service worker, icons, health); every protected
+route (`/me/*`, `/checkout/*`, `/org/*`, `/scan`, `/admin/*`, `/invite/*`) redirects to
+`/login?next=<page>`; `/api/cron/*` returns 401 without the secret; event/society pages fall
+back to 404 when the database is unreachable; React Email renders inside server code.
+
 ### Manual – acceptance criteria walkthrough (staging with `seed.sql`)
 Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3 first.
 
