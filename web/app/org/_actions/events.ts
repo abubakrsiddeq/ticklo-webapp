@@ -9,7 +9,7 @@ import { fail, type ActionResult } from "@/lib/errors";
 import type { TablesUpdate } from "@/lib/database.types";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
-import { slugify, withSuffix } from "@/lib/slug";
+import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { cancelEventSchema, eventSchema, ticketTypeSchema } from "@/lib/validation/event";
 import { notifyEventCancelled } from "@/lib/emails/notify";
@@ -69,7 +69,7 @@ export async function createEvent(orgSlug: string, form: FormData): Promise<Acti
   }
 
   const supabase = await createClient();
-  let slug = slugify(parsed.data.name, 70);
+  let slug = avoidReserved(slugify(parsed.data.name, 70), 80);
   for (let attempt = 0; attempt < 4; attempt++) {
     const { data, error } = await supabase
       .from("events")

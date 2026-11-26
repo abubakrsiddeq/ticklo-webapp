@@ -32,6 +32,8 @@ const nextConfig: NextConfig = {
     formats: ["image/webp"],
   },
   experimental: {
+    // proxy.ts buffers request bodies (default 10 MB); uploads can be ~10 MB.
+    proxyClientMaxBodySize: "12mb",
     serverActions: {
       // Payment screenshot (5 MB) + student card photo (5 MB) + form overhead.
       bodySizeLimit: "11mb",

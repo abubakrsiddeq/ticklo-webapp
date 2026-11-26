@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { errorCode, fail, type ActionResult } from "@/lib/errors";
 import type { TablesUpdate } from "@/lib/database.types";
 import { readUpload, uploadPrivate, uploadPublicImage } from "@/lib/storage";
-import { slugify, withSuffix } from "@/lib/slug";
+import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { orgSchema, socialLinksFrom } from "@/lib/validation/org";
 
@@ -35,7 +35,7 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
   }
 
   const supabase = await createClient();
-  let slug = slugify(parsed.data.name);
+  let slug = avoidReserved(slugify(parsed.data.name));
   for (let attempt = 0; attempt < 4; attempt++) {
     const { error } = await supabase.rpc("create_organization", {
       p_name: parsed.data.name,
