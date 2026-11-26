@@ -314,3 +314,22 @@ where every ticket has its own QR; at the gate they scan like online tickets and
   the tickets, so already printed tickets keep working.
 - **Cash is not tracked** in "Collected"; the report shows printed / used / voided / face value.
 - My templates: a society can save designs (`ticket_templates`, RLS: organizers of that society).
+
+## D-040 More templates, society logo, fixed-size TickLO logo (owner request, 2026-11-26)
+- **Categories** grew from 9 to 16: added Mushaira / Poetry, Gala / Dinner, Convocation / Farewell,
+  Workshop, Competition, Exhibition / Expo, Theatre / Comedy (Conference also covers seminars).
+- **6 templates per category (96 in total):** the 11 hand-made designs stay; the rest come from six
+  modern layouts (Split, Boarding Pass, Glass, Diagonal, Big Type, Minimal) combined with a kit per
+  category – two colour palettes, title font, an original vector icon, a background pattern and
+  six different headlines (`lib/print/templates-modern.ts`). Generating them from layouts keeps
+  every design consistent and easy to fix in one place.
+- **Society logo:** new `{{logo}}` image placeholder = the society's logo from Settings. Every modern
+  layout has a logo slot (white circle plate). If the society has no logo, the slot prints nothing
+  (editor shows a "Society logo" box). Editor: "+ Society logo" button and "Use society logo" for
+  any image; images can get a coloured plate behind them. Society logo uploads now keep PNG
+  transparency (were turned into JPEG with a black background).
+- **"Ticket partner: TickLO" has one fixed size (29 × 10.2 mm, full opacity) – it can only be
+  moved.** No resize handles, no width/opacity controls; old designs are put back to this size when
+  opened (`normalizeDesign`). Enforced in the browser, the server action and Postgres
+  (migration `20261126001100_brand_fixed_size.sql`).
+- Gallery thumbnails render only when visible and one at a time (100 designs on a phone).

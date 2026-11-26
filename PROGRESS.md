@@ -177,6 +177,13 @@ Event dashboard → **Printed tickets** tab.
 - Migration applied to TICkLO (2026-11-26). No new env vars; the Edge Functions need no
   redeploy (scan-verify passes the new `serial` through). Hostinger needs the new web build.
 
+## Change 2026-11-26: 96 templates, society logo, fixed TickLO logo (D-040)
+- 16 template categories × 6 designs; modern layouts with the society logo; TickLO logo is a
+  fixed size and can only be moved. Rendered all 96 in headless Chrome (long names too) and
+  checked that the logo cannot be resized in the editor. 17 print unit tests, 11 DB tests.
+- **Needs:** apply migration `20261126001100_brand_fixed_size.sql` to TICkLO (until then the
+  database still accepts a smaller logo; the app itself already blocks it).
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -192,7 +199,7 @@ Event dashboard → **Printed tickets** tab.
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
   `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (67 tests).
-- **Unit tests:** `cd web && npm test` (43 tests).
+- **Unit tests:** `cd web && npm test` (44 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -227,6 +234,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261126001100_brand_fixed_size.sql`** to TICkLO (fixed TickLO logo size, D-040).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.

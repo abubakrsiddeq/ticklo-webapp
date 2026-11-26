@@ -25,7 +25,7 @@ export default async function BatchDesignPage({ params }: { params: Promise<{ so
       batchId={batchId}
       backHref={back}
       initialDesign={design}
-      values={{ ...printValues(event, org.name, detail.batch.ticket_types), serial: first?.serial, code: first?.code }}
+      values={{ ...printValues(event, org, detail.batch.ticket_types), serial: first?.serial, code: first?.code }}
     />
   );
 }

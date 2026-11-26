@@ -28,7 +28,7 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
   let logoUrl: string | null = null;
   let proofPath: string | null = null;
   try {
-    if (logo.file) logoUrl = await uploadPublicImage("logos", user.id, logo.file, 600);
+    if (logo.file) logoUrl = await uploadPublicImage("logos", user.id, logo.file, 600, { keepTransparency: true });
     if (proof.file) proofPath = await uploadPrivate("org-proofs", user.id, proof.file);
   } catch (e) {
     return fail(e);
@@ -77,7 +77,7 @@ export async function updateOrganization(orgSlug: string, form: FormData): Promi
     social_links: socialLinksFrom(parsed.data),
   };
   try {
-    if (logo.file) update.logo_url = await uploadPublicImage("logos", access.org.id, logo.file, 600);
+    if (logo.file) update.logo_url = await uploadPublicImage("logos", access.org.id, logo.file, 600, { keepTransparency: true });
     if (proof.file) update.proof_path = await uploadPrivate("org-proofs", access.user.id, proof.file);
   } catch (e) {
     return fail(e);

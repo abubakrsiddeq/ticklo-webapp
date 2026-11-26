@@ -34,7 +34,8 @@ const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
 
 /** Absolute URL → same-origin proxy so the canvas stays exportable (no CORS taint). */
 export function resolveImageSrc(src: string, values: PlaceholderValues): string | null {
-  const raw = src.trim() === "{{poster}}" ? values.poster : src;
+  const token = /^\{\{\s*(poster|logo)\s*\}\}$/.exec(src.trim());
+  const raw = token ? values[token[1] as "poster" | "logo"] : src;
   if (!raw) return null;
   if (raw.startsWith("/") || raw.startsWith("data:") || raw.startsWith("blob:")) return raw;
   if (/^https?:\/\//i.test(raw)) {
@@ -192,37 +193,56 @@ function extendForBleed(l: { x: number; y: number; width: number; height: number
   return { dx, dy, dw, dh };
 }
 
-function imageContent(K: Konva, l: ImageLayer, opts: BuildOptions, box: { x: number; y: number; w: number; h: number }): KonvaNS.Shape | null {
+function imageContent(K: Konva, l: ImageLayer, opts: BuildOptions, box: { x: number; y: number; w: number; h: number }): KonvaNS.Group | null {
   const url = resolveImageSrc(l.src, opts.values);
   const img = url ? opts.assets.images.get(url) : undefined;
+  const g = new K.Group();
+  const radius = l.cornerRadius ?? 0;
   if (!img) {
+    // Editor only: show where the image will go (e.g. the society has no logo yet)
     if (!opts.placeholders) return null;
-    return new K.Rect({ x: box.x, y: box.y, width: box.w, height: box.h, fill: "#E2E8F0", stroke: "#94A3B8", strokeWidth: 4, dash: [16, 10], cornerRadius: l.cornerRadius ?? 0 });
+    const label = /\{\{\s*logo/.test(l.src) ? "Society logo" : /\{\{\s*poster/.test(l.src) ? "Event poster" : "Image";
+    g.add(new K.Rect({ x: box.x, y: box.y, width: box.w, height: box.h, fill: "#E2E8F0", stroke: "#94A3B8", strokeWidth: 4, dash: [16, 10], cornerRadius: radius }));
+    const fs = Math.max(14, Math.min(box.w / 7, box.h / 3, 40));
+    g.add(new K.Text({ x: box.x, y: box.y + box.h / 2 - fs / 2, width: box.w, text: label, align: "center", fontSize: fs, fontFamily: SYSTEM_BOLD, fontStyle: "bold", fill: "#64748B" }));
+    return g;
   }
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const fit = l.fit ?? "cover";
+  let inner = box;
+  let fit = l.fit ?? "cover";
+  let imgRadius = radius;
+  if (l.plate) {
+    g.add(new K.Rect({ x: box.x, y: box.y, width: box.w, height: box.h, fill: l.plate, cornerRadius: radius }));
+    const pad = Math.min(box.w, box.h) * (radius >= Math.min(box.w, box.h) / 2 - 1 ? 0.2 : 0.12);
+    inner = { x: box.x + pad, y: box.y + pad, w: box.w - pad * 2, h: box.h - pad * 2 };
+    fit = "contain";
+    imgRadius = 0;
+  }
   if (fit === "contain") {
-    const s = Math.min(box.w / iw, box.h / ih);
+    const s = Math.min(inner.w / iw, inner.h / ih);
     const w = iw * s;
     const h = ih * s;
-    return new K.Image({ image: img, x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, width: w, height: h, cornerRadius: l.cornerRadius ?? 0 });
+    g.add(new K.Image({ image: img, x: inner.x + (inner.w - w) / 2, y: inner.y + (inner.h - h) / 2, width: w, height: h, cornerRadius: imgRadius }));
+  } else if (fit === "stretch") {
+    g.add(new K.Image({ image: img, x: inner.x, y: inner.y, width: inner.w, height: inner.h, cornerRadius: imgRadius }));
+  } else {
+    const s = Math.max(inner.w / iw, inner.h / ih);
+    const cw = inner.w / s;
+    const ch = inner.h / s;
+    g.add(
+      new K.Image({
+        image: img,
+        x: inner.x,
+        y: inner.y,
+        width: inner.w,
+        height: inner.h,
+        crop: { x: (iw - cw) / 2, y: (ih - ch) / 2, width: cw, height: ch },
+        cornerRadius: imgRadius,
+      }),
+    );
   }
-  if (fit === "stretch") {
-    return new K.Image({ image: img, x: box.x, y: box.y, width: box.w, height: box.h, cornerRadius: l.cornerRadius ?? 0 });
-  }
-  const s = Math.max(box.w / iw, box.h / ih);
-  const cw = box.w / s;
-  const ch = box.h / s;
-  return new K.Image({
-    image: img,
-    x: box.x,
-    y: box.y,
-    width: box.w,
-    height: box.h,
-    crop: { x: (iw - cw) / 2, y: (ih - ch) / 2, width: cw, height: ch },
-    cornerRadius: l.cornerRadius ?? 0,
-  });
+  return g;
 }
 
 export function textContent(K: Konva, l: Extract<Layer, { type: "text" }>, values: PlaceholderValues) {

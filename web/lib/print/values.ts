@@ -3,16 +3,16 @@ import type { PlaceholderValues } from "./design";
 
 const part = (d: Date, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-GB", { timeZone: PKT_TIME_ZONE, ...options }).format(d);
 
-/** The values for {{event_name}}, {{date}} … of one event + ticket type (Pakistan time). */
+/** The values for {{event_name}}, {{date}}, {{logo}} … of one event + ticket type (Pakistan time). */
 export function printValues(
   event: { name: string; venue: string; starts_at: string; poster_url?: string | null },
-  orgName: string,
+  org: { name: string; logo_url?: string | null },
   ticketType?: { name: string; price_paisa: number } | null,
 ): PlaceholderValues {
   const start = new Date(event.starts_at);
   return {
     event_name: event.name,
-    society: orgName,
+    society: org.name,
     date: formatDate(start),
     day: part(start, { day: "numeric" }),
     month: part(start, { month: "short" }).toUpperCase(),
@@ -23,5 +23,6 @@ export function printValues(
     ticket_type: ticketType?.name ?? "General",
     price: ticketType ? formatPKR(ticketType.price_paisa, { freeLabel: "FREE" }) : "Rs 0",
     poster: event.poster_url ?? undefined,
+    logo: org.logo_url ?? undefined,
   };
 }

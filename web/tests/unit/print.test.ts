@@ -8,7 +8,8 @@ import {
   suggestPrefix,
   type TicketDesign,
 } from "@/lib/print/design";
-import { TEMPLATES, cloneDesign, templateByKey } from "@/lib/print/templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES, TEMPLATES_PER_CATEGORY, cloneDesign, templateByKey } from "@/lib/print/templates";
+import { BRAND_HEIGHT, BRAND_WIDTH, normalizeDesign } from "@/lib/print/design";
 import { layoutPlan, sheetPlan } from "@/lib/print/layout";
 import { qrMatrix, qrRunsPath, SAMPLE_QR_TOKEN } from "@/lib/print/qr-matrix";
 import { TICKET_FONTS, fontById } from "@/lib/print/fonts";
@@ -53,14 +54,40 @@ describe("ticket design rules (PRT-05)", () => {
     expect(designProblems(rotated).map((p) => p.message).join()).toMatch(/rotated/);
   });
 
-  it("needs a visible TickLO logo", () => {
+  it("needs a visible TickLO logo at its fixed size – it can move, not shrink (D-040)", () => {
     const d = base();
     const b = d.layers.find((l) => l.type === "brand")!;
     b.hidden = true;
     expect(designProblems(d).map((p) => p.message).join()).toMatch(/TickLO/);
     b.hidden = false;
-    b.opacity = 0.3;
+    b.opacity = 0.8;
     expect(designProblems(d)).toHaveLength(1);
+    b.opacity = undefined;
+    if (b.type === "brand") {
+      b.width = 200;
+      b.height = 70;
+    }
+    expect(designProblems(d)).toHaveLength(1);
+    const fixed = normalizeDesign(d);
+    const nb = fixed.layers.find((l) => l.type === "brand")!;
+    expect(nb.type === "brand" && [nb.width, nb.height]).toEqual([BRAND_WIDTH, BRAND_HEIGHT]);
+    expect(designProblems(fixed)).toEqual([]);
+    // Moving is fine
+    nb.x = 40;
+    nb.y = 20;
+    expect(designProblems(fixed)).toEqual([]);
+  });
+
+  it("has 6 templates in every category, unique keys, logo slot in modern ones", () => {
+    for (const c of TEMPLATE_CATEGORIES) expect(TEMPLATES.filter((t) => t.category === c.key), c.key).toHaveLength(TEMPLATES_PER_CATEGORY);
+    expect(new Set(TEMPLATES.map((t) => t.key)).size).toBe(TEMPLATES.length);
+    for (const t of TEMPLATES) {
+      const b = t.design.layers.find((l) => l.type === "brand");
+      expect(b && b.type === "brand" && [b.width, b.height], t.key).toEqual([BRAND_WIDTH, BRAND_HEIGHT]);
+    }
+    const modern = TEMPLATES.filter((t) => /-(split|boarding|glass|diagonal|bigtype|minimal)$/.test(t.key));
+    expect(modern.length).toBeGreaterThanOrEqual(80);
+    for (const t of modern) expect(t.design.layers.some((l) => l.type === "image" && l.src === "{{logo}}"), t.key).toBe(true);
   });
 
   it("rejects damaged JSON", () => {

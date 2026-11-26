@@ -18,7 +18,7 @@ const design = (over: Record<string, unknown> = {}, qr: Record<string, unknown> 
   layers: [
     { id: "t", type: "text", x: 40, y: 40, width: 800, text: "{{event_name}}", fontSize: 60 },
     { id: "qr", type: "qr", x: 1400, y: 150, size: 300, ...qr },
-    { id: "brand", type: "brand", x: 40, y: 560, width: 300, height: 60, ...brand },
+    { id: "brand", type: "brand", x: 40, y: 540, width: 290, height: 102, ...brand },
   ],
   ...over,
 });
@@ -89,17 +89,22 @@ describe("printed tickets (PRT-02 .. PRT-04)", () => {
 
   it("refuses designs without the QR or the TickLO logo", async () => {
     const { eventId, typeIds } = await createEvent(c, [{ quantity: 10 }]);
-    const noQr = design({ layers: [{ id: "brand", type: "brand", x: 40, y: 560, width: 300, height: 60 }] });
+    const noQr = design({ layers: [{ id: "brand", type: "brand", x: 40, y: 540, width: 290, height: 102 }] });
     await expectTL(createBatch(eventId, typeIds[0], 1, { d: noQr }), "INVALID_DESIGN");
     const noBrand = design({ layers: [{ id: "qr", type: "qr", x: 1400, y: 150, size: 300 }] });
     await expectTL(createBatch(eventId, typeIds[0], 1, { d: noBrand }), "INVALID_DESIGN");
     await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, { size: 120 }) }), "INVALID_DESIGN");
     await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, { x: 1700 }) }), "INVALID_DESIGN");
     await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, { hidden: true }) }), "INVALID_DESIGN");
-    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { width: 100 }) }), "INVALID_DESIGN");
-    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { opacity: 0.2 }) }), "INVALID_DESIGN");
+    // TickLO logo: fixed size, full opacity – it can only move (D-040)
+    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { width: 200, height: 70 }) }), "INVALID_DESIGN");
+    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { width: 250 }) }), "INVALID_DESIGN");
+    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { opacity: 0.8 }) }), "INVALID_DESIGN");
+    await expectTL(createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { x: 1600 }) }), "INVALID_DESIGN");
+    const moved = await createBatch(eventId, typeIds[0], 1, { d: design({}, {}, { x: 700, y: 20 }) });
+    expect(moved.quantity).toBe(1);
     const t = await c.query("select count(*)::int n from public.tickets where event_id = $1", [eventId]);
-    expect(t.rows[0].n).toBe(0);
+    expect(t.rows[0].n).toBe(1); // only the batch with the moved (not shrunk) logo
   });
 
   it("locks the price once tickets are printed", async () => {

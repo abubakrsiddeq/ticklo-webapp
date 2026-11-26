@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
-  BRAND_HEIGHT_RATIO,
-  MIN_BRAND_WIDTH,
   MIN_QR_SIZE,
   drawOrder,
   layerBox,
@@ -258,11 +256,16 @@ function configureTransformer(tr: Transformer, layer: Layer, scale: number) {
   let rotate = true;
   let keepRatio = false;
   let min = 20;
-  if (layer.type === "qr" || layer.type === "brand") {
+  if (layer.type === "brand") {
+    // "Ticket partner: TickLO" has a fixed size – it can only be moved (D-040)
+    tr.setAttrs({ enabledAnchors: [], rotateEnabled: false, resizeEnabled: false, keepRatio: true });
+    return;
+  }
+  if (layer.type === "qr") {
     anchors = CORNERS;
     rotate = false;
     keepRatio = true;
-    min = layer.type === "qr" ? MIN_QR_SIZE : MIN_BRAND_WIDTH;
+    min = MIN_QR_SIZE;
   } else if (layer.type === "text") {
     anchors = ["middle-left", "middle-right", ...CORNERS];
     keepRatio = true;
@@ -289,10 +292,8 @@ function resized(layer: Layer, sx: number, sy: number, anchor: string | null): L
     }
     case "qr":
       return { ...layer, size: Math.round(Math.max(MIN_QR_SIZE, layer.size * sx)) };
-    case "brand": {
-      const width = Math.round(Math.max(MIN_BRAND_WIDTH, layer.width * sx));
-      return { ...layer, width, height: Math.round(width * BRAND_HEIGHT_RATIO) };
-    }
+    case "brand":
+      return layer; // fixed size
     case "line":
       return { ...layer, width: r(layer.width * sx) };
     default:

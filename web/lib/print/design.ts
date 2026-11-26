@@ -11,14 +11,17 @@ import { z } from "zod";
  *
  * Rules (also checked in Postgres → print_design_problem):
  *  - exactly one QR layer, at least 20 mm, not rotated, fully on the ticket
- *  - at least one "Ticket partner: TickLO" (brand) layer, at least 18 mm wide
+ *  - at least one "Ticket partner: TickLO" (brand) layer at its fixed size (29 mm wide, full
+ *    opacity) – it can be moved, never made smaller (owner rule, D-040)
  *  - QR and brand layers are always drawn on top of everything else
  */
 
 export const UNITS_PER_MM = 10;
 export const MIN_QR_SIZE = 200; // 20 mm
-export const MIN_BRAND_WIDTH = 180; // 18 mm
 export const BRAND_HEIGHT_RATIO = 0.35; // brand layer height = width × ratio
+/** "Ticket partner: TickLO" has one fixed size on every ticket: 29 × 10.2 mm. */
+export const BRAND_WIDTH = 290;
+export const BRAND_HEIGHT = Math.round(BRAND_WIDTH * BRAND_HEIGHT_RATIO);
 export const QR_CAPTION_RATIO = 0.17; // serial caption under the QR (height = size × ratio)
 export const MAX_LAYERS = 300;
 
@@ -63,11 +66,13 @@ export interface TextLayer extends Base {
 
 export interface ImageLayer extends Base {
   type: "image";
-  src: string; // https URL, "/…" path, or "{{poster}}"
+  src: string; // https URL, "/…" path, "{{poster}}" (event poster) or "{{logo}}" (society logo)
   width: number;
   height: number;
   fit?: "cover" | "contain" | "stretch";
   cornerRadius?: number;
+  /** Coloured plate behind the image (e.g. white circle behind a logo); drawn only when the image exists. */
+  plate?: string;
 }
 
 export interface RectLayer extends Base {
@@ -122,7 +127,7 @@ export interface QrLayer extends Base {
 export interface BrandLayer extends Base {
   type: "brand";
   width: number;
-  height: number; // always width × BRAND_HEIGHT_RATIO
+  height: number; // always BRAND_HEIGHT
   variant?: "light" | "dark"; // light = for light backgrounds (navy logo); dark = white logo
 }
 
@@ -158,7 +163,7 @@ export const PLACEHOLDERS = [
 ] as const;
 
 export type PlaceholderKey = (typeof PLACEHOLDERS)[number]["key"];
-export type PlaceholderValues = Partial<Record<PlaceholderKey | "poster", string>>;
+export type PlaceholderValues = Partial<Record<PlaceholderKey | "poster" | "logo", string>>;
 
 /** Placeholders that are different on every ticket. */
 export const PER_TICKET_KEYS: ReadonlySet<string> = new Set(["serial", "code"]);
@@ -232,6 +237,7 @@ const layerSchema = z.discriminatedUnion("type", [
     height: size,
     fit: z.enum(["cover", "contain", "stretch"]).optional(),
     cornerRadius: z.number().min(0).max(3000).optional(),
+    plate: colour.optional(),
   }),
   z.object({
     ...base,
@@ -265,7 +271,7 @@ const layerSchema = z.discriminatedUnion("type", [
   z.object({
     ...base,
     type: z.literal("path"),
-    data: z.string().max(20000),
+    data: z.string().max(40000),
     viewBox: z.tuple([z.number().positive(), z.number().positive()]),
     width: size,
     height: size,
@@ -329,8 +335,9 @@ export function designProblems(design: unknown): DesignProblem[] {
   const brandOk = brands.some(
     (b) =>
       !b.hidden &&
-      b.width >= MIN_BRAND_WIDTH &&
-      (b.opacity ?? 1) >= 0.6 &&
+      Math.abs(b.width - BRAND_WIDTH) <= 1 &&
+      Math.abs(b.height - BRAND_HEIGHT) <= 2 &&
+      (b.opacity ?? 1) >= 0.99 &&
       (b.rotation ?? 0) === 0 &&
       b.x >= 0 &&
       b.y >= 0 &&
@@ -340,7 +347,7 @@ export function designProblems(design: unknown): DesignProblem[] {
   if (!brandOk) {
     problems.push({
       layerId: brands[0]?.id,
-      message: 'The "Ticket partner: TickLO" logo must be on the ticket (at least 18 mm wide, fully visible).',
+      message: 'The "Ticket partner: TickLO" logo must be on the ticket at its normal size (29 mm wide) and fully visible. You can move it, not shrink it.',
     });
   }
   return problems;
@@ -349,6 +356,29 @@ export function designProblems(design: unknown): DesignProblem[] {
 export function parseDesign(input: unknown): TicketDesign | null {
   const parsed = designSchema.safeParse(input);
   return parsed.success ? (parsed.data as TicketDesign) : null;
+}
+
+/**
+ * Put every "Ticket partner: TickLO" layer back to its fixed size (keeps its position, kept on
+ * the ticket). Used when a design is loaded into the editor (old saved designs, templates).
+ */
+export function normalizeDesign(d: TicketDesign): TicketDesign {
+  return {
+    ...d,
+    layers: d.layers.map((l) => {
+      if (l.type !== "brand") return l;
+      return {
+        ...l,
+        width: BRAND_WIDTH,
+        height: BRAND_HEIGHT,
+        opacity: undefined,
+        rotation: undefined,
+        hidden: undefined,
+        x: Math.round(Math.min(Math.max(0, l.x), d.width - BRAND_WIDTH)),
+        y: Math.round(Math.min(Math.max(0, l.y), d.height - BRAND_HEIGHT)),
+      };
+    }),
+  };
 }
 
 /** QR and brand layers can't be deleted (the editor hides the delete button). */

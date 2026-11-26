@@ -23,8 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/native-select";
 import {
-  BRAND_HEIGHT_RATIO,
-  MIN_BRAND_WIDTH,
   MIN_QR_SIZE,
   PLACEHOLDERS,
   isProtected,
@@ -270,6 +268,11 @@ export function PropertiesPanel({
             <Button type="button" size="sm" variant="outline" onClick={onReplaceImage}>
               <ImageUp /> Replace image
             </Button>
+            {layer.src !== "{{logo}}" ? (
+              <Button type="button" size="sm" variant="ghost" onClick={() => set({ src: "{{logo}}", fit: "contain" })}>
+                Use society logo
+              </Button>
+            ) : null}
             {canUsePoster && layer.src !== "{{poster}}" ? (
               <Button type="button" size="sm" variant="ghost" onClick={() => set({ src: "{{poster}}" })}>
                 Use event poster
@@ -286,6 +289,17 @@ export function PropertiesPanel({
           <Row label="Corners">
             <NumberField label="Corner radius" value={mm(layer.cornerRadius ?? 0)} step={0.5} min={0} suffix="mm" onChange={(v) => set({ cornerRadius: Math.max(0, v * 10) })} />
           </Row>
+          <Row label="Plate">
+            <div className="grid grid-cols-[auto_1fr] items-center gap-2">
+              <Toggle pressed={Boolean(layer.plate)} onClick={() => set({ plate: layer.plate ? undefined : "#FFFFFF" })} label="Coloured plate behind the image">
+                {layer.plate ? "On" : "Off"}
+              </Toggle>
+              {layer.plate ? <ColorField label="Plate colour" value={layer.plate} onChange={(v) => set({ plate: v })} /> : <span className="text-xs text-muted-foreground">e.g. white circle behind a logo</span>}
+            </div>
+          </Row>
+          {layer.src === "{{logo}}" ? (
+            <p className="text-xs text-muted-foreground">Shows your society logo (Settings → logo). If there is no logo, nothing is printed here.</p>
+          ) : null}
         </div>
       ) : null}
 
@@ -307,7 +321,10 @@ export function PropertiesPanel({
 
       {layer.type === "brand" ? (
         <div className="grid gap-2">
-          <p className="rounded-lg bg-brand-soft p-2 text-xs text-brand-strong">&quot;Ticket partner: TickLO&quot; is on every TickLO ticket. You can move and resize it.</p>
+          <p className="rounded-lg bg-brand-soft p-2 text-xs text-brand-strong">
+            &quot;Ticket partner: TickLO&quot; is on every TickLO ticket at a fixed size (29 mm). You can move it anywhere on the ticket and pick the version that is
+            readable on your background.
+          </p>
           <Row label="Version">
             <NativeSelect aria-label="Logo version" value={layer.variant ?? "light"} className="h-9 text-sm" onChange={(e) => set({ variant: e.target.value as "light" | "dark" })}>
               <option value="light">For light backgrounds</option>
@@ -326,6 +343,7 @@ export function PropertiesPanel({
           <Row label="Y" className="grid-cols-[20px_1fr]">
             <NumberField label="Y position" value={mm(layer.y)} step={0.5} suffix="mm" onChange={(v) => set({ y: Math.round(v * 10) })} />
           </Row>
+          {layer.type !== "brand" ? (
           <Row label="W" className="grid-cols-[20px_1fr]">
             <NumberField
               label="Width"
@@ -335,13 +353,11 @@ export function PropertiesPanel({
               onChange={(v) => {
                 const u = Math.round(v * 10);
                 if (layer.type === "qr") set({ size: Math.max(MIN_QR_SIZE, u) } as LayerPatch);
-                else if (layer.type === "brand") {
-                  const w = Math.max(MIN_BRAND_WIDTH, u);
-                  set({ width: w, height: Math.round(w * BRAND_HEIGHT_RATIO) });
-                } else set({ width: Math.max(1, u) });
+                else set({ width: Math.max(1, u) });
               }}
             />
           </Row>
+          ) : null}
           {layer.type !== "text" && layer.type !== "line" && layer.type !== "qr" && layer.type !== "brand" ? (
             <Row label="H" className="grid-cols-[20px_1fr]">
               <NumberField label="Height" value={mm(layer.height)} step={0.5} suffix="mm" onChange={(v) => set({ height: Math.max(1, Math.round(v * 10)) })} />
@@ -353,6 +369,7 @@ export function PropertiesPanel({
             <NumberField label="Rotation" value={layer.rotation ?? 0} step={5} suffix="°" onChange={(v) => set({ rotation: v })} />
           </Row>
         ) : null}
+        {layer.type !== "brand" ? (
         <Row label="Opacity">
           <input
             type="range"
@@ -364,6 +381,7 @@ export function PropertiesPanel({
             className="w-full accent-[#0F9D58]"
           />
         </Row>
+        ) : null}
         {!protectedLayer ? (
           <Row label="Order">
             <div className="flex gap-1">

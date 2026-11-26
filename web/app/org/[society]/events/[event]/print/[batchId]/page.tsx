@@ -31,7 +31,7 @@ export default async function PrintBatchPage({
   if (!detail) notFound();
   const { batch, tickets } = detail;
   const design = parseDesign(batch.design);
-  const values = printValues(event, org.name, batch.ticket_types);
+  const values = printValues(event, org, batch.ticket_types);
   const base = `/org/${org.slug}/events/${event.slug}/print`;
   const first = tickets[0]?.serial ?? "";
   const last = tickets[tickets.length - 1]?.serial ?? "";

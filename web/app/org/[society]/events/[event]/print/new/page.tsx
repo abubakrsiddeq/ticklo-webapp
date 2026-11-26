@@ -36,7 +36,7 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
           name: t.name,
           price_paisa: t.price_paisa,
           remaining: t.remaining,
-          values: printValues(event, org.name, t),
+          values: printValues(event, org, t),
         }))}
       />
     </div>

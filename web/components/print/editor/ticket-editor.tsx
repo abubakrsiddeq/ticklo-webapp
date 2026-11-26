@@ -36,6 +36,7 @@ import {
   designProblems,
   isProtected,
   newLayerId,
+  normalizeDesign,
   type Layer,
   type PlaceholderValues,
   type TicketDesign,
@@ -68,7 +69,7 @@ export function TicketEditor({
   orgSlug: string;
   onDesignChange: (d: TicketDesign) => void;
 }) {
-  const history = useHistory(initialDesign);
+  const history = useHistory(normalizeDesign(initialDesign));
   const design = history.value;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -293,6 +294,16 @@ export function TicketEditor({
           }}
         >
           {uploading ? <Loader2 className="animate-spin" /> : <ImageIcon />} Image
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (!values.logo) toast.info("Your society has no logo yet – add it in Settings. The box stays empty until then.");
+            addLayer({ id: newLayerId(), type: "image", src: "{{logo}}", x: 60, y: 60, width: 150, height: 150, fit: "contain", cornerRadius: 75, plate: "#FFFFFF", name: "Society logo" });
+          }}
+        >
+          + Society logo
         </Button>
         {values.poster ? (
           <Button
