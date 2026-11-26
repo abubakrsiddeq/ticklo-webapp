@@ -208,5 +208,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 - **Apply migration `20261126000900_admin_roles.sql` to the TICkLO project** – the role buttons
   fail until then: `supabase db push` (or `supabase db query --linked -f` + record the version,
   D-034). Your own admin account is already created; change its temporary password after login.
+- Optional speed-up: the Supabase project is in Seoul. When creating the production project,
+  pick **Mumbai (ap-south-1)** – every database query gets ~2x faster from Pakistan (D-038).
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
   limit, privacy/terms author, pilot society).

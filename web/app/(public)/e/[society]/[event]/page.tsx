@@ -51,10 +51,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function EventPage({ params }: { params: Promise<Params> }) {
   const { society, event: eventSlug } = await params;
-  const data = await getEventPage(society, eventSlug);
+  const [data, user] = await Promise.all([getEventPage(society, eventSlug), getCurrentUser()]);
   if (!data) notFound();
   const { event, org, ticketTypes } = data;
-  const user = await getCurrentUser();
 
   const now = serverNow();
   const started = new Date(event.starts_at).getTime() <= now;

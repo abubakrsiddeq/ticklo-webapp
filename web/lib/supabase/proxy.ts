@@ -24,7 +24,8 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Do not remove: this call refreshes an expired access token.
-  await supabase.auth.getUser();
+  // Do not remove: refreshes an expired access token. getClaims() verifies the
+  // JWT locally (ES256 signing keys), so a valid session costs no network call (D-038).
+  await supabase.auth.getClaims();
   return response;
 }

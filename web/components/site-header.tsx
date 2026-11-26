@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UserMenu, type UserMenuOrg } from "@/components/user-menu";
 import { HeaderNav, MobileMenu, type NavItem } from "@/components/header-nav";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -19,10 +20,40 @@ async function loadMenuData(userId: string) {
   return { orgs, canScan: (scanEvents ?? []).length > 0 };
 }
 
-/** Floating pill header (glass), sticky on scroll. */
-export async function SiteHeader() {
-  const user = isSupabaseConfigured ? await getCurrentUser() : null;
-  const menu = user ? await loadMenuData(user.id) : null;
+const shellClass =
+  "mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 rounded-full bg-white/85 pr-2 pl-5 shadow-pill ring-1 ring-navy/[0.06] backdrop-blur-xl supports-[backdrop-filter]:bg-white/70";
+
+/**
+ * Floating pill header (glass), sticky on scroll. Streams in: the shell shows
+ * at once and the signed-in part fills in, so it never holds a page back (D-038).
+ */
+export function SiteHeader() {
+  return (
+    <Suspense fallback={<SiteHeaderShell />}>
+      <SiteHeaderContent />
+    </Suspense>
+  );
+}
+
+/** Same pill without the user parts – shown while the header loads and in loading.tsx skeletons. */
+export function SiteHeaderShell() {
+  return (
+    <header className="no-print sticky top-0 z-50 px-3 pt-3 sm:px-4">
+      <div className={shellClass}>
+        <Logo height={30} />
+        <HeaderNav items={[{ href: "/events", label: "Events" }]} />
+        <div className="flex items-center gap-1.5 pr-1" aria-hidden>
+          <span className="size-9 animate-pulse rounded-full bg-secondary" />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+async function SiteHeaderContent() {
+  const session = isSupabaseConfigured ? await getSession() : null;
+  // Profile and menu data in parallel (the user id comes from the verified JWT).
+  const [user, menu] = session ? await Promise.all([getCurrentUser(), loadMenuData(session.id)]) : [null, null];
 
   const items: NavItem[] = [
     { href: "/events", label: "Events" },
@@ -35,7 +66,7 @@ export async function SiteHeader() {
 
   return (
     <header className="no-print sticky top-0 z-50 px-3 pt-3 sm:px-4">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 rounded-full bg-white/85 pr-2 pl-5 shadow-pill ring-1 ring-navy/[0.06] backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
+      <div className={shellClass}>
         <Logo height={30} />
         <HeaderNav items={items} />
         <div className="flex items-center gap-1.5">

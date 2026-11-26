@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { Poster } from "@/components/poster";
 import { InstallHint } from "@/components/install-hint";
-import { requireUser } from "@/lib/auth";
+import { getSession, requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/queries/orders";
 import { formatEventRange, formatPKR } from "@/lib/format";
@@ -18,9 +18,11 @@ export const metadata: Metadata = { title: "My tickets", robots: { index: false 
 // TKT-01: upcoming and past tickets, with event, date, ticket type, status
 export default async function MyTicketsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const user = await requireUser("/me/tickets");
+  // The user id comes from the verified session, so the lists load alongside the profile check (D-038).
+  const session = (await getSession()) ?? (await requireUser("/me/tickets"));
   const supabase = await createClient();
-  const [{ data: tickets }, { data: orders }] = await Promise.all([
+  const [, { data: tickets }, { data: orders }] = await Promise.all([
+    requireUser("/me/tickets"), // still blocks suspended accounts
     supabase
       .from("tickets")
       .select(
@@ -28,12 +30,12 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
          ticket_types!inner ( name ),
          events!inner ( id, name, slug, starts_at, ends_at, venue, status, poster_url, organizations!inner ( slug, name ) )`,
       )
-      .eq("owner_id", user.id)
+      .eq("owner_id", session.id)
       .order("created_at", { ascending: true }),
     supabase
       .from("orders")
       .select("id, ref_code, status, total_paisa, hold_expires_at, created_at, events!inner ( name, ends_at )")
-      .eq("user_id", user.id)
+      .eq("user_id", session.id)
       .in("status", ["awaiting_payment", "under_review", "rejected"])
       .order("created_at", { ascending: false }),
   ]);

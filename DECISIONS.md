@@ -235,3 +235,23 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
   for that society's events. Every change is in the audit log.
 - Real admin accounts are created with `web/scripts/create-admin.mjs` (service role). Supabase
   Auth on the hosted project needs passwords of 8+ characters.
+
+## D-038 Fast page changes
+- Problem: the Supabase project is in Seoul (ap-northeast-2); each round trip took 300–900 ms
+  from Pakistan, and every click made ~4 of them one after another (proxy `getUser`, page
+  `getUser`, profile, header menu), with no `loading.tsx` – the old page sat frozen ~1.3–1.9 s.
+- The project signs JWTs with ES256, so `proxy.ts` and `getSession()` (lib/auth.ts) use
+  `auth.getClaims()`: the token is verified locally with the cached public key – no network
+  call for a valid session. Expired tokens are still refreshed in the proxy. Suspended users are
+  still blocked by `profiles.is_suspended` (checked in `requireUser` and RLS).
+- Profile + header menu, society + membership, event + access check, event page + user, and
+  My tickets lists now load in parallel.
+- `SiteHeader` streams inside `<Suspense>` with a matching shell, and `loading.tsx` skeletons
+  sit at each level (root, public, event page, me, ticket, org, society, event dashboard, admin,
+  checkout, invite, scan): the new page appears on click and fills in when the data arrives.
+- `experimental.staleTimes.dynamic = 30` – pages visited in the last 30 s reopen instantly;
+  Server Actions already `revalidatePath` / `router.refresh`, which clears that cache.
+- Measured on the production build, logged in: first paint ~20 ms (was 1.3–1.9 s), full page
+  0.35–0.9 s.
+- Moving the Supabase project closer (e.g. Mumbai ap-south-1) would cut every remaining query
+  roughly in half; that needs a new project + data move, so it is listed for Abubakar.

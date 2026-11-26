@@ -45,6 +45,10 @@ const nextConfig = {
     formats: ["image/webp"],
   },
   experimental: {
+    // Reuse a page the browser already loaded for 30 s (back/forward and tab
+    // switches feel instant). Server Actions call revalidatePath / router.refresh,
+    // which clears this cache, so changes still show at once (D-038).
+    staleTimes: { dynamic: 30, static: 300 },
     // proxy.ts buffers request bodies (default 10 MB); uploads can be ~10 MB.
     proxyClientMaxBodySize: "12mb",
     serverActions: {
