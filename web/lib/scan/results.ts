@@ -17,7 +17,7 @@ export interface ScanView {
   card?: boolean;
 }
 
-/** SCN-04 wording. Expired codes (e.g. screenshots) show "Not valid here" (acceptance criteria). */
+/** SCN-04 wording. "expired_code" only happens for legacy rotating (T1) tokens. */
 export function describeScan(r: ScanResponse): ScanView {
   switch (r.result) {
     case "ok":

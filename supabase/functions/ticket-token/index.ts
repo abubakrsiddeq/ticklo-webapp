@@ -1,18 +1,18 @@
 /**
- * ticket-token – issues a fresh signed QR token for a ticket (TKT-02).
+ * ticket-token – returns the ticket's fixed signed QR token (D-037).
  *
  * POST { "ticket_id": "<uuid>" }  with  Authorization: Bearer <user JWT>
  *
- * 200 { status: "valid", token, issued_at, refresh_in: 30, valid_for: 60, server_time }
+ * 200 { status: "valid", token, static: true }
  * 200 { status: "checked_in", checked_in_at }   – ticket already used (TKT-04)
  * 200 { status: "cancelled" }                   – event cancelled
  * 401 not signed in · 404 not your ticket · 403 suspended
  *
- * The QR signing key (QR_SIGNING_SECRET) exists only in this runtime (NFR-06).
+ * QR_SIGNING_SECRET is shared with the web server (D-037) so emails can carry the QR.
  * Used by the web app now and by the Flutter app later.
  */
-import { admin, getUser, json, nowSeconds, preflight, readJson, env } from "../_shared/http.ts";
-import { isUuid, QR_MAX_AGE_SECONDS, QR_ROTATE_SECONDS, signTicketToken } from "../_shared/qr-token.ts";
+import { admin, getUser, json, preflight, readJson, env } from "../_shared/http.ts";
+import { isUuid, signStaticTicketToken } from "../_shared/qr-token.ts";
 
 Deno.serve(async (req) => {
   const early = preflight(req);
@@ -45,16 +45,8 @@ Deno.serve(async (req) => {
       return json({ status: ticket.status });
     }
 
-    const now = nowSeconds();
-    const token = await signTicketToken(ticket.id, now, env("QR_SIGNING_SECRET"));
-    return json({
-      status: "valid",
-      token,
-      issued_at: now,
-      server_time: now,
-      refresh_in: QR_ROTATE_SECONDS,
-      valid_for: QR_MAX_AGE_SECONDS,
-    });
+    const token = await signStaticTicketToken(ticket.id, env("QR_SIGNING_SECRET"));
+    return json({ status: "valid", token, static: true });
   } catch (e) {
     console.error("ticket-token error", e);
     return json({ error: "server_error" }, 500);

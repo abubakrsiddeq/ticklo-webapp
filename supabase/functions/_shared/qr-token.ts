@@ -1,5 +1,16 @@
 /**
- * TickLO rotating QR tokens (TKT-02, SCN-03, NFR-06, business rule 8).
+ * TickLO QR tokens.
+ *
+ * CURRENT (D-037): one fixed QR per ticket – works without internet at the venue
+ * and is sent by email:
+ *
+ *   T2.<ticket id: 16 bytes base64url>.<HMAC-SHA256("T2.<id>"), first 16 bytes, base64url>
+ *
+ * A copied QR still enters only once: check-in is an atomic "valid → checked_in"
+ * update, so the second scan of any copy shows "Already used".
+ *
+ * LEGACY (T1, original v1 design – still verifiable, no longer issued):
+ * rotating tokens (TKT-02, SCN-03, NFR-06, business rule 8).
  *
  * Format (≈56 chars, keeps the QR code small and fast to scan):
  *
@@ -15,6 +26,7 @@
  */
 
 export const QR_TOKEN_VERSION = "T1";
+export const QR_STATIC_VERSION = "T2";
 export const QR_ROTATE_SECONDS = 30;
 export const QR_MAX_AGE_SECONDS = 60;
 export const QR_MAX_FUTURE_SKEW_SECONDS = 5;
@@ -99,6 +111,14 @@ export async function signTicketToken(ticketId: string, issuedAtSeconds: number,
   return `${payload}.${base64UrlEncode(signature)}`;
 }
 
+/** Fixed QR token for a ticket (D-037). Same input → same token. */
+export async function signStaticTicketToken(ticketId: string, secret: string): Promise<string> {
+  assertSecret(secret);
+  const payload = `${QR_STATIC_VERSION}.${base64UrlEncode(uuidToBytes(ticketId))}`;
+  const signature = await signPayload(payload, secret);
+  return `${payload}.${base64UrlEncode(signature)}`;
+}
+
 export type TokenFailureReason = "malformed" | "bad_signature" | "expired" | "not_yet_valid";
 
 export type VerifyTokenResult =
@@ -126,6 +146,20 @@ export async function verifyTicketToken(
 
   if (typeof token !== "string" || token.length > 200) return { ok: false, reason: "malformed" };
   const parts = token.trim().split(".");
+
+  // Fixed per-ticket token (D-037): signature only, no expiry.
+  if (parts.length === 3 && parts[0] === QR_STATIC_VERSION) {
+    const [v, idPart, sigPart] = parts;
+    const idBytes = base64UrlDecode(idPart);
+    const signature = base64UrlDecode(sigPart);
+    if (!idBytes || idBytes.length !== 16 || !signature || signature.length !== SIGNATURE_BYTES) {
+      return { ok: false, reason: "malformed" };
+    }
+    const expected = await signPayload(`${v}.${idPart}`, secret);
+    if (!constantTimeEqual(signature, expected)) return { ok: false, reason: "bad_signature" };
+    return { ok: true, ticketId: bytesToUuid(idBytes), issuedAt: 0, ageSeconds: 0 };
+  }
+
   if (parts.length !== 4 || parts[0] !== QR_TOKEN_VERSION) return { ok: false, reason: "malformed" };
 
   const [version, idPart, timePart, sigPart] = parts;

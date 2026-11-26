@@ -12,6 +12,8 @@ export interface EmailMessage {
   /** Short template name for the email log, e.g. "order-confirmed" */
   template: string;
   related?: { type: string; id: string };
+  /** Files; give `contentId` to show an image inline with <img src="cid:…"> */
+  attachments?: { filename: string; content: Buffer; contentType?: string; contentId?: string }[];
 }
 
 let resend: Resend | null = null;
@@ -50,7 +52,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
   try {
     const [html, text] = await Promise.all([render(msg.react), render(msg.react, { plainText: true })]);
     if (!serverEnv.resendApiKey) {
-      console.info(`\n[email → console] to=${msg.to} | ${msg.subject}\n${text}\n`);
+      console.info(`\n[email → console] to=${msg.to} | ${msg.subject}${msg.attachments?.length ? ` | ${msg.attachments.length} attachment(s)` : ""}\n${text}\n`);
       await log(msg, "logged");
       return { ok: true };
     }
@@ -60,6 +62,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
       subject: msg.subject,
       html,
       text,
+      attachments: msg.attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType, contentId: a.contentId })),
     });
     if (error) throw new Error(error.message);
     await log(msg, "sent", { providerId: data?.id });

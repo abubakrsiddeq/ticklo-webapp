@@ -143,6 +143,15 @@ Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
   RPC functions, which check permissions themselves; leaked-password protection is an
   account setting).
 
+## Change 2026-11-26: fixed QR per ticket (D-037)
+- Rotating QR removed on request (no internet at venues). Ticket page shows one fixed signed QR
+  (download button, works offline); confirmation email carries each ticket's QR (inline + PNG).
+- Scanner unchanged for users; each ticket still enters only once (atomic check-in).
+- **Hostinger:** add env var `QR_SIGNING_SECRET` (value is in `env.txt`, same as the Supabase
+  secret) and redeploy – without it the ticket page shows "QR code is not available".
+- Staging now holds real data (seed accounts removed), so `npm run smoke:remote` cannot run there
+  anymore; it needs a project with `seed.sql` loaded.
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.

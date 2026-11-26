@@ -11,7 +11,7 @@ export default function TermsPage() {
       <ol className="grid list-decimal gap-3 pl-6 leading-relaxed text-slate-700">
         <li>TickLO is a platform that connects students with university societies. Each event is organised by the society, not by TickLO.</li>
         <li>You pay the society directly. TickLO charges no fees and is not responsible for refunds; contact the society for any payment issue.</li>
-        <li>Tickets are personal. The live QR code changes every 30 seconds; screenshots and copies are not valid at the gate.</li>
+        <li>Tickets are personal. Each ticket QR can be scanned only once – whoever is scanned first gets in, so never share your QR.</li>
         <li>Uploading fake or reused payment screenshots is fraud. Such accounts may be suspended and reported to the society.</li>
         <li>Societies must provide true information, honour the tickets they approve, and handle refunds for cancelled events.</li>
         <li>TickLO may suspend accounts or remove events that break these terms.</li>

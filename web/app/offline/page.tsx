@@ -12,7 +12,7 @@ export default function OfflinePage() {
       <WifiOff className="mb-4 size-12 text-muted-foreground" aria-hidden />
       <h1 className="text-2xl font-bold text-navy">You&apos;re offline</h1>
       <p className="mt-2 text-muted-foreground">
-        TickLO needs internet. Your live QR ticket changes every 30 seconds, so it can only be shown online. Connect to Wi-Fi or mobile data and try again.
+        This page needs internet. Your ticket QR still works offline – open it from your confirmation email or the QR image you downloaded.
       </p>
     </main>
   );

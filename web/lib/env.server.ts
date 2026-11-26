@@ -7,4 +7,6 @@ export const serverEnv = {
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   emailFrom: process.env.EMAIL_FROM ?? "TickLO <onboarding@resend.dev>",
   cronSecret: process.env.CRON_SECRET ?? "",
+  /** Same value as the Edge Function secret QR_SIGNING_SECRET (D-037). */
+  qrSigningSecret: process.env.QR_SIGNING_SECRET ?? "",
 };

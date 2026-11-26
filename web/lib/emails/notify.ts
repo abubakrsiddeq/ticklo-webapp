@@ -4,6 +4,7 @@ import { absoluteUrl, dashboardEventPath, dashboardPath, eventPath } from "@/lib
 import { formatDateTime, formatEventRange, formatPKR } from "@/lib/format";
 import { sendEmail, sendEmails, type EmailMessage } from "@/lib/emails/send";
 import { accountLabel } from "@/lib/payments/accounts";
+import { ticketQrPng } from "@/lib/qr";
 import PaymentInstructionsEmail from "@/emails/payment-instructions";
 import OrderConfirmedEmail from "@/emails/order-confirmed";
 import PaymentRejectedEmail from "@/emails/payment-rejected";
@@ -66,12 +67,26 @@ export async function notifyPaymentInstructions(orderId: string) {
   }
 }
 
-/** EML-03 (also used for free tickets) */
+/** EML-03 (also used for free tickets) – carries every ticket's QR (D-037). */
 export async function notifyOrderConfirmed(orderId: string) {
   try {
     const order = await loadOrder(orderId);
     if (!order?.buyer_email || order.status !== "approved") return;
+    const { data: tickets } = await createAdminClient()
+      .from("tickets")
+      .select("id, code, ticket_types!inner ( name )")
+      .eq("order_id", order.id)
+      .order("created_at");
+    const qrTickets: { code: string; type: string; cid: string | null }[] = [];
+    const attachments: { filename: string; content: Buffer; contentType: string; contentId: string }[] = [];
+    for (const t of tickets ?? []) {
+      const png = await ticketQrPng(t.id, 480);
+      const cid = `qr-${t.code.toLowerCase()}`;
+      if (png) attachments.push({ filename: `ticklo-ticket-${t.code}.png`, content: png, contentType: "image/png", contentId: cid });
+      qrTickets.push({ code: t.code, type: t.ticket_types.name, cid: png ? cid : null });
+    }
     await sendEmail({
+      attachments,
       to: order.buyer_email,
       subject: `Your tickets for ${order.events.name} are ready`,
       template: "order-confirmed",
@@ -85,6 +100,7 @@ export async function notifyOrderConfirmed(orderId: string) {
         ticketCount: order.ticket_count,
         ticketsUrl: absoluteUrl("/me/tickets"),
         requiresCard: order.requires_student_card,
+        tickets: qrTickets,
       }),
     });
   } catch (e) {

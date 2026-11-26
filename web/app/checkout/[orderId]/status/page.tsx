@@ -40,7 +40,7 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ or
       icon: CheckCircle2,
       tone: "text-brand-strong",
       title: "Your tickets are ready!",
-      text: "Open My tickets at the gate and show the live QR code.",
+      text: "Show your QR at the gate – it's in My tickets and in your email, and works without internet.",
     },
     rejected: { icon: XCircle, tone: "text-destructive", title: "Payment not approved", text: order.reject_reason ?? "" },
     expired: { icon: Clock3, tone: "text-muted-foreground", title: "Order expired", text: "The 60 minute hold ended before a screenshot was uploaded." },

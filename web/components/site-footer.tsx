@@ -64,7 +64,7 @@ export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
             <Logo variant="dark" height={34} priority={false} />
             <p className="mt-4 text-base font-medium text-white">{TAGLINE}</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              Verified tickets for university society events across Pakistan. Live QR codes that can&apos;t be faked or resold.
+              Verified tickets for university society events across Pakistan. One QR per ticket, one entry per QR.
             </p>
           </div>
           {COLUMNS.map((c) => (

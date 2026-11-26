@@ -7,11 +7,11 @@ token: `Authorization: Bearer <access_token>` (supabase-js / supabase-flutter
 
 | Function | Who | Body | Returns |
 |---|---|---|---|
-| `ticket-token` | ticket owner | `{ ticket_id }` | `{ status: "valid", token, issued_at, refresh_in: 30, valid_for: 60 }` or `{ status: "checked_in", checked_in_at }` / `{ status: "cancelled" }` |
+| `ticket-token` | ticket owner | `{ ticket_id }` | `{ status: "valid", token, static: true }` or `{ status: "checked_in", checked_in_at }` / `{ status: "cancelled" }` |
 | `scan-verify` | scanner / organizer | `{ token, event_id, device? }` | `{ result: "ok" \| "already_used" \| "expired_code" \| "wrong_event" \| "invalid" \| "not_found" \| "cancelled" \| "not_allowed", holder_name?, ticket_type?, requires_student_card?, checked_in_at? }` |
 | `release-holds` | cron | – (header `x-cron-secret`) | `{ expired }` |
 
-QR token format and rules: `_shared/qr-token.ts` (rotates every 30 s, valid 60 s).
+QR token format and rules: `_shared/qr-token.ts` – one fixed signed QR per ticket (`T2`, no expiry, D-037). The web server signs the same token for emails, so `QR_SIGNING_SECRET` must be set in both places.
 
 ## Secrets
 

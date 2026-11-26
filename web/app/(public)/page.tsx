@@ -16,7 +16,7 @@ function HeroTicket() {
         <div className="ticket-notch overflow-hidden rounded-3xl bg-white text-navy shadow-lift">
           <div className="flex items-center justify-between bg-navy px-6 py-4 text-white">
             <LogoMark variant="dark" size={44} />
-            <span className="rounded-full bg-brand-light/20 px-3 py-1 text-xs font-semibold text-brand-light">LIVE</span>
+            <span className="rounded-full bg-brand-light/20 px-3 py-1 text-xs font-semibold text-brand-light">VALID</span>
           </div>
           <div className="grid gap-4 px-6 py-5">
             <div>
@@ -32,7 +32,7 @@ function HeroTicket() {
                 <span className="font-semibold">Ali Raza</span>
                 <span className="text-slate-500">VIP · 1 ticket</span>
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-strong">
-                  <span className="size-1.5 animate-pulse rounded-full bg-brand" /> New code in 24s
+                  <span className="size-1.5 rounded-full bg-brand" /> Works offline
                 </span>
               </div>
             </div>
@@ -50,7 +50,7 @@ const STEPS = [
   { icon: CalendarSearch, title: "Pick your event", text: "Find society events at your university and choose your tickets." },
   { icon: CreditCard, title: "Pay the society", text: "Send the amount by bank or JazzCash/Easypaisa with your reference code." },
   { icon: Upload, title: "Upload the screenshot", text: "The organizer verifies it – your tickets appear in My tickets." },
-  { icon: ScanLine, title: "Walk right in", text: "Show the live QR at the gate. It changes every 30 seconds – no fakes." },
+  { icon: ScanLine, title: "Walk right in", text: "Show your QR at the gate – even offline. Each ticket enters only once." },
 ];
 
 // EVT-01: upcoming published events, soonest first
@@ -69,17 +69,17 @@ export default async function HomePage() {
                 <ShieldCheck className="size-4 text-brand-light" aria-hidden /> Verified society events · Zero fees
               </p>
               <h1 className="mt-5 text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                Campus events, <span className="text-gradient-brand">tickets that can&apos;t be faked.</span>
+                Campus events, <span className="text-gradient-brand">tickets you can trust.</span>
               </h1>
               <p className="mt-5 max-w-xl text-lg text-slate-300">
-                {TAGLINE} Book university society events across Pakistan and enter with a live QR code.
+                {TAGLINE} Book university society events across Pakistan and enter with one scan.
               </p>
               <div className="mt-8 max-w-2xl">
                 <EventFilters universities={universities} />
               </div>
               <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm">
                 {[
-                  ["30 s", "QR refresh"],
+                  ["0 MB", "internet needed at the gate"],
                   ["Rs 0", "TickLO fees"],
                   ["1 tap", "gate check-in"],
                 ].map(([v, l]) => (

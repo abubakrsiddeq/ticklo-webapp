@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "TickLO – university event tickets",
     short_name: "TickLO",
-    description: "Your TickLO tickets with live QR codes.",
+    description: "Your TickLO tickets and QR codes – even offline.",
     start_url: "/me/tickets",
     scope: "/",
     display: "standalone",

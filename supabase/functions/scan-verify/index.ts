@@ -11,9 +11,9 @@
  *   { result: "expired_code" | "wrong_event" | "invalid" | "not_found" | "cancelled" | "not_allowed" }
  * 401 not signed in · 400 bad request
  *
- * Order of checks: scanner permission → signature → freshness (60 s, server
- * time) → atomic check-in in Postgres (perform_check_in). Every attempt is
- * logged in public.checkins.
+ * Order of checks: scanner permission → signature (fixed T2 tokens never
+ * expire – D-037; legacy T1 tokens still need to be < 60 s old) → atomic
+ * check-in in Postgres (perform_check_in). Every attempt is logged.
  */
 import { admin, env, getUser, json, nowSeconds, preflight, readJson } from "../_shared/http.ts";
 import { isUuid, verifyTicketToken } from "../_shared/qr-token.ts";

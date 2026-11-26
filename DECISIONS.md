@@ -255,3 +255,18 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
   0.35–0.9 s.
 - Moving the Supabase project closer (e.g. Mumbai ap-south-1) would cut every remaining query
   roughly in half; that needs a new project + data move, so it is listed for Abubakar.
+
+## D-037 Fixed QR per ticket instead of a rotating QR (owner decision, 2026-11-26)
+- Abubakar decided to drop the 30-second rotating QR because venues often have no internet.
+  Each ticket now has ONE fixed, signed QR: `T2.<ticket id>.<HMAC>` (no time, no personal data).
+- The QR is shown on the ticket page without any network call (plus "Download QR"), and the
+  confirmation email (EML-03) carries every ticket's QR as an inline image + PNG attachment.
+- Trade-off (accepted): a screenshot/forward of the QR is a valid copy. Single use still holds –
+  check-in is an atomic `valid → checked_in` update, so only the first scan of any copy gets in;
+  the next shows "Already used at …". Students are told not to share their QR.
+- This replaces TKT-02/TKT-03 (rotation, countdown), TKT-07's "no QR image in email" and business
+  rule 8; acceptance criterion "screenshot after 60 s → Not valid here" no longer applies.
+- The signing key `QR_SIGNING_SECRET` is now shared by the Edge Functions and the web server
+  (needed to put the QR in emails); NFR-06's "key only in the Edge Function" is relaxed. It is a
+  server-only env var, never sent to the browser.
+- Legacy rotating `T1` tokens are still verified (with the 60 s limit) but are no longer issued.

@@ -26,7 +26,7 @@ hosting. Free tiers only.
    account with the reference code (e.g. `TL-048213`) in the remarks → upload the screenshot.
 4. The organizer approves (or rejects with a reason) in the payments list; duplicates (same
    transaction ID or same screenshot) are flagged red. On approval the tickets appear in
-   **My tickets** with a QR code that changes every 30 seconds.
+   **My tickets** and in the confirmation email with one fixed QR per ticket (works offline – D-037).
 5. At the gate a volunteer opens `/scan` on their phone and scans. Each ticket works once.
 
 All money/ticket rules live in Postgres functions (atomic, shared with the future Flutter app);
@@ -150,6 +150,7 @@ Never commit real values.
 | `SUPABASE_SERVICE_ROLE_KEY` | **server only** | service role / secret key – never exposed to the browser |
 | `RESEND_API_KEY` | server only | empty → emails are printed to the server console instead |
 | `EMAIL_FROM` | server only | e.g. `TickLO <tickets@ticklo.pk>` (verified domain in Resend) |
+| `QR_SIGNING_SECRET` | server only | signs ticket QR codes – same value as the Edge Function secret |
 | `CRON_SECRET` | server only | long random string for `/api/cron/*` |
 | `PROOF_RETENTION_DAYS` | server only (optional) | delete payment screenshots N days after the event; unset = keep |
 
@@ -189,7 +190,7 @@ web/
     (auth)/              login, signup, reset-password
     auth/                callback, confirm, signout (route handlers)
     checkout/[orderId]/  payment instructions, timer, upload; /status
-    me/                  tickets (+ live QR), profile
+    me/                  tickets (+ QR, download), profile
     org/                 register society, organizer dashboard, events, payments, attendees, team, accounts, reports
     invite/[token]/      accept a team invite
     scan/                web scanner

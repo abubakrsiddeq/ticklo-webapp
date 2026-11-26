@@ -17,7 +17,7 @@ export default function EventReminderEmail(p: EventReminderProps) {
       <P>Hi {p.name}, a quick reminder about {p.eventName}.</P>
       <Details rows={[["When", p.eventDate], ["Where", p.venue]]} />
       <P>
-        Keep your phone charged and open My tickets at the gate – the QR code is live and changes every 30 seconds.
+        Keep your ticket QR ready – it&apos;s in your confirmation email and in My tickets, and works without internet.
         {p.requiresCard ? " Don't forget your student card." : ""}
       </P>
       <CTA href={p.ticketsUrl}>Open My tickets</CTA>

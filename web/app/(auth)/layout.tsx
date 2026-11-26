@@ -4,7 +4,7 @@ import { Logo } from "@/components/logo";
 import { TAGLINE } from "@/lib/site";
 
 const POINTS = [
-  { icon: QrCode, text: "Live QR tickets that change every 30 seconds" },
+  { icon: QrCode, text: "QR tickets in your email – they work without internet" },
   { icon: Wallet, text: "Pay the society directly – TickLO charges no fees" },
   { icon: BadgeCheck, text: "Only verified university societies" },
 ];

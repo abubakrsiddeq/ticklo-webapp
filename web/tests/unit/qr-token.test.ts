@@ -4,10 +4,12 @@ import {
   base64UrlDecode,
   base64UrlEncode,
   bytesToUuid,
+  signStaticTicketToken,
   signTicketToken,
   uuidToBytes,
   verifyTicketToken,
 } from "../../../supabase/functions/_shared/qr-token.ts";
+import { staticTicketToken } from "@/lib/qr-token";
 
 const SECRET = "test-secret-that-is-long-enough-123";
 const TICKET = "6f1c2a9e-3b4d-4c5e-8f60-718293a4b5c6";
@@ -72,5 +74,24 @@ describe("QR token (TKT-02, SCN-03, rule 8, NFR-06)", () => {
   it("refuses weak secrets and invalid ids", async () => {
     await expect(signTicketToken(TICKET, NOW, "short")).rejects.toThrow(/at least/);
     await expect(signTicketToken("not-a-uuid", NOW, SECRET)).rejects.toThrow(/UUID/);
+  });
+});
+
+
+describe("fixed per-ticket QR (D-037)", () => {
+  it("web server and Edge Function produce the same token", async () => {
+    const edge = await signStaticTicketToken(TICKET, SECRET);
+    expect(staticTicketToken(TICKET, SECRET)).toBe(edge);
+    expect(edge.startsWith("T2.")).toBe(true);
+    expect(edge.length).toBeLessThan(50);
+  });
+
+  it("never expires but still needs a valid signature", async () => {
+    const token = staticTicketToken(TICKET, SECRET);
+    expect(await verifyTicketToken(token, SECRET, NOW + 10 * 365 * 86400)).toMatchObject({ ok: true, ticketId: TICKET });
+    expect(await verifyTicketToken(token, "another-secret-that-is-long-enough", NOW)).toEqual({ ok: false, reason: "bad_signature" });
+    const [v, , sig] = token.split(".");
+    const forged = [v, base64UrlEncode(uuidToBytes("00000000-0000-4000-8000-000000000001")), sig].join(".");
+    expect(await verifyTicketToken(forged, SECRET, NOW)).toEqual({ ok: false, reason: "bad_signature" });
   });
 });

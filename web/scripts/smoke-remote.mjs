@@ -10,7 +10,7 @@
  * deletes them again at the end. NEVER run against production.
  */
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const env = Object.fromEntries(
@@ -75,7 +75,13 @@ async function main() {
 
   // Rotating QR token (Edge Function ticket-token)
   const { data: tok, error: tokErr } = await student.c.functions.invoke("ticket-token", { body: { ticket_id: ticketId } });
-  check("ticket-token returns a signed QR token", !tokErr && tok?.status === "valid" && /^T1\./.test(tok?.token ?? ""), tokErr?.message ?? `refresh_in=${tok?.refresh_in}`);
+  check("ticket-token returns the fixed QR token (T2)", !tokErr && tok?.status === "valid" && /^T2\./.test(tok?.token ?? ""), tokErr?.message ?? "");
+  const { data: tokAgain } = await student.c.functions.invoke("ticket-token", { body: { ticket_id: ticketId } });
+  check("QR is the same every time (no rotation)", tokAgain?.token === tok?.token);
+  const b64u = (b) => b.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const payload = `T2.${b64u(Buffer.from(ticketId.replace(/-/g, ""), "hex"))}`;
+  const webToken = `${payload}.${b64u(createHmac("sha256", env.QR_SIGNING_SECRET).update(payload).digest().subarray(0, 16))}`;
+  check("web server (emails) makes the same QR as the Edge Function", webToken === tok?.token);
   const { data: tokOther } = await scanner.c.functions.invoke("ticket-token", { body: { ticket_id: ticketId } }).catch(() => ({ data: null }));
   check("ticket-token refuses someone else's ticket", !tokOther?.token);
 

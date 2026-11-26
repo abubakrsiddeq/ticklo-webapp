@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, CalendarDays, IdCard, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LiveTicketQR } from "@/components/live-ticket-qr";
+import { TicketQr } from "@/components/ticket-qr";
+import { ticketQrDataUrl } from "@/lib/qr";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatEventRange } from "@/lib/format";
@@ -39,6 +40,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
 
   const ev = ticket.events;
   const status = ev.status === "cancelled" ? "cancelled" : ticket.status;
+  const qrDataUrl = status === "valid" ? await ticketQrDataUrl(ticket.id) : null;
 
   return (
     <div className="mx-auto grid max-w-md gap-5">
@@ -60,7 +62,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </p>
         </div>
         <div className="p-5">
-          <LiveTicketQR ticketId={ticket.id} initialStatus={status} initialCheckedInAt={ticket.checked_in_at} />
+          <TicketQr ticketId={ticket.id} code={ticket.code} qrDataUrl={qrDataUrl} initialStatus={status} initialCheckedInAt={ticket.checked_in_at} />
           <div className="mt-5 grid grid-cols-2 gap-3 border-t pt-4 text-sm">
             <div>
               <div className="text-muted-foreground">Name</div>
@@ -81,7 +83,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
             </p>
           ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
-            Show this live screen at the gate. Screenshots don&apos;t work – the code changes every 30 seconds.
+            Show this QR at the gate – it also works without internet (save it or use the one in your email). Each ticket can be
+            scanned only once, so don&apos;t share it.
           </p>
         </div>
       </div>
@@ -107,7 +110,7 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
               </Link>
             ))}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Each ticket has its own QR. Show each one separately at the gate.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Each ticket has its own QR. Send each friend their own ticket QR – each works once.</p>
         </section>
       ) : null}
     </div>
