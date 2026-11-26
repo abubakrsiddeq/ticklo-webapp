@@ -18,6 +18,7 @@ interface Row {
   requires_student_card: boolean;
   status: "valid" | "checked_in" | "cancelled";
   checked_in_at: string | null;
+  serial: string | null;
 }
 
 const cacheKey = (eventId: string) => `ticklo-attendees-${eventId}`;
@@ -77,7 +78,14 @@ export function ManualList({
     const needle = q.trim().toLowerCase();
     const list = rows ?? [];
     if (!needle) return list.slice(0, 100);
-    return list.filter((r) => r.holder_name.toLowerCase().includes(needle) || r.code.toLowerCase().includes(needle)).slice(0, 100);
+    return list
+      .filter(
+        (r) =>
+          r.holder_name.toLowerCase().includes(needle) ||
+          r.code.toLowerCase().includes(needle) ||
+          (r.serial ?? "").toLowerCase().includes(needle),
+      )
+      .slice(0, 100);
   }, [rows, q]);
 
   async function checkIn(r: Row) {
@@ -108,12 +116,12 @@ export function ManualList({
         <SheetHeader className="border-b p-4">
           <SheetTitle>Manual check-in</SheetTitle>
           <SheetDescription>
-            {online ? "Search by name or ticket code." : "Offline: you can search the saved list, but check-in needs internet."}
+            {online ? "Search by name, ticket code or the serial on a paper ticket." : "Offline: you can search the saved list, but check-in needs internet."}
           </SheetDescription>
           <label className="relative mt-2">
             <span className="sr-only">Search</span>
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or code (e.g. K7Q2-M9XD)" className="pl-9" autoFocus />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, code or paper serial (QWL-0042)" className="pl-9" autoFocus />
           </label>
         </SheetHeader>
         <div className="overflow-y-auto p-2">
@@ -128,7 +136,7 @@ export function ManualList({
                   <div className="min-w-0">
                     <p className="truncate font-medium text-navy">{r.holder_name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {r.ticket_type} · <span className="font-mono">{r.code}</span>
+                      {r.ticket_type} · <span className="font-mono">{r.serial ? `Printed ${r.serial}` : r.code}</span>
                     </p>
                     {r.requires_student_card ? (
                       <p className="flex items-center gap-1 text-xs text-warning">

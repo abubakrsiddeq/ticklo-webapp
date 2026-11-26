@@ -270,3 +270,47 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
   (needed to put the QR in emails); NFR-06's "key only in the Edge Function" is relaxed. It is a
   server-only env var, never sent to the browser.
 - Legacy rotating `T1` tokens are still verified (with the 60 s limit) but are no longer issued.
+
+## D-039 Printed (paper) tickets (owner request, 2026-11-26)
+Abubakar asked for on-the-spot paper tickets: the organizer picks a designed template (Qawwali,
+trip, auto show, DJ night …), edits it like Canva, chooses how many, and gets a print-ready PDF
+where every ticket has its own QR; at the gate they scan like online tickets and a copy shows
+"Already used". He asked for all phases at once. Decisions taken:
+- **Same `tickets` table** (`source = 'printed'`, `batch_id`, `serial_no`, no order/owner) so
+  scanner, "Already used", live counts, attendee list, CSV and event cancellation work unchanged.
+  Batches live in `print_batches` (design JSON stored, so the same PDF can be downloaded again).
+- **Same QR** as online tickets (`T2.<id>.<HMAC>`): unforgeable, works offline. Error correction
+  level Q for print (a smudge still scans).
+- **Capacity:** printed tickets use up the ticket type's quantity (`ticket_type_taken` counts them;
+  `create_print_batch` takes the same row lock as `create_order`), so online + printed never
+  oversell. Voided printed tickets give their place back. Printed tickets also lock the price
+  (it is on the paper) and block deleting the type.
+- **Only for approved (published), not-ended events**; sale windows do not apply (gate sales
+  happen after online sales close). 1–2000 tickets per batch.
+- **Serial numbers** run on per event across batches (batch 2 starts after batch 1), shown as
+  `PREFIX-0001` (prefix 1–6 letters/numbers, suggested from the event name). The serial is printed
+  under the QR and on the stub, and the scanner's manual list can find it (damaged ticket).
+- **QR + "Ticket partner: TickLO" logo are mandatory**: exactly one QR ≥ 20 mm, not rotated, fully
+  on the ticket; a TickLO logo ≥ 18 mm wide, ≥ 60 % opacity. Checked in the editor, in the server
+  action and again in Postgres (`print_design_problem`) because the browser can be bypassed. The
+  renderer always draws QR and logo on top, so nothing can be placed over them.
+- **Templates are original vector artwork in code** (11 designs, 180 × 65 mm with a tear-off stub
+  for the seller: serial + buyer name/phone). The reference pictures Abubakar sent are stock
+  designs (Behance/Graphic Mega) and were not copied.
+- **Editor:** Konva (imperative, no react-konva) – one renderer for editor, thumbnails and PDF, so
+  what you see is what prints. Self-hosted fonts (@fontsource, incl. Noto Nastaliq Urdu). Long
+  event names shrink to fit (`fitHeight`). Uploaded images go to the society's `posters` folder
+  (PNG transparency kept); posters are loaded through `/api/print-image` (same-origin, only our
+  public buckets) because a canvas with cross-origin images cannot be exported.
+- **PDF is built in the browser** (pdf-lib) – no load on Hostinger: artwork rendered once at
+  400 DPI with bleed and reused; QR drawn as vector rectangles; serial as real text; texts with
+  `{{serial}}`/`{{code}}` rendered at 600 DPI per ticket. Layouts: A4/A3 sheets (2 mm bleed,
+  5 mm gap, cut marks, footer with serial range) or one ticket per page with 3 mm bleed (press).
+  Measured: 400 tickets ≈ 11 s, 6 MB.
+- **Every PDF download is counted and logged** (`record_print_download`); signed tokens are only
+  sent for that download. Voided tickets are left out of the PDF.
+- **Void** by serial range with a required reason (audit log); no "un-void" (reprint instead).
+- **Fix the design after creating** is allowed (`update_print_batch_design`): QR codes belong to
+  the tickets, so already printed tickets keep working.
+- **Cash is not tracked** in "Collected"; the report shows printed / used / voided / face value.
+- My templates: a society can save designs (`ticket_templates`, RLS: organizers of that society).

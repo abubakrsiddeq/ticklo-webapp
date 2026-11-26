@@ -1,15 +1,17 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { serialLabel } from "@/lib/print/design";
 
-/** ORG-09: attendees of an event (organizers only – RLS). */
+/** ORG-09: attendees of an event (organizers only – RLS). Printed tickets (PRT-10) have no order. */
 export async function listAttendees(eventId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("tickets")
     .select(
-      `id, code, holder_name, status, checked_in_at, checkin_method, created_at, checked_in_by,
+      `id, code, holder_name, holder_phone, status, checked_in_at, checkin_method, created_at, checked_in_by, source, serial_no,
        ticket_types!inner ( name, requires_student_card ),
-       orders!inner ( ref_code, buyer_phone, buyer_email, created_at )`,
+       orders ( ref_code, buyer_phone, buyer_email, created_at ),
+       print_batches ( prefix )`,
     )
     .eq("event_id", eventId)
     .order("holder_name");
@@ -20,7 +22,15 @@ export async function listAttendees(eventId: string) {
     ? await supabase.from("profiles").select("id, full_name").in("id", scannerIds)
     : { data: [] };
   const names = new Map((people ?? []).map((p) => [p.id, p.full_name ?? "Team member"]));
-  return rows.map((r) => ({ ...r, checked_in_by_name: r.checked_in_by ? (names.get(r.checked_in_by) ?? "Team member") : null }));
+  return rows.map((r) => ({
+    ...r,
+    serial: r.print_batches && r.serial_no ? serialLabel(r.print_batches.prefix, r.serial_no) : null,
+    orderRef: r.orders?.ref_code ?? (r.print_batches && r.serial_no ? `Printed ${serialLabel(r.print_batches.prefix, r.serial_no)}` : "–"),
+    orderCreatedAt: r.orders?.created_at ?? r.created_at,
+    phone: r.orders?.buyer_phone ?? r.holder_phone,
+    email: r.orders?.buyer_email ?? null,
+    checked_in_by_name: r.checked_in_by ? (names.get(r.checked_in_by) ?? "Team member") : null,
+  }));
 }
 
 export type Attendee = Awaited<ReturnType<typeof listAttendees>>[number];

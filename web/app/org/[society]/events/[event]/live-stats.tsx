@@ -15,7 +15,8 @@ export interface EventStats {
   awaiting_payment: number;
   approved_orders: number;
   collected_paisa: number;
-  by_type: { ticket_type_id: string; name: string; price_paisa: number; quantity: number; sold: number; held: number; checked_in: number }[];
+  printed_tickets?: number;
+  by_type: { ticket_type_id: string; name: string; price_paisa: number; quantity: number; sold: number; held: number; printed?: number; checked_in: number }[];
 }
 
 function Stat({ icon: Icon, label, value, sub, href }: { icon: typeof Ticket; label: string; value: string; sub?: string; href?: string }) {
@@ -76,8 +77,13 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Hourglass} label="Review baqi" value={String(stats.pending_review)} sub={`${stats.awaiting_payment} awaiting payment`} href={paymentsHref} />
-        <Stat icon={Ticket} label="Tickets sold" value={String(stats.total_tickets)} sub={`${capPct}% of ${stats.capacity} capacity`} />
-        <Stat icon={Banknote} label="Collected" value={formatPKR(stats.collected_paisa)} sub={`${stats.approved_orders} approved orders`} />
+        <Stat
+          icon={Ticket}
+          label="Tickets sold"
+          value={String(stats.total_tickets)}
+          sub={`${capPct}% of ${stats.capacity} capacity${stats.printed_tickets ? ` · ${stats.printed_tickets} printed` : ""}`}
+        />
+        <Stat icon={Banknote} label="Collected" value={formatPKR(stats.collected_paisa)} sub={`${stats.approved_orders} approved online orders${stats.printed_tickets ? " (cash for printed tickets not included)" : ""}`} />
         <Stat icon={Users} label="Checked in" value={`${stats.checked_in}/${stats.total_tickets}`} sub={`${inPct}% arrived`} />
       </div>
       <div className="grid gap-2 rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4">
@@ -97,6 +103,7 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
                 <th className="px-4 py-2 font-medium">Ticket type</th>
                 <th className="px-4 py-2 text-right font-medium">Sold</th>
                 <th className="px-4 py-2 text-right font-medium">On hold</th>
+                <th className="px-4 py-2 text-right font-medium">Printed</th>
                 <th className="px-4 py-2 text-right font-medium">Left</th>
                 <th className="px-4 py-2 text-right font-medium">Checked in</th>
               </tr>
@@ -109,7 +116,8 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.sold}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.held}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{Math.max(0, t.quantity - t.sold - t.held)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{t.printed ?? 0}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{Math.max(0, t.quantity - t.sold - t.held - (t.printed ?? 0))}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{t.checked_in}</td>
                 </tr>
               ))}

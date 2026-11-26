@@ -36,10 +36,10 @@ export default async function AttendeesPage({ params }: { params: Promise<{ soci
             name: a.holder_name,
             type: a.ticket_types.name,
             card: a.ticket_types.requires_student_card,
-            orderRef: a.orders.ref_code,
-            orderTime: formatShortDateTime(a.orders.created_at),
-            phone: a.orders.buyer_phone,
-            email: a.orders.buyer_email,
+            orderRef: a.orderRef,
+            orderTime: formatShortDateTime(a.orderCreatedAt),
+            phone: a.phone,
+            email: a.email,
             status: a.status,
             checkedInAt: a.checked_in_at ? formatTime(a.checked_in_at) : null,
             checkedInBy: a.checked_in_by_name,
@@ -47,7 +47,7 @@ export default async function AttendeesPage({ params }: { params: Promise<{ soci
           }))}
         />
       ) : (
-        <EmptyState icon={Users} title="No attendees yet" description="Tickets appear here once orders are approved." />
+        <EmptyState icon={Users} title="No attendees yet" description="Tickets appear here once orders are approved or printed tickets are created." />
       )}
     </div>
   );

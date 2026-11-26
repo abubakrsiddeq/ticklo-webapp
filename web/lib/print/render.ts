@@ -229,7 +229,7 @@ export function textContent(K: Konva, l: Extract<Layer, { type: "text" }>, value
   let text = fillPlaceholders(l.text, values);
   if (l.uppercase) text = text.toUpperCase();
   const rtl = /[؀-ۿ]/.test(text);
-  return new K.Text({
+  const node = new K.Text({
     text,
     width: l.width,
     fontSize: l.fontSize,
@@ -244,6 +244,16 @@ export function textContent(K: Konva, l: Extract<Layer, { type: "text" }>, value
     wrap: "word",
     ...(rtl ? { direction: "rtl" } : {}),
   });
+  // Long event names: shrink instead of running into the next line of the design
+  if (l.fitHeight) {
+    const min = l.fontSize * 0.4;
+    let size = l.fontSize;
+    while (node.height() > l.fitHeight && size > min) {
+      size *= 0.94;
+      node.fontSize(size);
+    }
+  }
+  return node;
 }
 
 /** One Konva group per layer, positioned at the layer's x/y with its rotation and opacity. */

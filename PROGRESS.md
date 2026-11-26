@@ -21,6 +21,8 @@ If a session stops, resume from the first unchecked milestone below.
 - [x] **M8 Web scanner** – `/scan`, camera scan, results, offline warning, manual list.
 - [x] **M9 Admin panel** – approvals, orders/disputes, fraud list, users, universities, logs.
 - [x] **M10 "Should" items + polish** – PWA, reminders, cron endpoints, unit tests, final README.
+- [x] **M11 Printed tickets (D-039)** – templates, Canva-style editor, batches with unique QR +
+      serial, print-ready PDF, void/buyer records, scanner + reports. Migration `…001000`.
 
 ## Done (by requirement ID)
 
@@ -152,6 +154,29 @@ Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
 - Staging now holds real data (seed accounts removed), so `npm run smoke:remote` cannot run there
   anymore; it needs a project with `seed.sql` loaded.
 
+## Change 2026-11-26: printed (paper) tickets (D-039)
+Event dashboard → **Printed tickets** tab.
+- PRT-01 Template gallery by category (Qawwali ×2, DJ Night, Concert, Trip, Auto Show, Sports,
+  Conference, Festival, Minimal, Poster photo) + "My templates".
+- PRT-02/03/04 Choose ticket type → design → quantity (1–2000) + serial prefix →
+  `create_print_batch` makes N tickets with consecutive serials, each its own signed QR; they use
+  up the ticket type's quantity (no overselling with online sales).
+- PRT-05 Editor: text + event fields, fonts (incl. Urdu Nastaliq), colours/gradients, shapes,
+  images/poster, drag/resize/rotate, snapping, layers, lock/hide, undo/redo, shortcuts,
+  auto-shrink. QR + "Ticket partner: TickLO" cannot be removed (also enforced in Postgres).
+- PRT-06 PDF in the browser: A4/A3 sheets with cut marks or press pages with 3 mm bleed; vector QR.
+- PRT-07 Void lost/stolen tickets by serial range (reason, audit) → scan shows "voided".
+- PRT-08 Batch page: ticket list (not used / used / voided), optional buyer name + phone, edit
+  design later (QRs stay the same), download log.
+- PRT-09 Scanner: result shows "Printed QWL-0042"; manual list searches the serial.
+- PRT-10 Dashboard "Printed" column, attendees + CSV include printed tickets, report section
+  "Printed (paper) tickets".
+- Verified: 11 DB tests + 16 unit tests; templates, PDFs (A4 + press) and the editor were driven
+  in headless Chrome – every QR in the PDF decodes to its own T2 token, QR can't be deleted or
+  dragged off the ticket, undo works.
+- **Needs:** apply migration `20261126001000_printed_tickets.sql` to TICkLO (see below). No new
+  env vars; the Edge Functions need no redeploy (scan-verify passes the new `serial` through).
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -166,8 +191,8 @@ Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (51 tests).
-- **Unit tests:** `cd web && npm test` (25 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (67 tests).
+- **Unit tests:** `cd web && npm test` (43 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -202,6 +227,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261126001000_printed_tickets.sql` to the TICkLO project** – the Printed
+  tickets tab fails until then (`supabase db push`, D-034). Then try it: event → Printed tickets →
+  New → pick a template → Create 4 → Download PDF (A4) → print one page at 100 % → scan.
 - ~~Staging Supabase project~~ – done (TICkLO). A production project later (same steps).
 - The database password you sent was rejected by Supabase (maybe a typo – it contains "ą").
   Not needed right now, but reset it (Dashboard → Project Settings → Database → Reset

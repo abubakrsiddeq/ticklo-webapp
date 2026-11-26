@@ -5,7 +5,7 @@ Ticketing and gate verification for events at Pakistani universities.
 
 | Folder | What |
 |---|---|
-| `web/` | Next.js 16 web app: public event pages, booking with manual bank/wallet payments, My tickets with rotating QR, organizer dashboard, web scanner, admin panel |
+| `web/` | Next.js 16 web app: public event pages, booking with manual bank/wallet payments, My tickets with QR, organizer dashboard, printed tickets (designer + PDF), web scanner, admin panel |
 | `supabase/` | Postgres migrations (schema, RLS, business logic), seed data, Edge Functions (QR signing + scan verification), auth email templates |
 | `brand/` | Official logo, app icon, social media artwork and brand guidelines (see `brand/README.md`) |
 | `PROGRESS.md` | What is built (by requirement ID), what is left, how to test |
@@ -28,6 +28,9 @@ hosting. Free tiers only.
    transaction ID or same screenshot) are flagged red. On approval the tickets appear in
    **My tickets** and in the confirmation email with one fixed QR per ticket (works offline – D-037).
 5. At the gate a volunteer opens `/scan` on their phone and scans. Each ticket works once.
+6. For cash sales on the spot, the organizer makes **printed tickets** (event → Printed tickets):
+   pick a template, edit it, choose how many, download the print-ready PDF. Every paper ticket has
+   its own QR + serial and is scanned the same way (D-039).
 
 All money/ticket rules live in Postgres functions (atomic, shared with the future Flutter app);
 QR signing lives in an Edge Function so the key never leaves Supabase.

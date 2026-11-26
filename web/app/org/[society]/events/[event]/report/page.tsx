@@ -99,6 +99,37 @@ export default async function ReportPage({ params }: { params: Promise<{ society
         </div>
       </section>
 
+      {r.printed.length ? (
+        <section>
+          <h3 className="mb-1 font-semibold text-navy">Printed (paper) tickets</h3>
+          <p className="mb-2 text-sm text-muted-foreground">Sold for cash by your team – not included in “Collected”. Face value = printed (not voided) × price.</p>
+          <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/60 text-left text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Ticket type</th>
+                  <th className="px-4 py-2 text-right font-medium">Printed</th>
+                  <th className="px-4 py-2 text-right font-medium">Used at gate</th>
+                  <th className="px-4 py-2 text-right font-medium">Voided</th>
+                  <th className="px-4 py-2 text-right font-medium">Face value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {r.printed.map((p) => (
+                  <tr key={p.name}>
+                    <td className="px-4 py-2">{p.name}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{p.printed}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{p.used}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{p.voided}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{formatPKR(p.faceValue, { freeLabel: "Free" })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       <section>
         <h3 className="mb-2 font-semibold text-navy">Approved orders</h3>
         <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">

@@ -57,6 +57,8 @@ export interface TextLayer extends Base {
   uppercase?: boolean;
   stroke?: string;
   strokeWidth?: number;
+  /** Shrink the font (down to 40 %) until the text is no taller than this. */
+  fitHeight?: number;
 }
 
 export interface ImageLayer extends Base {
@@ -66,7 +68,6 @@ export interface ImageLayer extends Base {
   height: number;
   fit?: "cover" | "contain" | "stretch";
   cornerRadius?: number;
-  grayscale?: boolean;
 }
 
 export interface RectLayer extends Base {
@@ -221,6 +222,7 @@ const layerSchema = z.discriminatedUnion("type", [
     uppercase: z.boolean().optional(),
     stroke: colour.optional(),
     strokeWidth: z.number().min(0).max(50).optional(),
+    fitHeight: z.number().min(10).max(6000).optional(),
   }),
   z.object({
     ...base,
@@ -230,7 +232,6 @@ const layerSchema = z.discriminatedUnion("type", [
     height: size,
     fit: z.enum(["cover", "contain", "stretch"]).optional(),
     cornerRadius: z.number().min(0).max(3000).optional(),
-    grayscale: z.boolean().optional(),
   }),
   z.object({
     ...base,
@@ -366,7 +367,12 @@ export function layerBox(l: Layer): { x: number; y: number; width: number; heigh
     case "line":
       return { x: l.x, y: l.y - l.strokeWidth / 2, width: l.width, height: l.strokeWidth };
     case "text":
-      return { x: l.x, y: l.y, width: l.width, height: l.fontSize * (l.lineHeight ?? 1.15) * Math.max(1, l.text.split("\n").length) };
+      return {
+        x: l.x,
+        y: l.y,
+        width: l.width,
+        height: l.fitHeight ?? l.fontSize * (l.lineHeight ?? 1.15) * Math.max(1, l.text.split("\n").length),
+      };
     default:
       return { x: l.x, y: l.y, width: l.width, height: l.height };
   }

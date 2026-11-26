@@ -214,7 +214,7 @@ function drawSheetExtras(
   if (opts.layout !== "single") {
     const last = Math.min(firstIndex + plan.perPage, tickets.length) - 1;
     const footer = `${opts.title} · ${tickets[firstIndex].serial} – ${tickets[last].serial} · Page ${pageNo} of ${pages} · Printed with TickLO`;
-    page.drawText(footer, { x: pt(Math.max(6, plan.grid.left)), y: pt(3.5), size: 6.5, font, color: rgb(0.45, 0.45, 0.45) });
+    page.drawText(footer, { x: pt(plan.grid.left + 4), y: pt(3.5), size: 6.5, font, color: rgb(0.45, 0.45, 0.45) });
   }
 }
 
