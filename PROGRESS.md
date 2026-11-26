@@ -26,6 +26,9 @@ If a session stops, resume from the first unchecked milestone below.
 - [x] **M12 Ambassadors (D-043)** – referral links + codes, promo codes and discounts, rewards
       and milestones, leaderboard, organizer tab, ambassador screen, applications, campus
       ambassadors. Migration `…001400` applied to TICkLO (2026-11-27).
+- [x] **M13 Festivals (D-044)** – sessions (workshops, competitions, nights, talks), ticket access
+      (pass / chosen sessions), session seats, session scanning, questions, team registration with
+      shortlisting and results, session managers. Migration `…001500` (**not applied to TICkLO yet**).
 
 ## Done (by requirement ID)
 
@@ -252,6 +255,42 @@ Event dashboard → **Ambassadors** tab; ambassadors use **Sell → My link & ra
 - **Not yet clicked through in a real browser.** Hostinger still runs the old web build – it
   keeps working; deploy the new build to switch the feature on.
 
+## Change 2026-11-27: festivals – sessions, session tickets, competitions (D-044)
+Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the schedule on the event page.
+- FES-01 Sessions per event (kind, time inside the event, venue, seats, description, "included in
+  passes"); Schedule tab grouped by day; duplicate event copies the schedule.
+- FES-02 Ticket access: pass or chosen sessions ("Opens" on Edit & tickets); after sales access
+  can only grow.
+- FES-03 Session seats shared by every ticket that opens the session (online + printed);
+  availability shows the smaller limit; print batches respect seats.
+- FES-04 Event page schedule: day tabs, kind filter, seats left / sold out, "Included in passes",
+  calendar link per session; booking widget shows what each ticket opens and warns about clashes.
+- FES-05 Competition entry types are hidden from the ticket list and the print wizard.
+- FES-06 Session scanning: once per ticket per session, "Not for this session", main entry kept
+  separate (`entry_at`); festival tickets keep their QR and list sessions with ✓ times.
+- FES-07 Scanner picks main entry or a session; scanners can be limited to sessions; manual list
+  and live count per session. Session scans go through a server action (no Edge Function change).
+- FES-08 Session form: competition settings (team size, fee per team/member, max teams,
+  registration close, shortlisting).
+- FES-09 Up to 10 questions per session (short/long text, number, choice, yes/no), asked when
+  booking a session ticket or registering a team; answers on the session page and CSV.
+- FES-10 Team registration page (members with roll no/university/phone, questions, code); pays
+  at once (60-minute hold) or applies; per-member tickets named after each member.
+- FES-11 Shortlisting: accept/decline with reason (team gets an email), then "Pay now" in My
+  tickets → My competitions; withdraw; places held only by paid/in-review/on-hold teams.
+- FES-12 Session managers (any team member): `/manage` and `/manage/<session>` with attendees,
+  answers, check-in, teams, CSV; menu "My sessions".
+- FES-13 Results (1st/2nd/3rd or own labels, linked to teams) published on the event page.
+- FES-14 Per-session numbers on the event overview and the report; payment review shows team
+  entries.
+- Not built (owner said skip): certificates.
+- Tests: 11 DB tests (sessions + dates, seats across types/printed, questions, direct entry refused,
+  access lock, session scanning + main entry, scanner limits + managers, free team, per-member
+  team, shortlisting/pay/decline/withdraw, results, duplicate) and 5 unit tests (days in PKT,
+  clashes, answers, labels, scan wording). `npm run check` passes (62 unit tests, build);
+  97 DB tests pass.
+- **Not clicked through in a real browser yet**; migration **not applied to TICkLO** (see "Needs").
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -266,8 +305,8 @@ Event dashboard → **Ambassadors** tab; ambassadors use **Sell → My link & ra
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (86 tests).
-- **Unit tests:** `cd web && npm test` (57 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (97 tests).
+- **Unit tests:** `cd web && npm test` (62 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -302,10 +341,18 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 | 14 | Ambassador link + reward (D-043) | Organizer: event → Ambassadors → Add ambassador (team member) → Program: Rs 50 per ticket, Rs 100 off for buyers → Save. Copy the card's link → open it logged out as another user → banner "… invited you" → book → price is Rs 100 less per ticket → approve → card shows 1 counted, reward Rs 50; the ambassador opens Sell → My link & rank and sees rank #1 |
 | 15 | Promo code | Ambassadors → New promo code `FAST20`, 20 %, min 2 tickets → book 1 ticket with the code (error) → 2 tickets (20 % off) |
 | 16 | Applications | Program → tick "Take applications" → student opens the event page → Apply → organizer Accepts → student gets "My ambassador page" in the menu |
+| 18 | Festival sessions (D-044) | Event → Schedule → add "AI Workshop" (workshop, 2 seats, not in passes, question "Laptop?" required) and "Qawwali" (concert, in passes) → Edit & tickets → add "Workshop" ticket → Opens → only AI Workshop. Event page shows the schedule; book 1 Workshop (answer the question) and 1 pass; try 3 workshop tickets → "Only 2 seats left" |
+| 19 | Session scanning | Scanner → choose AI Workshop → scan the workshop ticket (OK), again (Already checked in), scan the pass (Not for this session) → choose Main entry → the workshop ticket still gets in once |
+| 20 | Competition | Schedule → add "Speed Coding" (competition, 10 teams, 2–3 members, Rs 1,500 per team, shortlisting on) → event page → Apply → organizer: /manage/<id> → Accept → team lead: My tickets → Pay now → approve payment → ticket "Team …"; publish results → event page shows 🏆 |
 | 17 | Campus ambassador | Admin → Ambassadors → add a user's email + code → register a new society with that code → admin page shows 1 society |
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127001500_festival_sessions.sql` to TICkLO first, then deploy the web
+  build.** The current live build keeps working with the migration (`create_order` only gained
+  optional arguments), but the new build without it would break scanning and booking. No new
+  env vars (session scans use the existing `QR_SIGNING_SECRET` on Hostinger), no Edge Function
+  redeploy.
 - **Deploy the new web build on Hostinger** to switch on ambassadors and promo codes
   (migration `…001400` is already applied to TICkLO; no new env vars, no Edge Function
   redeploy). Then try checks #14–17 under "How to test".

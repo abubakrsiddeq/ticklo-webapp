@@ -28,7 +28,8 @@ export async function getPrintOverview(eventId: string) {
       }
       return { data: all };
     })(),
-    supabase.from("ticket_types").select("id, name, price_paisa, quantity, sort_order").eq("event_id", eventId).order("sort_order"),
+    // D-044: competition entry fees are registered online by teams, never printed
+    supabase.from("ticket_types").select("id, name, price_paisa, quantity, sort_order").eq("event_id", eventId).is("registration_session_id", null).order("sort_order"),
     supabase.rpc("event_availability", { p_event_id: eventId }),
   ]);
   const counts = new Map<string, { valid: number; used: number; voided: number; sold: number }>();

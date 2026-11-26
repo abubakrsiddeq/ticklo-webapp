@@ -37,6 +37,11 @@ hosting. Free tiers only.
    paper), with a leaderboard, rewards/milestones the society pays, buyer discounts and promo
    codes. Students can apply from the event page; ambassadors see their numbers at
    `/sell/<event>/promote`. TickLO campus ambassadors bring new societies with a code (D-043).
+8. **Festivals** (event → Schedule): sessions (workshops, competitions, qawwali nights, talks)
+   with their own time, venue and seats. Each ticket type is a pass or opens chosen sessions;
+   the scanner checks in per session; sessions can ask questions; competitions take team
+   registrations (fee per team or member, optional shortlisting, results). Session managers run
+   their session at `/manage` (D-044).
 
 All money/ticket rules live in Postgres functions (atomic, shared with the future Flutter app);
 QR signing lives in an Edge Function so the key never leaves Supabase.
