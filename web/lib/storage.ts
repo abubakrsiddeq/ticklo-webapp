@@ -62,9 +62,25 @@ export async function readUpload(
  * pages stay light on 3G/4G (NFR-02). Falls back to the original bytes if
  * sharp is not available on the host.
  */
-async function optimiseImage(file: ValidFile, maxWidth: number): Promise<{ buffer: Buffer; type: UploadKind; ext: string }> {
+async function optimiseImage(
+  file: ValidFile,
+  maxWidth: number,
+  keepTransparency = false,
+): Promise<{ buffer: Buffer; type: UploadKind; ext: string }> {
   try {
     const sharp = (await import("sharp")).default;
+    if (keepTransparency && file.type !== "image/jpeg") {
+      // Logos on printed tickets need their transparent background (PNG out)
+      const meta = await sharp(file.buffer, { failOn: "none" }).metadata();
+      if (meta.hasAlpha) {
+        const out = await sharp(file.buffer, { failOn: "none" })
+          .rotate()
+          .resize({ width: maxWidth, height: maxWidth * 2, fit: "inside", withoutEnlargement: true })
+          .png({ compressionLevel: 9 })
+          .toBuffer();
+        return { buffer: out, type: "image/png", ext: "png" };
+      }
+    }
     const out = await sharp(file.buffer, { failOn: "none" })
       .rotate()
       .resize({ width: maxWidth, height: maxWidth * 2, fit: "inside", withoutEnlargement: true })
@@ -83,8 +99,9 @@ export async function uploadPublicImage(
   folder: string,
   file: ValidFile,
   maxWidth = 1600,
+  opts: { keepTransparency?: boolean } = {},
 ): Promise<string> {
-  const img = await optimiseImage(file, maxWidth);
+  const img = await optimiseImage(file, maxWidth, opts.keepTransparency);
   const path = `${folder}/${randomUUID()}.${img.ext}`;
   const storage = createAdminClient().storage.from(bucket);
   const { error } = await storage.upload(path, img.buffer, { contentType: img.type, upsert: false, cacheControl: "31536000" });
