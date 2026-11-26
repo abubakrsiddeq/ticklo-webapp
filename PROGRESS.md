@@ -128,8 +128,9 @@ Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
   the CLI migration history. `seed.sql` loaded (5 test accounts, 15 universities, events).
 - Edge Functions `ticket-token`, `scan-verify`, `release-holds` deployed; secrets
   `QR_SIGNING_SECRET` and `CRON_SECRET` set.
-- Auth: redirect URLs for localhost, 8-character passwords. Site URL is `http://localhost:3000`
-  until the domain exists. Google provider off until credentials exist.
+- Auth: Site URL `https://ticklo.bkrtechsolutions.com`, redirect URLs for that domain + localhost, 8-character passwords. (Was `http://localhost:3000`
+  before the domain existed.) Google provider off until credentials exist.
+- Hostinger: `env.txt` (env import) and `hostinger-cron.txt` (cron commands) in the repo root, both git-ignored.
 - `web/.env.local` written (not in git) – `cd web && npm run dev` runs against staging.
 - **Live end-to-end test passes 24/24** (`cd web && npm run smoke:remote`): real login, free
   ticket, signed QR from the Edge Function, scan OK → "Already used", forged QR rejected,

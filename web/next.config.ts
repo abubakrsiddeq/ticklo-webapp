@@ -22,6 +22,16 @@ if (supabaseUrl) {
   }
 }
 
+// Server Actions compare the browser's Origin with the host the server sees.
+// Behind Hostinger's proxy those can differ, so the public site host is allowed explicitly.
+const allowedOrigins: string[] = [];
+try {
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (site) allowedOrigins.push(new URL(site).host);
+} catch {
+  // ignore malformed URL
+}
+
 const nextConfig: NextConfig = {
   // Cache Components is intentionally OFF: almost every TickLO page reads the
   // Supabase session cookie, so classic dynamic rendering is simpler and safer.
@@ -35,6 +45,7 @@ const nextConfig: NextConfig = {
     // proxy.ts buffers request bodies (default 10 MB); uploads can be ~10 MB.
     proxyClientMaxBodySize: "12mb",
     serverActions: {
+      allowedOrigins,
       // Payment screenshot (5 MB) + student card photo (5 MB) + form overhead.
       bodySizeLimit: "11mb",
     },
