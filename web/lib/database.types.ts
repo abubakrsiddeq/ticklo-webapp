@@ -847,7 +847,9 @@ export type Database = {
           label: string | null;
           last_downloaded_at: string | null;
           prefix: string;
+          printing_cost_paisa: number;
           quantity: number;
+          require_sale: boolean;
           template_key: string | null;
           ticket_type_id: string;
           updated_at: string;
@@ -863,7 +865,9 @@ export type Database = {
           label?: string | null;
           last_downloaded_at?: string | null;
           prefix: string;
+          printing_cost_paisa?: number;
           quantity: number;
+          require_sale?: boolean;
           template_key?: string | null;
           ticket_type_id: string;
           updated_at?: string;
@@ -879,7 +883,9 @@ export type Database = {
           label?: string | null;
           last_downloaded_at?: string | null;
           prefix?: string;
+          printing_cost_paisa?: number;
           quantity?: number;
+          require_sale?: boolean;
           template_key?: string | null;
           ticket_type_id?: string;
           updated_at?: string;
@@ -904,6 +910,129 @@ export type Database = {
             columns: ["ticket_type_id"];
             isOneToOne: false;
             referencedRelation: "ticket_types";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      print_cash_entries: {
+        Row: {
+          amount_paisa: number;
+          created_at: string;
+          event_id: string;
+          id: string;
+          method: string;
+          note: string | null;
+          received_by: string | null;
+          seller_id: string | null;
+        };
+        Insert: {
+          amount_paisa: number;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          method?: string;
+          note?: string | null;
+          received_by?: string | null;
+          seller_id?: string | null;
+        };
+        Update: {
+          amount_paisa?: number;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          method?: string;
+          note?: string | null;
+          received_by?: string | null;
+          seller_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "print_cash_entries_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_cash_entries_received_by_fkey";
+            columns: ["received_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_cash_entries_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      print_sellers: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          event_id: string;
+          id: string;
+          name: string;
+          phone: string | null;
+          settled_at: string | null;
+          settled_by: string | null;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          event_id: string;
+          id?: string;
+          name: string;
+          phone?: string | null;
+          settled_at?: string | null;
+          settled_by?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          phone?: string | null;
+          settled_at?: string | null;
+          settled_by?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "print_sellers_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_sellers_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_sellers_settled_by_fkey";
+            columns: ["settled_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_sellers_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -1099,7 +1228,14 @@ export type Database = {
           id: string;
           order_id: string | null;
           owner_id: string | null;
+          sale_method: string | null;
+          sale_price_paisa: number | null;
+          sale_source: string | null;
+          sale_status: string | null;
+          seller_id: string | null;
           serial_no: number | null;
+          sold_at: string | null;
+          sold_by: string | null;
           source: string;
           status: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id: string;
@@ -1118,7 +1254,14 @@ export type Database = {
           id?: string;
           order_id?: string | null;
           owner_id?: string | null;
+          sale_method?: string | null;
+          sale_price_paisa?: number | null;
+          sale_source?: string | null;
+          sale_status?: string | null;
+          seller_id?: string | null;
           serial_no?: number | null;
+          sold_at?: string | null;
+          sold_by?: string | null;
           source?: string;
           status?: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id: string;
@@ -1137,7 +1280,14 @@ export type Database = {
           id?: string;
           order_id?: string | null;
           owner_id?: string | null;
+          sale_method?: string | null;
+          sale_price_paisa?: number | null;
+          sale_source?: string | null;
+          sale_status?: string | null;
+          seller_id?: string | null;
           serial_no?: number | null;
+          sold_at?: string | null;
+          sold_by?: string | null;
           source?: string;
           status?: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id?: string;
@@ -1174,6 +1324,20 @@ export type Database = {
           {
             foreignKeyName: "tickets_owner_id_fkey";
             columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_seller_id_fkey";
+            columns: ["seller_id"];
+            isOneToOne: false;
+            referencedRelation: "print_sellers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tickets_sold_by_fkey";
+            columns: ["sold_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
@@ -1228,6 +1392,16 @@ export type Database = {
           p_token: string | null;
         };
         Returns: Json;
+      };
+      add_print_cash: {
+        Args: {
+          p_event_id: string | null;
+          p_seller_id: string | null;
+          p_amount_paisa: number | null;
+          p_method?: string | null;
+          p_note?: string | null;
+        };
+        Returns: string;
       };
       admin_delete_university: {
         Args: {
@@ -1315,6 +1489,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      assign_printed_tickets: {
+        Args: {
+          p_event_id: string | null;
+          p_seller_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+        };
+        Returns: number;
+      };
       assign_scanner: {
         Args: {
           p_event_id: string | null;
@@ -1332,6 +1515,13 @@ export type Database = {
         Returns: undefined;
       };
       can_scan_event: {
+        Args: {
+          p_event_id: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: boolean;
+      };
+      can_sell_printed: {
         Args: {
           p_event_id: string | null;
           p_user_id?: string | null;
@@ -1378,6 +1568,18 @@ export type Database = {
           p_label?: string | null;
         };
         Returns: Json;
+      };
+      delete_print_cash: {
+        Args: {
+          p_entry_id: string | null;
+        };
+        Returns: undefined;
+      };
+      delete_print_seller: {
+        Args: {
+          p_seller_id: string | null;
+        };
+        Returns: undefined;
       };
       event_availability: {
         Args: {
@@ -1496,6 +1698,34 @@ export type Database = {
         };
         Returns: Json;
       };
+      mark_printed_sold: {
+        Args: {
+          p_event_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+          p_method?: string | null;
+          p_comp?: boolean | null;
+          p_buyer_name?: string | null;
+          p_buyer_phone?: string | null;
+        };
+        Returns: number;
+      };
+      my_print_stock: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          serial: string;
+          serial_no: number;
+          ticket_type: string;
+          price_paisa: number;
+          sale_status: string;
+          status: Database["public"]["Enums"]["ticket_status"];
+          sale_method: string;
+          sold_at: string;
+          seller_name: string;
+        }[];
+      };
       my_scan_events: {
         Args: never;
         Returns: {
@@ -1507,6 +1737,18 @@ export type Database = {
           venue: string;
           starts_at: string;
           ends_at: string;
+          access: string;
+        }[];
+      };
+      my_sell_events: {
+        Args: never;
+        Returns: {
+          event_id: string;
+          event_name: string;
+          event_slug: string;
+          org_name: string;
+          org_slug: string;
+          starts_at: string;
           access: string;
         }[];
       };
@@ -1540,11 +1782,26 @@ export type Database = {
         };
         Returns: Json;
       };
+      print_check_range: {
+        Args: {
+          p_from: number | null;
+          p_to: number | null;
+        };
+        Returns: undefined;
+      };
       print_design_problem: {
         Args: {
           p_design: Json | null;
         };
         Returns: string;
+      };
+      print_range_has_settled: {
+        Args: {
+          p_event_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+        };
+        Returns: boolean;
       };
       print_serial_label: {
         Args: {
@@ -1552,6 +1809,24 @@ export type Database = {
           p_serial: number | null;
         };
         Returns: string;
+      };
+      print_staff_event: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: string;
+      };
+      printed_sale_apply: {
+        Args: {
+          p_event_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+          p_method: string | null;
+          p_comp: boolean | null;
+          p_buyer_name: string | null;
+          p_buyer_phone: string | null;
+        };
+        Returns: number;
       };
       rate_limit_hit: {
         Args: {
@@ -1592,6 +1867,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      return_printed_tickets: {
+        Args: {
+          p_event_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+          p_note?: string | null;
+        };
+        Returns: number;
+      };
       review_event: {
         Args: {
           p_event_id: string | null;
@@ -1614,6 +1898,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      save_print_seller: {
+        Args: {
+          p_event_id: string | null;
+          p_seller_id: string | null;
+          p_name: string | null;
+          p_phone?: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: string;
+      };
       scanner_attendees: {
         Args: {
           p_event_id: string | null;
@@ -1629,11 +1923,36 @@ export type Database = {
           serial: string;
         }[];
       };
+      sell_printed_ticket: {
+        Args: {
+          p_ticket_id: string | null;
+          p_method?: string | null;
+          p_comp?: boolean | null;
+          p_buyer_name?: string | null;
+          p_buyer_phone?: string | null;
+        };
+        Returns: Json;
+      };
+      set_print_batch_options: {
+        Args: {
+          p_batch_id: string | null;
+          p_require_sale: boolean | null;
+          p_printing_cost_paisa: number | null;
+        };
+        Returns: undefined;
+      };
       set_printed_ticket_buyer: {
         Args: {
           p_ticket_id: string | null;
           p_name: string | null;
           p_phone?: string | null;
+        };
+        Returns: undefined;
+      };
+      settle_print_seller: {
+        Args: {
+          p_seller_id: string | null;
+          p_close: boolean | null;
         };
         Returns: undefined;
       };
@@ -1681,6 +2000,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      undo_printed_sale: {
+        Args: {
+          p_event_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+        };
+        Returns: number;
+      };
       update_member_role: {
         Args: {
           p_org_id: string | null;
@@ -1708,7 +2035,7 @@ export type Database = {
     };
     Enums: {
       checkin_method: "scan" | "manual";
-      checkin_result: "ok" | "invalid" | "expired_code" | "wrong_event" | "already_used" | "cancelled" | "not_allowed" | "not_found";
+      checkin_result: "ok" | "invalid" | "expired_code" | "wrong_event" | "already_used" | "cancelled" | "not_allowed" | "not_found" | "not_sold";
       dispute_status: "open" | "resolved";
       email_status: "sent" | "failed" | "logged";
       event_status: "draft" | "pending_review" | "published" | "rejected" | "cancelled";
