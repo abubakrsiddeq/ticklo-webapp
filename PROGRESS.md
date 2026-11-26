@@ -196,7 +196,8 @@ Event dashboard → **Printed tickets** tab.
   at 1000 by the Supabase API – now paged.
 - Tests: 6 DB tests (incl. 50 printed / 40 sold / 38 used / 10 returned / Rs 78,000), 4 unit tests.
   Not yet clicked through in a real browser against Supabase.
-- **Needs:** apply migration `20261126001200_printed_sales.sql` to TICkLO.
+- Migration `20261126001200_printed_sales.sql` applied to TICkLO (2026-11-26) and checked; the 50
+  printed tickets already there are now "in stock".
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -248,7 +249,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261126001200_printed_sales.sql`** to TICkLO (printed sales, D-041).
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.
