@@ -23,6 +23,9 @@ If a session stops, resume from the first unchecked milestone below.
 - [x] **M10 "Should" items + polish** – PWA, reminders, cron endpoints, unit tests, final README.
 - [x] **M11 Printed tickets (D-039)** – templates, Canva-style editor, batches with unique QR +
       serial, print-ready PDF, void/buyer records, scanner + reports. Migration `…001000`.
+- [x] **M12 Ambassadors (D-043)** – referral links + codes, promo codes and discounts, rewards
+      and milestones, leaderboard, organizer tab, ambassador screen, applications, campus
+      ambassadors. Migration `…001400` (**not applied to TICkLO yet**).
 
 ## Done (by requirement ID)
 
@@ -206,6 +209,44 @@ Event dashboard → **Printed tickets** tab.
   real browser yet.
 - Migration `20261126001300_gate_sales.sql` applied to TICkLO (2026-11-27) and checked.
 
+## Change 2026-11-27: ambassadors, referral links, promo codes, rewards (D-043)
+Event dashboard → **Ambassadors** tab; ambassadors use **Sell → My link & rank**.
+- AMB-01 Ambassadors are the event's sellers (one person = one code for online + paper). Program
+  settings per event: reward, buyer discount, credit rule, leaderboard, applications, milestones.
+- AMB-02 Every seller gets a code from their first name (`ALI`, `ALI2`); organizer can change it.
+- AMB-03 Share link `/e/<society>/<event>?ref=ALI`: "Ali invited you · Rs 100 off" banner, link
+  opens counted (once per browser per day, IP-limited).
+- AMB-04 Link remembered 7 days (cookie per event); a typed code wins; stored on the order for
+  good. Closed ambassadors get nothing new.
+- AMB-05 Ambassador screen `/sell/<event>/promote`: code, WhatsApp share (ready Roman Urdu
+  message), copy, native share, downloadable QR, rank, tickets, link opens, live refresh with a
+  cheer on new tickets. Events without paper tickets open straight on this screen.
+- AMB-06 Rewards: none / Rs per ticket / % of money brought, up to 10 milestones with progress
+  bar, "Reward given" entries (money or a gift note), earned / given / due.
+- AMB-07 Discounts: ambassador discount + promo codes (Rs off each ticket or %, max uses, dates,
+  ticket types, minimum tickets for group deals). One discount per order – the bigger one. Code
+  box with live preview in the booking widget; discount shown on checkout, status, payment
+  review, admin order page, report + CSV.
+- AMB-08 Organizer tab: tiles, ranked ambassador cards (link, code, clicks, online + paper,
+  counted, money, reward, due, milestones, WhatsApp "here is your link"), promo codes, rewards
+  given, CSV export; report section "Ambassadors & promo codes".
+- AMB-09 Credit when approved (paper: when sold) or – option – only when scanned at the gate.
+- AMB-10 Leaderboard: top 10 as "First L." + own rank; organizer can hide it.
+- AMB-11 Applications: "Become an ambassador" on the event page → organizer accepts/declines
+  (sees name, phone, university, message and record at other events).
+- AMB-12 No self-referral (same account or same phone), "N orders from one phone" warning,
+  rate-limited code checks, used promo codes can only be turned off.
+- AMB-13 `/me/ambassador`: all my events, totals, "#1" count; menu link "My ambassador page".
+- AMB-14 TickLO campus ambassadors: admin → Ambassadors (add by email, code, campus, on/off,
+  societies brought / approved / events live / paid tickets); code on the society register form
+  or later in Society profile (owner, first 30 days).
+- Tests: 12 DB tests (codes, links, own code, preview + clicks, discounts, max uses, 100 % off,
+  credit approved vs gate, rewards, payouts, same-phone flag, settings, applications, own view,
+  campus ambassadors) and 8 unit tests (discount maths, labels, milestones, share text).
+  `npm run check` passes (typecheck, lint, 57 unit tests, production build); 86 DB tests pass.
+- **Not yet clicked through in a real browser** and the migration is **not applied to TICkLO**
+  (see "Needs from Abubakar").
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -220,8 +261,8 @@ Event dashboard → **Printed tickets** tab.
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (74 tests).
-- **Unit tests:** `cd web && npm test` (49 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (86 tests).
+- **Unit tests:** `cd web && npm test` (57 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
 
@@ -253,9 +294,18 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 | 11 | Report shows approved orders and collected amount | Event → Report (print to PDF or CSV) |
 | 12 | Other society's dashboard / someone else's ticket → "Not allowed" | As `student@` open `/org/lums-music-society` and another user's `/me/tickets/<id>` |
 | 13 | All pages fine at 360 px | Chrome DevTools device mode 360×740 |
+| 14 | Ambassador link + reward (D-043) | Organizer: event → Ambassadors → Add ambassador (team member) → Program: Rs 50 per ticket, Rs 100 off for buyers → Save. Copy the card's link → open it logged out as another user → banner "… invited you" → book → price is Rs 100 less per ticket → approve → card shows 1 counted, reward Rs 50; the ambassador opens Sell → My link & rank and sees rank #1 |
+| 15 | Promo code | Ambassadors → New promo code `FAST20`, 20 %, min 2 tickets → book 1 ticket with the code (error) → 2 tickets (20 % off) |
+| 16 | Applications | Program → tick "Take applications" → student opens the event page → Apply → organizer Accepts → student gets "My ambassador page" in the menu |
+| 17 | Campus ambassador | Admin → Ambassadors → add a user's email + code → register a new society with that code → admin page shows 1 society |
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127001400_ambassadors.sql` to TICkLO** (same D-034 method as before),
+  **first**, then redeploy the web app on Hostinger. Order matters: the current live web keeps
+  working with the new migration (the new `create_order` arguments are optional), but the new
+  web build without the migration would break booking. No new env vars, no Edge Function
+  redeploy.
 - ~~Apply migrations `…000900_admin_roles` and `…001000_printed_tickets`~~ – applied to TICkLO
   on 2026-11-26 (D-034 method, recorded in the migration history). Please try it: event →
   Printed tickets → New → pick a template → Create 4 → Download PDF (A4) → print at 100 % → scan.

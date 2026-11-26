@@ -27,7 +27,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ ord
     .from("orders")
     .select(
       `*, events!inner ( id, name, slug, starts_at, status, org_id, organizations!inner ( id, name, slug ) ),
-       order_items ( quantity, unit_price_paisa, ticket_types!inner ( name ) )`,
+       order_items ( quantity, unit_price_paisa, ticket_types!inner ( name ) ),
+       print_sellers ( name, ref_code ), promo_codes ( code )`,
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -89,6 +90,23 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ ord
               <dd>{order.order_items.map((i) => `${i.quantity}× ${i.ticket_types.name}`).join(", ")}</dd>
               <dt className="text-muted-foreground">Amount</dt>
               <dd className="font-semibold">{formatPKR(order.total_paisa, { freeLabel: "Free" })}</dd>
+              {Number(order.discount_paisa) > 0 ? (
+                <>
+                  <dt className="text-muted-foreground">Discount</dt>
+                  <dd>
+                    −{formatPKR(Number(order.discount_paisa))}
+                    {order.promo_codes ? ` (${order.promo_codes.code})` : ""}
+                  </dd>
+                </>
+              ) : null}
+              {order.print_sellers ? (
+                <>
+                  <dt className="text-muted-foreground">Ambassador</dt>
+                  <dd>
+                    {order.print_sellers.name} ({order.print_sellers.ref_code}, {order.referral_source ?? "link"})
+                  </dd>
+                </>
+              ) : null}
               <dt className="text-muted-foreground">Booked</dt>
               <dd>{formatDateTime(order.created_at)}</dd>
               {order.submitted_at ? (

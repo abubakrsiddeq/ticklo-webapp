@@ -80,7 +80,10 @@ export async function checkCode(eventId: string, code: string): Promise<ActionRe
   if (!z.string().uuid().safeParse(eventId).success) return { ok: false, error: "Event not found." };
   const c = normalizeCode(code);
   if (!c || c.length < 3 || c.length > 16) return { ok: false, error: "Enter a code of 3 to 16 letters or digits." };
-  if (!(await rateLimit(`code:${await clientIp()}`, 20, 600))) return { ok: false, error: "Too many tries. Please wait a few minutes." };
+  // per account when logged in (a whole campus can share one IP), else per IP with a higher limit
+  const who = await getCurrentUser();
+  const allowed = who ? await rateLimit(`code:u:${who.id}`, 20, 600) : await rateLimit(`code:ip:${await clientIp()}`, 100, 600);
+  if (!allowed) return { ok: false, error: "Too many tries. Please wait a few minutes." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("referral_preview", { p_event_id: eventId, p_code: c });
   if (error) return fail(error);
@@ -105,7 +108,7 @@ export async function trackReferralClick(eventId: string, code: string): Promise
   if (!z.string().uuid().safeParse(eventId).success) return;
   const c = normalizeCode(code);
   if (!c || c.length > 16) return;
-  if (!(await rateLimit(`refclick:${await clientIp()}`, 30, 3600))) return;
+  if (!(await rateLimit(`refclick:${await clientIp()}`, 300, 3600))) return; // campus WiFi = many people, one IP
   const supabase = await createClient();
   await supabase.rpc("track_referral_click", { p_event_id: eventId, p_code: c });
 }

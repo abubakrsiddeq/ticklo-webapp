@@ -121,7 +121,10 @@ export default async function PrintSalesPage({ params }: { params: Promise<{ soc
 
           <section className="grid gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-heading text-lg font-bold text-navy">Sellers</h3>
+              <div>
+                <h3 className="font-heading text-lg font-bold text-navy">Sellers</h3>
+                <p className="text-sm text-muted-foreground">Same people as on the Ambassadors tab – their online link sales and rank are there.</p>
+              </div>
               <div className="flex gap-2">
                 <Button asChild variant="outline">
                   <a href={`${base}/sales/export`} download>

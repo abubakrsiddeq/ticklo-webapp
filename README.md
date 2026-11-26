@@ -32,6 +32,11 @@ hosting. Free tiers only.
    pick a template, edit it, choose how many, download the print-ready PDF. Every paper ticket has
    its own QR + serial and is scanned the same way (D-039). Sellers get serial ranges and mark
    sales on their phone at `/sell`; Sales & cash shows each seller's account (D-041).
+7. **Ambassadors** (event → Ambassadors): every seller/ambassador gets a personal link
+   (`/e/<society>/<event>?ref=ALI`) and code. Bookings through them count for them (online +
+   paper), with a leaderboard, rewards/milestones the society pays, buyer discounts and promo
+   codes. Students can apply from the event page; ambassadors see their numbers at
+   `/sell/<event>/promote`. TickLO campus ambassadors bring new societies with a code (D-043).
 
 All money/ticket rules live in Postgres functions (atomic, shared with the future Flutter app);
 QR signing lives in an Edge Function so the key never leaves Supabase.
