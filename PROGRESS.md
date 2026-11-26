@@ -28,7 +28,7 @@ If a session stops, resume from the first unchecked milestone below.
       ambassadors. Migration `…001400` applied to TICkLO (2026-11-27).
 - [x] **M13 Festivals (D-044)** – sessions (workshops, competitions, nights, talks), ticket access
       (pass / chosen sessions), session seats, session scanning, questions, team registration with
-      shortlisting and results, session managers. Migration `…001500` (**not applied to TICkLO yet**).
+      shortlisting and results, session managers. Migration `…001500` applied to TICkLO (2026-11-27).
 
 ## Done (by requirement ID)
 
@@ -289,7 +289,14 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   team, shortlisting/pay/decline/withdraw, results, duplicate) and 5 unit tests (days in PKT,
   clashes, answers, labels, scan wording). `npm run check` passes (62 unit tests, build);
   97 DB tests pass.
-- **Not clicked through in a real browser yet**; migration **not applied to TICkLO** (see "Needs").
+- Migration `20261127001500_festival_sessions.sql` applied to TICkLO (2026-11-27) in one transaction
+  (D-034 method, recorded in the migration history) and checked: 5 new tables with RLS, one
+  `create_order` (8 arguments), `wrong_session` scan result, `entry_at` filled for the 25 tickets
+  already checked in, the 2 existing ticket types are passes, the live event's availability
+  unchanged (443 / 199), orders and tickets untouched. Advisors: only the expected "can execute"
+  warnings (1 new public one on purpose: `event_schedule`).
+- **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
+  working; deploy the new build to switch festivals on.
 
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
@@ -348,11 +355,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127001500_festival_sessions.sql` to TICkLO first, then deploy the web
-  build.** The current live build keeps working with the migration (`create_order` only gained
-  optional arguments), but the new build without it would break scanning and booking. No new
-  env vars (session scans use the existing `QR_SIGNING_SECRET` on Hostinger), no Edge Function
-  redeploy.
+- **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is
+  already applied to TICkLO; no new env vars – session scans use the existing
+  `QR_SIGNING_SECRET` – and no Edge Function redeploy). Then try checks #18–20.
 - **Deploy the new web build on Hostinger** to switch on ambassadors and promo codes
   (migration `…001400` is already applied to TICkLO; no new env vars, no Edge Function
   redeploy). Then try checks #14–17 under "How to test".
