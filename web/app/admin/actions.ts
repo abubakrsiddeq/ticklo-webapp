@@ -187,3 +187,22 @@ export async function removeOrgMember(orgId: string, userId: string): Promise<Ac
   revalidatePath("/org", "layout");
   return { ok: true, message: "Removed from the society." };
 }
+
+/** AMB-14: make someone a TickLO campus ambassador (by email), change their code, or turn it off. */
+export async function saveCampusAmbassador(input: { email?: string; userId?: string; code: string; universityId: string | null; active: boolean }): Promise<ActionResult> {
+  if (!(await admin())) return { ok: false, error: "Admins only." };
+  const supabase = await createClient();
+  let userId = input.userId && uuid.safeParse(input.userId).success ? input.userId : null;
+  if (!userId) {
+    const email = z.string().trim().toLowerCase().email().safeParse(input.email ?? "");
+    if (!email.success) return { ok: false, error: "Enter the person's email.", fieldErrors: { email: "Valid email" } };
+    const { data: profile } = await createAdminClient().from("profiles").select("id").ilike("email", email.data.replace(/[%_\\]/g, (m) => `\\${m}`)).maybeSingle();
+    if (!profile) return { ok: false, error: "No TickLO account with this email. Ask them to sign up first.", fieldErrors: { email: "No account" } };
+    userId = profile.id;
+  }
+  const universityId = input.universityId && uuid.safeParse(input.universityId).success ? input.universityId : null;
+  const { error } = await supabase.rpc("admin_save_campus_ambassador", { p_user_id: userId, p_code: input.code, p_university_id: universityId, p_active: input.active });
+  if (error) return fail(error, { code: "Try another code" });
+  revalidatePath("/admin/ambassadors");
+  return { ok: true, message: input.active ? "Campus ambassador saved." : "Campus ambassador turned off." };
+}

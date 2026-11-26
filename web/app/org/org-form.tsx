@@ -38,7 +38,7 @@ export function OrgForm({
         else {
           toast.error(res.error);
           const fe = res.fieldErrors ?? {};
-          setFileErrors({ logo: fe.logo ?? "", proof: fe.proof ?? "" });
+          setFileErrors({ logo: fe.logo ?? "", proof: fe.proof ?? "", referral_code: fe.referral_code ?? "" });
           for (const [k, v] of Object.entries(fe)) if (k in defaults) form.setError(k as keyof OrgInput, { message: v });
         }
       }),
@@ -96,6 +96,11 @@ export function OrgForm({
           <Input id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="pt-2" />
         </FormField>
       </div>
+      {mode === "create" ? (
+        <FormField id="referral_code" label="TickLO ambassador code (optional)" hint="Did a TickLO campus ambassador tell you about us? Enter their code." error={fileErrors.referral_code || undefined}>
+          <Input id="referral_code" name="referral_code" maxLength={16} autoComplete="off" autoCapitalize="characters" className="font-mono uppercase sm:max-w-xs" />
+        </FormField>
+      ) : null}
       <SubmitButton pending={pending} pendingText="Saving…" variant={mode === "create" ? "brand" : "default"} className="sm:justify-self-start">
         {mode === "create" ? "Submit for approval" : "Save changes"}
       </SubmitButton>

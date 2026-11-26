@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgStaff } from "@/lib/auth";
+import { serverNow } from "@/lib/time";
+import { ReferralCodeForm } from "./referral-form";
 import { listUniversities } from "@/lib/queries/public";
 import { updateOrganization } from "../../_actions/org";
 import { OrgForm } from "../../org-form";
@@ -9,10 +11,13 @@ export const metadata: Metadata = { title: "Society profile" };
 
 export default async function OrgSettingsPage({ params }: { params: Promise<{ society: string }> }) {
   const { society } = await params;
-  const { org } = await requireOrgStaff(society, `/org/${society}/settings`);
+  const { org, role } = await requireOrgStaff(society, `/org/${society}/settings`);
+  // AMB-14: owners can still say which TickLO ambassador brought them (first 30 days)
+  const canAddReferral = role === "owner" && !org.referred_by && serverNow() - new Date(org.created_at).getTime() < 30 * 86400 * 1000;
   const universities = await listUniversities();
   const links = (org.social_links ?? {}) as Record<string, string>;
   return (
+    <div className="grid gap-6">
     <Card>
       <CardHeader>
         <CardTitle>Society profile</CardTitle>
@@ -34,5 +39,17 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ so
         />
       </CardContent>
     </Card>
+    {canAddReferral ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Who told you about TickLO?</CardTitle>
+          <CardDescription>If a TickLO campus ambassador helped you sign up, enter their code so they get credit. You can do this once.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ReferralCodeForm orgSlug={org.slug} />
+        </CardContent>
+      </Card>
+    ) : null}
+    </div>
   );
 }

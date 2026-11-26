@@ -10,6 +10,14 @@ import { readUpload, uploadPrivate, uploadPublicImage } from "@/lib/storage";
 import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { orgSchema, socialLinksFrom } from "@/lib/validation/org";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeCode } from "@/lib/referrals";
+
+/** AMB-14: is this an active TickLO campus ambassador code? (checked before the society is created) */
+async function campusCodeExists(code: string): Promise<boolean> {
+  const { data } = await createAdminClient().from("campus_ambassadors").select("user_id").eq("code", code).eq("active", true).maybeSingle();
+  return Boolean(data);
+}
 
 /** ORG-01: register a society (pending until an admin approves). */
 export async function createOrganization(form: FormData): Promise<ActionResult> {
@@ -23,6 +31,8 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
   const errs: Record<string, string> = {};
   if (logo.error) errs.logo = logo.error;
   if (proof.error) errs.proof = proof.error;
+  const referral = normalizeCode(String(form.get("referral_code") ?? ""));
+  if (referral && (referral.length > 16 || !(await campusCodeExists(referral)))) errs.referral_code = "This TickLO ambassador code is not valid.";
   if (Object.keys(errs).length) return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: errs };
 
   let logoUrl: string | null = null;
@@ -48,6 +58,13 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
       p_proof_path: proofPath,
     });
     if (!error) {
+      if (referral) {
+        const { data: created } = await supabase.from("organizations").select("id").eq("slug", slug).maybeSingle();
+        if (created) {
+          const { error: refError } = await supabase.rpc("set_org_referral", { p_org_id: created.id, p_code: referral });
+          if (refError) console.error("referral code not saved", refError.message);
+        }
+      }
       revalidatePath("/", "layout");
       redirect(`/org/${slug}?created=1`);
     }
@@ -98,4 +115,17 @@ export async function resubmitOrganization(orgSlug: string): Promise<ActionResul
   if (error) return fail(error);
   revalidatePath(`/org/${orgSlug}`, "layout");
   return { ok: true, message: "Sent to TickLO for review again." };
+}
+
+/** AMB-14: the owner adds a TickLO campus ambassador code later (once, first 30 days). */
+export async function setOrgReferral(orgSlug: string, code: string): Promise<ActionResult> {
+  const access = await getOrgAccess(orgSlug);
+  if (!access?.user || access.role !== "owner") return { ok: false, error: "Only the society owner can do that." };
+  const c = normalizeCode(code);
+  if (!c || c.length > 16) return { ok: false, error: "Enter the code.", fieldErrors: { code: "Enter the code" } };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_org_referral", { p_org_id: access.org.id, p_code: c });
+  if (error) return fail(error, { code: "Not valid" });
+  revalidatePath(`/org/${orgSlug}`, "layout");
+  return { ok: true, message: "Thanks! The ambassador gets credit for bringing you." };
 }
