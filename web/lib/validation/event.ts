@@ -20,6 +20,8 @@ export const eventSchema = z
     capacity: intString("Capacity", 1, 100000),
     visibility: z.enum(["public", "link_only"]),
     max_tickets_per_order: intString("Max tickets per order", 1, 20),
+    // FES-15: single event, festival with sessions, or competition / registration
+    format: z.enum(["single", "festival", "competition"], { message: "Choose what kind of event this is" }),
   })
   .refine((v) => (fromPKTInputValue(v.ends_at) ?? "") > (fromPKTInputValue(v.starts_at) ?? ""), {
     message: "End time must be after the start time",

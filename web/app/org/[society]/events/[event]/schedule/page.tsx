@@ -8,12 +8,23 @@ import { createClient } from "@/lib/supabase/server";
 import { formatTime, toPKTInputValue } from "@/lib/format";
 import { asQuestions, feeLabel, groupByDay, kindEmoji, kindLabel, teamSizeLabel } from "@/lib/sessions";
 import { DeleteSessionButton, SessionDialog, SessionManagers, type SessionValue } from "@/components/sessions/session-forms";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SetupChecklist } from "@/components/sessions/setup-checklist";
+import { getSetupSteps } from "@/lib/queries/setup";
+import { asEventFormat } from "@/lib/sessions";
 
 export const metadata: Metadata = { title: "Schedule" };
 
 /** D-044 (FES-01, FES-08, FES-12, FES-14): the festival's sessions, seats, managers. */
-export default async function SchedulePage({ params }: { params: Promise<{ society: string; event: string }> }) {
+export default async function SchedulePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ society: string; event: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const { society, event: eventSlug } = await params;
+  const sp = await searchParams;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/schedule`);
   const supabase = await createClient();
   const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }] = await Promise.all([
@@ -28,18 +39,47 @@ export default async function SchedulePage({ params }: { params: Promise<{ socie
   const names = new Map(teamOptions.map((t) => [t.user_id, t.name]));
   const editable = event.status !== "cancelled";
   const defaultStart = toPKTInputValue(event.starts_at);
+  const format = asEventFormat(event.format);
+  const steps = event.status === "published" || event.status === "cancelled" ? null : await getSetupSteps(event, `/org/${org.slug}/events/${event.slug}`);
+  const isCompetition = format === "competition";
 
   return (
     <div className="grid gap-6">
+      {steps ? <SetupChecklist steps={steps} format={format} /> : null}
+      {sp.created ? (
+        <Alert>
+          <AlertDescription>
+            {isCompetition
+              ? "Draft created. Set up your competition below: team size, entry fee and how many teams can take part."
+              : "Draft created. Now add the sessions – each workshop, competition, night or talk – then create passes and session tickets on Edit & tickets."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-2xl">
-          <h3 className="font-heading text-lg font-bold text-navy">Schedule</h3>
+          <h3 className="font-heading text-lg font-bold text-navy">{isCompetition ? "Competition" : "Schedule"}</h3>
           <p className="text-sm text-muted-foreground">
-            Festival with workshops, competitions, a qawwali night…? Add each one as a session. Then on <strong>Edit &amp; tickets</strong> choose what
-            each ticket opens: a pass, or only some sessions. Competitions get team registration.
+            {isCompetition ? (
+              <>Teams register from the event page, pay the entry fee (or wait for shortlisting) and get one pass per team or per member. You can add more than one competition (e.g. categories).</>
+            ) : (
+              <>
+                Add each workshop, competition, qawwali night or talk as a session. Then on <strong>Edit &amp; tickets</strong> choose what each ticket opens: a
+                pass, or only some sessions. Competitions get team registration.
+              </>
+            )}
           </p>
         </div>
-        {editable ? <SessionDialog orgSlug={org.slug} eventId={event.id} defaultStart={defaultStart} eventVenue={event.venue} /> : null}
+        {editable ? (
+          <SessionDialog
+            orgSlug={org.slug}
+            eventId={event.id}
+            defaultStart={defaultStart}
+            eventVenue={event.venue}
+            defaultKind={isCompetition || sp.add === "competition" ? "competition" : "workshop"}
+            defaultOpen={sp.add === "competition" && !list.length}
+            addLabel={isCompetition ? "Add competition" : "Add session"}
+          />
+        ) : null}
       </div>
 
       {list.length ? (
@@ -146,7 +186,9 @@ export default async function SchedulePage({ params }: { params: Promise<{ socie
         <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-8 text-center shadow-card">
           <CalendarRange className="size-10 text-brand-strong" aria-hidden />
           <p className="max-w-md text-sm text-muted-foreground">
-            No sessions – this is a simple event with one entry. Add sessions if it has workshops, competitions or several nights.
+            {isCompetition
+              ? "No competition yet. Click “Add competition” to set the team size, entry fee and number of teams."
+              : "No sessions yet. Add the first workshop, competition, night or talk."}
           </p>
         </div>
       )}

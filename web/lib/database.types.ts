@@ -500,6 +500,7 @@ export type Database = {
           created_by: string | null;
           description: string | null;
           ends_at: string;
+          format: string;
           id: string;
           max_tickets_per_order: number;
           name: string;
@@ -526,6 +527,7 @@ export type Database = {
           created_by?: string | null;
           description?: string | null;
           ends_at: string;
+          format?: string;
           id?: string;
           max_tickets_per_order?: number;
           name: string;
@@ -552,6 +554,7 @@ export type Database = {
           created_by?: string | null;
           description?: string | null;
           ends_at?: string;
+          format?: string;
           id?: string;
           max_tickets_per_order?: number;
           name?: string;

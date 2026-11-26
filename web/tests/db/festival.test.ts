@@ -321,3 +321,23 @@ describe("duplicate event (FES-01)", () => {
     expect(rows[1]).toMatchObject({ all_sessions: false, reg_for: "Coding Cup", opens: ["Coding Cup"] });
   });
 });
+
+describe("event format (FES-15)", () => {
+  it("is single by default and organizers can choose festival or competition", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    expect((await c.query("select format from public.events where id = $1", [eventId])).rows[0].format).toBe("single");
+    // organizers write events directly (column grants) – the new column is writable
+    await org(() => c.query("update public.events set format = 'festival' where id = $1", [eventId]));
+    expect((await c.query("select format from public.events where id = $1", [eventId])).rows[0].format).toBe("festival");
+    await expect(org(() => c.query("update public.events set format = 'party' where id = $1", [eventId]))).rejects.toThrow(/events_format/);
+    const id = await org(async () => {
+      const r = await c.query(
+        `insert into public.events (org_id, slug, name, venue, starts_at, ends_at, capacity, format, created_by)
+         values ($1, 'fmt-' || substr(md5(random()::text), 1, 8), 'Hackathon', 'Lab', now() + interval '3 days', now() + interval '4 days', 100, 'competition', $2) returning id`,
+        [SEED.org, SEED.organizer],
+      );
+      return r.rows[0].id as string;
+    });
+    expect((await c.query("select format from public.events where id = $1", [id])).rows[0].format).toBe("competition");
+  });
+});

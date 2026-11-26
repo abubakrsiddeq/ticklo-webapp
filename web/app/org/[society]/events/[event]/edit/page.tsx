@@ -10,6 +10,9 @@ import { deleteDraftEvent, duplicateEvent, submitEvent, updateEvent } from "@/ap
 import { EventForm } from "../../event-form";
 import { TicketTypesEditor, type EditorTicketType } from "./ticket-types-editor";
 import { AccountsPicker } from "./accounts-picker";
+import { asEventFormat } from "@/lib/sessions";
+import { getSetupSteps } from "@/lib/queries/setup";
+import { SetupChecklist } from "@/components/sessions/setup-checklist";
 
 export const metadata: Metadata = { title: "Edit event" };
 
@@ -59,9 +62,13 @@ export default async function EditEventPage({
 
   const editable = event.status !== "cancelled";
   const canSubmit = event.status === "draft" || event.status === "rejected";
+  const format = asEventFormat(event.format);
+  const base = `/org/${org.slug}/events/${event.slug}`;
+  const steps = event.status === "published" || event.status === "cancelled" ? null : await getSetupSteps(event, base);
 
   return (
     <div className="grid gap-6">
+      {steps ? <SetupChecklist steps={steps} format={format} /> : null}
       {sp.created || sp.duplicated ? (
         <Alert>
           <AlertDescription>
@@ -106,17 +113,23 @@ export default async function EditEventPage({
         </Card>
       ) : null}
 
-      <Card>
+      <Card id="tickets" className="scroll-mt-28">
         <CardHeader>
-          <CardTitle>Ticket types</CardTitle>
-          <CardDescription>Price 0 = free ticket, issued instantly.</CardDescription>
+          <CardTitle>{format === "competition" ? "Audience tickets (optional)" : format === "festival" ? "Tickets & passes" : "Ticket types"}</CardTitle>
+          <CardDescription>
+            {format === "competition"
+              ? "Teams pay their entry fee when they register (Competition tab). Add tickets here only if spectators need one."
+              : format === "festival"
+                ? "A pass opens every session included in passes; a session ticket opens only the sessions you choose. Price 0 = free."
+                : "Price 0 = free ticket, issued instantly."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <TicketTypesEditor orgSlug={org.slug} eventId={event.id} types={editorTypes} capacity={event.capacity} editable={editable} sessions={sessions ?? []} />
+          <TicketTypesEditor orgSlug={org.slug} eventId={event.id} types={editorTypes} capacity={event.capacity} editable={editable} sessions={sessions ?? []} format={format} scheduleHref={`${base}/schedule`} />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="accounts" className="scroll-mt-28">
         <CardHeader>
           <CardTitle>Payment accounts shown to students</CardTitle>
           <CardDescription>Students send money directly to these accounts.</CardDescription>
@@ -137,7 +150,7 @@ export default async function EditEventPage({
       </Card>
 
       {editable ? (
-        <Card>
+        <Card id="details" className="scroll-mt-28">
           <CardHeader>
             <CardTitle>Event details</CardTitle>
           </CardHeader>
@@ -155,6 +168,7 @@ export default async function EditEventPage({
                 capacity: String(event.capacity),
                 visibility: event.visibility,
                 max_tickets_per_order: String(event.max_tickets_per_order),
+                format: asEventFormat(event.format),
               }}
             />
           </CardContent>

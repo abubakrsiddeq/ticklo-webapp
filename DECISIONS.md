@@ -472,3 +472,26 @@ tickets. Asked for everything except certificates.
 - **Duplicate event** copies sessions (same offset from the start), access and competition entry
   types.
 - **Not built (owner said skip):** certificates.
+
+## D-045 Ask the kind of event first (owner request, 2026-11-27)
+Owner: when adding a new event, ask whether it is a single event or several events (festival)
+and guide the rest from that.
+- **First question on "New event":** 🎟 Single event · 🎪 Festival – many sessions · 🏆
+  Competition / registration (hackathon, MUN, tournament). Stored as `events.format` (default
+  `single`; events that already had sessions became festival/competition). It can be changed later
+  on Event details; switching back to single is refused while sessions exist.
+- **The format only guides the screens** – rules still come from sessions and ticket types, so
+  nothing breaks if a "single" event has sessions.
+- **Next step after creating:** single → Edit & tickets; festival → Schedule ("add the
+  sessions"); competition → Competition tab with the competition form already open.
+- **Setup checklist** on Edit & tickets and Schedule until the event is live, with steps per
+  format (single: details → ticket types → payment accounts → submit; festival: details →
+  sessions → tickets & passes → payment accounts → submit; competition: details → competition
+  setup → audience tickets (optional) → payment accounts → submit). Payment accounts count as done
+  when everything is free.
+- **Ticket form asks "What does this ticket open?"** (pass / only these sessions) for festival and
+  competition events, so the separate "Opens" dialog was removed. Competition events don't open a
+  new ticket form by default ("Audience tickets (optional)").
+- The Schedule tab is shown only for festival/competition events (or events that already have
+  sessions) and is called "Competition" for competition events. Labels and hints in the event
+  form follow the format (e.g. "Festival starts (first day)").

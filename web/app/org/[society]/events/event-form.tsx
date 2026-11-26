@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
+import { EVENT_FORMATS } from "@/lib/sessions";
+import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/errors";
 
 // ORG-04: name, description, poster, venue, start/end (PKT), capacity, visibility, max per order
@@ -29,6 +31,7 @@ export function EventForm({
   const [preview, setPreview] = useState<string | null>(posterUrl ?? null);
   const form = useForm<EventInput>({ resolver: zodResolver(eventSchema), defaultValues: defaults });
   const { errors } = form.formState;
+  const format = useWatch({ control: form.control, name: "format" });
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     const fd = new FormData(e.currentTarget);
@@ -56,8 +59,51 @@ export function EventForm({
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate encType="multipart/form-data">
-      <FormField id="name" label="Event name" error={errors.name?.message} required>
-        <Input {...fieldAria("name", errors.name?.message)} {...form.register("name")} />
+      {/* FES-15: asked first – the next steps follow from it */}
+      <fieldset className="grid gap-2">
+        <legend className="mb-1 text-sm font-semibold text-navy">
+          {mode === "create" ? "What kind of event is this?" : "Event type"}
+          <span className="text-destructive" aria-hidden>
+            {" "}
+            *
+          </span>
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
+          {EVENT_FORMATS.map((f) => (
+            <label
+              key={f.key}
+              className={cn(
+                "flex cursor-pointer flex-col gap-1 rounded-2xl border-2 p-3 text-sm transition-colors",
+                format === f.key ? "border-brand bg-brand-soft" : "border-navy/10 hover:border-brand/40",
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <input type="radio" value={f.key} className="size-4 accent-[#0B7D47]" {...form.register("format")} />
+                <span className="font-semibold text-navy">
+                  {f.emoji} {f.label}
+                </span>
+              </span>
+              {mode === "create" ? (
+                <>
+                  <span className="text-xs text-slate-700">{f.hint}</span>
+                  <span className="text-xs text-muted-foreground">{f.example}</span>
+                </>
+              ) : null}
+            </label>
+          ))}
+        </div>
+        {errors.format?.message ? (
+          <p role="alert" className="text-sm text-destructive">
+            {errors.format.message}
+          </p>
+        ) : null}
+      </fieldset>
+      <FormField id="name" label={format === "festival" ? "Festival name" : format === "competition" ? "Competition / event name" : "Event name"} error={errors.name?.message} required>
+        <Input
+          placeholder={format === "festival" ? "e.g. Aurex 2026" : format === "competition" ? "e.g. CodeFest Hackathon 2026" : "e.g. Winter Gala 2026"}
+          {...fieldAria("name", errors.name?.message)}
+          {...form.register("name")}
+        />
       </FormField>
       <FormField id="description" label="Description" error={errors.description?.message}>
         <Textarea rows={6} {...fieldAria("description", errors.description?.message)} {...form.register("description")} />
@@ -66,15 +112,27 @@ export function EventForm({
         <Input placeholder="e.g. Main Auditorium, LUMS" {...fieldAria("venue", errors.venue?.message)} {...form.register("venue")} />
       </FormField>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="starts_at" label="Starts (Pakistan time)" error={errors.starts_at?.message} required>
+        <FormField id="starts_at" label={format === "festival" ? "Festival starts (first day, PKT)" : "Starts (Pakistan time)"} error={errors.starts_at?.message} required>
           <Input type="datetime-local" {...fieldAria("starts_at", errors.starts_at?.message)} {...form.register("starts_at")} />
         </FormField>
-        <FormField id="ends_at" label="Ends (Pakistan time)" error={errors.ends_at?.message} required>
+        <FormField
+          id="ends_at"
+          label={format === "festival" ? "Festival ends (last day, PKT)" : "Ends (Pakistan time)"}
+          hint={format !== "single" ? "All sessions must fit between start and end." : undefined}
+          error={errors.ends_at?.message}
+          required
+        >
           <Input type="datetime-local" {...fieldAria("ends_at", errors.ends_at?.message)} {...form.register("ends_at")} />
         </FormField>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <FormField id="capacity" label="Capacity" hint="Total people allowed in." error={errors.capacity?.message} required>
+        <FormField
+          id="capacity"
+          label="Capacity"
+          hint={format === "festival" ? "Total people across the festival (sessions get their own seats later)." : format === "competition" ? "Participants + audience in total." : "Total people allowed in."}
+          error={errors.capacity?.message}
+          required
+        >
           <Input type="number" inputMode="numeric" min={1} {...fieldAria("capacity", errors.capacity?.message, true)} {...form.register("capacity")} />
         </FormField>
         <FormField id="max_tickets_per_order" label="Max tickets per order" error={errors.max_tickets_per_order?.message} required>
@@ -113,7 +171,13 @@ export function EventForm({
         ) : null}
       </FormField>
       <SubmitButton pending={pending} pendingText="Saving…" variant={mode === "create" ? "brand" : "default"} className="sm:justify-self-start">
-        {mode === "create" ? "Create draft & add tickets" : "Save event details"}
+        {mode === "create"
+          ? format === "festival"
+            ? "Create draft & add sessions"
+            : format === "competition"
+              ? "Create draft & set up the competition"
+              : "Create draft & add tickets"
+          : "Save event details"}
       </SubmitButton>
     </form>
   );

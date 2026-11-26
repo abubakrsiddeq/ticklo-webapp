@@ -122,3 +122,30 @@ export interface TeamMember {
   roll_no?: string;
   university?: string;
 }
+
+/** FES-15 (D-045): asked first when creating an event – guides the next steps. */
+export const EVENT_FORMATS = [
+  {
+    key: "single",
+    label: "Single event",
+    emoji: "🎟",
+    hint: "One show with one entry – a concert, qawwali night, seminar, dinner or trip.",
+    example: "e.g. Winter Gala, Qawwali Night",
+  },
+  {
+    key: "festival",
+    label: "Festival – many sessions",
+    emoji: "🎪",
+    hint: "Workshops, competitions, talks and nights inside one event, with passes and separate tickets.",
+    example: "e.g. Aurex, tech fest, sports week",
+  },
+  {
+    key: "competition",
+    label: "Competition / registration",
+    emoji: "🏆",
+    hint: "Teams or individuals register (and pay an entry fee), with optional shortlisting and results.",
+    example: "e.g. hackathon, MUN, futsal tournament",
+  },
+] as const;
+export type EventFormat = (typeof EVENT_FORMATS)[number]["key"];
+export const asEventFormat = (v: string | null | undefined): EventFormat => (v === "festival" || v === "competition" ? v : "single");

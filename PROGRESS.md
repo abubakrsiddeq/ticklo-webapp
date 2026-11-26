@@ -283,6 +283,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - FES-13 Results (1st/2nd/3rd or own labels, linked to teams) published on the event page.
 - FES-14 Per-session numbers on the event overview and the report; payment review shows team
   entries.
+- FES-15 (D-045) "What kind of event is this?" first on New event (single / festival /
+  competition) → next step, setup checklist, format-aware labels; ticket form asks what the
+  ticket opens. Migration `…001600_event_format` (**not applied to TICkLO yet**). 1 DB test.
 - Not built (owner said skip): certificates.
 - Tests: 11 DB tests (sessions + dates, seats across types/printed, questions, direct entry refused,
   access lock, session scanning + main entry, scanner limits + managers, free team, per-member
@@ -312,7 +315,7 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 ### Automated
 - **DB tests (no Docker needed):** a local Postgres 15+ must be running.
   `cd web && npm run test:db` – recreates the `ticklo_test` database from
-  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (97 tests).
+  `supabase/tests/local_stub.sql` + all migrations + seed, then runs `web/tests/db` (98 tests).
 - **Unit tests:** `cd web && npm test` (62 tests).
 - **All checks:** `cd web && npm run check` (typecheck + lint + unit tests + build).
 - **Edge Functions type-check:** `npx deno@2.9.6 check supabase/functions/*/index.ts`.
@@ -348,6 +351,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 | 14 | Ambassador link + reward (D-043) | Organizer: event → Ambassadors → Add ambassador (team member) → Program: Rs 50 per ticket, Rs 100 off for buyers → Save. Copy the card's link → open it logged out as another user → banner "… invited you" → book → price is Rs 100 less per ticket → approve → card shows 1 counted, reward Rs 50; the ambassador opens Sell → My link & rank and sees rank #1 |
 | 15 | Promo code | Ambassadors → New promo code `FAST20`, 20 %, min 2 tickets → book 1 ticket with the code (error) → 2 tickets (20 % off) |
 | 16 | Applications | Program → tick "Take applications" → student opens the event page → Apply → organizer Accepts → student gets "My ambassador page" in the menu |
+| 21 | Kind of event first (D-045) | New event → choose 🎪 Festival → you land on Schedule with the checklist; choose 🏆 Competition → the competition form opens; choose 🎟 Single → Edit & tickets as before |
 | 18 | Festival sessions (D-044) | Event → Schedule → add "AI Workshop" (workshop, 2 seats, not in passes, question "Laptop?" required) and "Qawwali" (concert, in passes) → Edit & tickets → add "Workshop" ticket → Opens → only AI Workshop. Event page shows the schedule; book 1 Workshop (answer the question) and 1 pass; try 3 workshop tickets → "Only 2 seats left" |
 | 19 | Session scanning | Scanner → choose AI Workshop → scan the workshop ticket (OK), again (Already checked in), scan the pass (Not for this session) → choose Main entry → the workshop ticket still gets in once |
 | 20 | Competition | Schedule → add "Speed Coding" (competition, 10 teams, 2–3 members, Rs 1,500 per team, shortlisting on) → event page → Apply → organizer: /manage/<id> → Accept → team lead: My tickets → Pay now → approve payment → ticket "Team …"; publish results → event page shows 🏆 |
@@ -355,6 +359,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127001600_event_format.sql` to TICkLO** (adds `events.format`; the live
+  build ignores it) before deploying the new web build – the new build needs it.
 - **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is
   already applied to TICkLO; no new env vars – session scans use the existing
   `QR_SIGNING_SECRET` – and no Edge Function redeploy). Then try checks #18–20.

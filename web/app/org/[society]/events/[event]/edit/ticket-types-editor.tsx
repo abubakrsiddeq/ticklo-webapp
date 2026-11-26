@@ -14,7 +14,13 @@ import { ActionButton } from "@/components/action-button";
 import { formatDateTime, formatPKR, paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
 import { ticketTypeSchema, type TicketTypeInput } from "@/lib/validation/event";
 import { deleteTicketType, saveTicketType } from "@/app/org/_actions/events";
-import { AccessDialog, type AccessSession } from "./access-dialog";
+
+export interface AccessSession {
+  id: string;
+  name: string;
+  kind: string;
+  pass_access: boolean;
+}
 
 export interface EditorTicketType {
   id: string;
@@ -38,14 +44,24 @@ function TypeForm({
   eventId,
   type,
   onDone,
+  sessions,
+  askAccess,
+  scheduleHref,
 }: {
   orgSlug: string;
   eventId: string;
   type: EditorTicketType | null;
   onDone: () => void;
+  sessions: AccessSession[];
+  askAccess: boolean;
+  scheduleHref?: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  // FES-15: festival tickets say what they open right in the form
+  const choosable = sessions.filter((x) => x.kind !== "competition");
+  const [allSessions, setAllSessions] = useState(type ? type.all_sessions : choosable.length === 0 || choosable.some((x) => x.pass_access));
+  const [picked, setPicked] = useState<string[]>(type?.session_ids ?? []);
   const form = useForm<TicketTypeInput>({
     resolver: zodResolver(ticketTypeSchema),
     defaultValues: {
@@ -64,7 +80,11 @@ function TypeForm({
 
   const onSubmit = form.handleSubmit((values) =>
     start(async () => {
-      const res = await saveTicketType(orgSlug, eventId, type?.id ?? null, values);
+      if (askAccess && choosable.length && !allSessions && !picked.length) {
+        toast.error("Choose at least one session, or make it a pass.");
+        return;
+      }
+      const res = await saveTicketType(orgSlug, eventId, type?.id ?? null, values, askAccess && choosable.length ? { all: allSessions, sessionIds: picked } : null);
       if (res.ok) {
         toast.success(res.message ?? "Saved");
         onDone();
@@ -110,6 +130,54 @@ function TypeForm({
         <input type="checkbox" className="size-5 accent-[#0B7D47]" disabled={locked} {...form.register("requires_student_card")} />
         Student card required (photo with payment + shown at the gate)
       </label>
+      {askAccess ? (
+        <fieldset className="grid gap-2 rounded-lg border border-navy/10 bg-white p-3">
+          <legend className="px-1 text-sm font-semibold text-navy">What does this ticket open?</legend>
+          {choosable.length ? (
+            <>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="radio" className="mt-1 size-4 accent-[#0B7D47]" checked={allSessions} onChange={() => setAllSessions(true)} />
+                <span>
+                  <span className="font-medium text-navy">All-access pass</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Main entry + {choosable.filter((x) => x.pass_access).map((x) => x.name).join(", ") || "sessions included in passes (none yet)"}
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="radio" className="mt-1 size-4 accent-[#0B7D47]" checked={!allSessions} onChange={() => setAllSessions(false)} />
+                <span className="font-medium text-navy">Only these sessions</span>
+              </label>
+              {!allSessions ? (
+                <div className="grid gap-1 pl-6">
+                  {choosable.map((x) => (
+                    <label key={x.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-[#0B7D47]"
+                        checked={picked.includes(x.id)}
+                        onChange={(e) => setPicked((p) => (e.target.checked ? [...p, x.id] : p.filter((id) => id !== x.id)))}
+                      />
+                      {x.name}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              {type?.booked ? <p className="text-xs text-muted-foreground">Tickets are sold: you can give more access, not less.</p> : null}
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No sessions yet, so this ticket is for the main entry.{" "}
+              {scheduleHref ? (
+                <a href={scheduleHref} className="font-medium text-brand-strong underline">
+                  Add sessions first
+                </a>
+              ) : null}{" "}
+              to sell passes and session tickets.
+            </p>
+          )}
+        </fieldset>
+      ) : null}
       <div className="flex gap-2">
         <SubmitButton pending={pending} pendingText="Saving…">{type ? "Save" : "Add ticket type"}</SubmitButton>
         <Button type="button" variant="ghost" onClick={onDone}>
@@ -128,6 +196,8 @@ export function TicketTypesEditor({
   capacity,
   editable,
   sessions = [],
+  format = "single",
+  scheduleHref,
 }: {
   orgSlug: string;
   eventId: string;
@@ -135,8 +205,11 @@ export function TicketTypesEditor({
   capacity: number;
   editable: boolean;
   sessions?: AccessSession[];
+  format?: string;
+  scheduleHref?: string;
 }) {
-  const [editing, setEditing] = useState<string | "new" | null>(types.length ? null : "new");
+  const askAccess = format !== "single" || sessions.length > 0;
+  const [editing, setEditing] = useState<string | "new" | null>(types.length || format === "competition" ? null : "new");
   const total = types.reduce((s, t) => s + t.quantity, 0);
   const sessionName = new Map(sessions.map((s) => [s.id, s.name]));
   const opens = (t: EditorTicketType) =>
@@ -153,7 +226,7 @@ export function TicketTypesEditor({
         {types.map((t) =>
           editing === t.id ? (
             <li key={t.id}>
-              <TypeForm orgSlug={orgSlug} eventId={eventId} type={t} onDone={() => setEditing(null)} />
+              <TypeForm orgSlug={orgSlug} eventId={eventId} type={t} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} />
             </li>
           ) : (
             <li key={t.id} className="flex flex-col gap-2 rounded-lg border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -183,9 +256,6 @@ export function TicketTypesEditor({
               </div>
               {t.registration_for ? null : editable ? (
                 <div className="flex gap-2">
-                  {sessions.length ? (
-                    <AccessDialog orgSlug={orgSlug} ticketTypeId={t.id} name={t.name} sessions={sessions} allSessions={t.all_sessions} sessionIds={t.session_ids} booked={t.booked} />
-                  ) : null}
                   <Button variant="outline" size="sm" onClick={() => setEditing(t.id)}>
                     <Pencil /> Edit
                   </Button>
@@ -208,7 +278,7 @@ export function TicketTypesEditor({
       </ul>
       {editable ? (
         editing === "new" ? (
-          <TypeForm orgSlug={orgSlug} eventId={eventId} type={null} onDone={() => setEditing(null)} />
+          <TypeForm orgSlug={orgSlug} eventId={eventId} type={null} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} />
         ) : (
           <Button variant="outline" onClick={() => setEditing("new")} className="justify-self-start">
             <Plus /> Add ticket type

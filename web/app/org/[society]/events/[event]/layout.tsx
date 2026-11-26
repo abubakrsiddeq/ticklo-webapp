@@ -4,6 +4,7 @@ import { NavTabs } from "@/components/nav-tabs";
 import { StatusBadge } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { formatEventRange } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function EventLayout({
   children,
@@ -15,6 +16,13 @@ export default async function EventLayout({
   const { society, event: eventSlug } = await params;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}`);
   const base = `/org/${org.slug}/events/${event.slug}`;
+  // FES-15: the Schedule tab is for festivals and competitions (or any event that already has sessions)
+  let showSchedule = event.format !== "single";
+  if (!showSchedule) {
+    const supabase = await createClient();
+    const { count } = await supabase.from("event_sessions").select("id", { count: "exact", head: true }).eq("event_id", event.id);
+    showSchedule = (count ?? 0) > 0;
+  }
   return (
     <div>
       <div className="mb-3 flex flex-col gap-1">
@@ -37,7 +45,7 @@ export default async function EventLayout({
         items={[
           { href: base, label: "Overview" },
           { href: `${base}/payments`, label: "Payments" },
-          { href: `${base}/schedule`, label: "Schedule" },
+          ...(showSchedule ? [{ href: `${base}/schedule`, label: event.format === "competition" ? "Competition" : "Schedule" }] : []),
           { href: `${base}/attendees`, label: "Attendees" },
           { href: `${base}/print`, label: "Printed tickets" },
           { href: `${base}/ambassadors`, label: "Ambassadors" },

@@ -13,7 +13,7 @@ export default async function NewEventPage({ params }: { params: Promise<{ socie
     <Card className="mx-auto max-w-3xl">
       <CardHeader>
         <CardTitle className="font-heading text-2xl text-navy">New event</CardTitle>
-        <CardDescription>Saved as a draft. Next you&apos;ll add ticket types and submit it for approval.</CardDescription>
+        <CardDescription>Saved as a draft. Next you&apos;ll set up tickets (and sessions for a festival), then submit it for approval.</CardDescription>
       </CardHeader>
       <CardContent>
         <EventForm
@@ -28,6 +28,7 @@ export default async function NewEventPage({ params }: { params: Promise<{ socie
             capacity: "100",
             visibility: "public",
             max_tickets_per_order: "5",
+            format: "single",
           }}
         />
       </CardContent>

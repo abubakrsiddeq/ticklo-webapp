@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { fail, type ActionResult } from "@/lib/errors";
+import { fail, friendlyError, type ActionResult } from "@/lib/errors";
 import type { TablesUpdate } from "@/lib/database.types";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
@@ -46,6 +46,7 @@ function eventFields(data: z.infer<typeof eventSchema>) {
     capacity: Number(data.capacity),
     visibility: data.visibility,
     max_tickets_per_order: Number(data.max_tickets_per_order),
+    format: data.format,
   };
 }
 
@@ -83,7 +84,15 @@ export async function createEvent(orgSlug: string, form: FormData): Promise<Acti
         await supabase.from("event_payment_accounts").insert(accounts.map((a) => ({ event_id: data.id, payment_account_id: a.id })));
       }
       revalidatePath(`/org/${orgSlug}`, "layout");
-      redirect(`/org/${orgSlug}/events/${data.slug}/edit?created=1`);
+      // FES-15: the next step depends on the kind of event
+      const base = `/org/${orgSlug}/events/${data.slug}`;
+      redirect(
+        parsed.data.format === "festival"
+          ? `${base}/schedule?created=1`
+          : parsed.data.format === "competition"
+            ? `${base}/schedule?created=1&add=competition`
+            : `${base}/edit?created=1`,
+      );
     }
     if (error?.code !== "23505") return fail(error);
     slug = withSuffix(slugify(parsed.data.name, 70), 80);
@@ -104,6 +113,11 @@ export async function updateEvent(orgSlug: string, eventId: string, form: FormDa
   if (poster.error) return { ok: false, error: poster.error, fieldErrors: { poster: poster.error } };
 
   const update: TablesUpdate<"events"> = eventFields(parsed.data);
+  const supabase = await createClient();
+  if (parsed.data.format === "single") {
+    const { count } = await supabase.from("event_sessions").select("id", { count: "exact", head: true }).eq("event_id", event.id);
+    if (count) return { ok: false, error: "This event has sessions. Delete them on the Schedule tab first, or keep it a festival.", fieldErrors: { format: "Has sessions" } };
+  }
   try {
     if (poster.file) update.poster_url = await uploadPublicImage("posters", access.org.id, poster.file);
   } catch (e) {
@@ -111,7 +125,6 @@ export async function updateEvent(orgSlug: string, eventId: string, form: FormDa
   }
   if (form.get("remove_poster") === "on" && !poster.file) update.poster_url = null;
 
-  const supabase = await createClient();
   const { error } = await supabase.from("events").update(update).eq("id", event.id);
   if (error) return fail(error);
   revalidateEvent(orgSlug, event.slug);
@@ -119,7 +132,13 @@ export async function updateEvent(orgSlug: string, eventId: string, form: FormDa
 }
 
 /** ORG-05: add or edit a ticket type. ORG-07 rules are enforced by a DB trigger. */
-export async function saveTicketType(orgSlug: string, eventId: string, ticketTypeId: string | null, input: unknown): Promise<ActionResult> {
+export async function saveTicketType(
+  orgSlug: string,
+  eventId: string,
+  ticketTypeId: string | null,
+  input: unknown,
+  ticketAccess: { all: boolean; sessionIds: string[] } | null = null,
+): Promise<ActionResult> {
   const access = await staffContext(orgSlug);
   if (!access) return { ok: false, error: "Not allowed." };
   const event = await eventOfOrg(access.org.id, eventId);
@@ -137,14 +156,28 @@ export async function saveTicketType(orgSlug: string, eventId: string, ticketTyp
     requires_student_card: d.requires_student_card,
   };
   const supabase = await createClient();
+  let id = ticketTypeId;
   if (ticketTypeId) {
     if (!uuid.safeParse(ticketTypeId).success) return { ok: false, error: "Ticket type not found." };
     const { error } = await supabase.from("ticket_types").update(row).eq("id", ticketTypeId).eq("event_id", event.id);
     if (error) return fail(error);
   } else {
     const { count } = await supabase.from("ticket_types").select("id", { count: "exact", head: true }).eq("event_id", event.id);
-    const { error } = await supabase.from("ticket_types").insert({ ...row, event_id: event.id, sort_order: (count ?? 0) + 1 });
-    if (error) return fail(error);
+    const { data: created, error } = await supabase.from("ticket_types").insert({ ...row, event_id: event.id, sort_order: (count ?? 0) + 1 }).select("id").single();
+    if (error || !created) return fail(error);
+    id = created.id;
+  }
+  // FES-15: what the ticket opens (festivals), set in the same form
+  if (ticketAccess && id) {
+    const { error } = await supabase.rpc("set_ticket_type_access", {
+      p_ticket_type_id: id,
+      p_all: ticketAccess.all,
+      p_session_ids: ticketAccess.sessionIds.filter((x) => uuid.safeParse(x).success),
+    });
+    if (error) {
+      revalidateEvent(orgSlug, event.slug);
+      return { ok: false, error: `Ticket saved, but what it opens was not: ${friendlyError(error)}` };
+    }
   }
   revalidateEvent(orgSlug, event.slug);
   return { ok: true, message: "Ticket type saved." };
@@ -260,6 +293,7 @@ export async function duplicateEvent(orgSlug: string, eventId: string): Promise<
       capacity: src.capacity,
       visibility: src.visibility,
       max_tickets_per_order: src.max_tickets_per_order,
+      format: src.format,
       created_by: access.user!.id,
     })
     .select("id, slug")

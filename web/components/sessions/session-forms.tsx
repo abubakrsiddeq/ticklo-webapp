@@ -64,15 +64,21 @@ export function SessionDialog({
   session,
   defaultStart,
   eventVenue,
+  defaultKind = "workshop",
+  defaultOpen = false,
+  addLabel = "Add session",
 }: {
   orgSlug: string;
   eventId: string;
   session?: SessionValue;
   defaultStart: string;
   eventVenue: string;
+  defaultKind?: string;
+  defaultOpen?: boolean;
+  addLabel?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState(session?.kind ?? "workshop");
+  const [open, setOpen] = useState(defaultOpen);
+  const [kind, setKind] = useState(session?.kind ?? defaultKind);
   const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
@@ -91,7 +97,7 @@ export function SessionDialog({
         </Button>
       ) : (
         <Button variant="brand" onClick={() => setOpen(true)}>
-          <Plus /> Add session
+          <Plus /> {addLabel}
         </Button>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
@@ -126,7 +132,7 @@ export function SessionDialog({
             }}
           >
             <DialogHeader>
-              <DialogTitle>{session ? `Edit ${session.name}` : "Add session"}</DialogTitle>
+              <DialogTitle>{session ? `Edit ${session.name}` : addLabel}</DialogTitle>
               <DialogDescription>A workshop, competition, concert or talk inside this event, with its own time, place and (optional) seats.</DialogDescription>
             </DialogHeader>
 
