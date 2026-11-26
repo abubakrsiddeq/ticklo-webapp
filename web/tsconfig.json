@@ -40,6 +40,10 @@
   ],
   "exclude": [
     "node_modules",
-    ".next"
+    ".next",
+    "tests",
+    "scripts",
+    "vitest.config.mts",
+    "vitest.db.config.mts"
   ]
 }
