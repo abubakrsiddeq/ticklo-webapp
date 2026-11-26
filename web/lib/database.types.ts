@@ -166,6 +166,7 @@ export type Database = {
           method: Database["public"]["Enums"]["checkin_method"];
           result: Database["public"]["Enums"]["checkin_result"];
           scanned_by: string | null;
+          session_id: string | null;
           ticket_id: string | null;
         };
         Insert: {
@@ -177,6 +178,7 @@ export type Database = {
           method: Database["public"]["Enums"]["checkin_method"];
           result: Database["public"]["Enums"]["checkin_result"];
           scanned_by?: string | null;
+          session_id?: string | null;
           ticket_id?: string | null;
         };
         Update: {
@@ -188,6 +190,7 @@ export type Database = {
           method?: Database["public"]["Enums"]["checkin_method"];
           result?: Database["public"]["Enums"]["checkin_result"];
           scanned_by?: string | null;
+          session_id?: string | null;
           ticket_id?: string | null;
         };
         Relationships: [
@@ -203,6 +206,13 @@ export type Database = {
             columns: ["scanned_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "checkins_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "event_sessions";
             referencedColumns: ["id"];
           },
           {
@@ -342,6 +352,93 @@ export type Database = {
           },
         ];
       };
+      event_sessions: {
+        Row: {
+          capacity: number | null;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          ends_at: string;
+          event_id: string;
+          fee_mode: string;
+          id: string;
+          kind: string;
+          name: string;
+          needs_approval: boolean;
+          pass_access: boolean;
+          questions: Json;
+          results: Json;
+          results_published: boolean;
+          sort_order: number;
+          starts_at: string;
+          team_max: number;
+          team_min: number;
+          updated_at: string;
+          venue: string | null;
+        };
+        Insert: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          ends_at: string;
+          event_id: string;
+          fee_mode?: string;
+          id?: string;
+          kind?: string;
+          name: string;
+          needs_approval?: boolean;
+          pass_access?: boolean;
+          questions?: Json;
+          results?: Json;
+          results_published?: boolean;
+          sort_order?: number;
+          starts_at: string;
+          team_max?: number;
+          team_min?: number;
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Update: {
+          capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          ends_at?: string;
+          event_id?: string;
+          fee_mode?: string;
+          id?: string;
+          kind?: string;
+          name?: string;
+          needs_approval?: boolean;
+          pass_access?: boolean;
+          questions?: Json;
+          results?: Json;
+          results_published?: boolean;
+          sort_order?: number;
+          starts_at?: string;
+          team_max?: number;
+          team_min?: number;
+          updated_at?: string;
+          venue?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_sessions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_sessions_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_staff: {
         Row: {
           assigned_by: string | null;
@@ -349,6 +446,7 @@ export type Database = {
           event_id: string;
           expires_at: string;
           role: string;
+          session_ids: string[] | null;
           user_id: string;
         };
         Insert: {
@@ -357,6 +455,7 @@ export type Database = {
           event_id: string;
           expires_at: string;
           role?: string;
+          session_ids?: string[] | null;
           user_id: string;
         };
         Update: {
@@ -365,6 +464,7 @@ export type Database = {
           event_id?: string;
           expires_at?: string;
           role?: string;
+          session_ids?: string[] | null;
           user_id?: string;
         };
         Relationships: [
@@ -535,6 +635,7 @@ export type Database = {
       };
       orders: {
         Row: {
+          answers: Json;
           approved_at: string | null;
           buyer_email: string | null;
           buyer_name: string;
@@ -560,6 +661,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          answers?: Json;
           approved_at?: string | null;
           buyer_email?: string | null;
           buyer_name: string;
@@ -585,6 +687,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          answers?: Json;
           approved_at?: string | null;
           buyer_email?: string | null;
           buyer_name?: string;
@@ -1475,6 +1578,185 @@ export type Database = {
           },
         ];
       };
+      session_checkins: {
+        Row: {
+          checked_in_at: string;
+          checked_in_by: string | null;
+          method: Database["public"]["Enums"]["checkin_method"];
+          session_id: string;
+          ticket_id: string;
+        };
+        Insert: {
+          checked_in_at?: string;
+          checked_in_by?: string | null;
+          method: Database["public"]["Enums"]["checkin_method"];
+          session_id: string;
+          ticket_id: string;
+        };
+        Update: {
+          checked_in_at?: string;
+          checked_in_by?: string | null;
+          method?: Database["public"]["Enums"]["checkin_method"];
+          session_id?: string;
+          ticket_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_checkins_checked_in_by_fkey";
+            columns: ["checked_in_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_checkins_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "event_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_checkins_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      session_managers: {
+        Row: {
+          assigned_by: string | null;
+          created_at: string;
+          session_id: string;
+          user_id: string;
+        };
+        Insert: {
+          assigned_by?: string | null;
+          created_at?: string;
+          session_id: string;
+          user_id: string;
+        };
+        Update: {
+          assigned_by?: string | null;
+          created_at?: string;
+          session_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_managers_assigned_by_fkey";
+            columns: ["assigned_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_managers_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "event_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_managers_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      team_registrations: {
+        Row: {
+          answers: Json;
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          event_id: string;
+          id: string;
+          member_count: number;
+          members: Json;
+          order_id: string | null;
+          reject_reason: string | null;
+          session_id: string;
+          status: string;
+          team_name: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          answers?: Json;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          event_id: string;
+          id?: string;
+          member_count: number;
+          members: Json;
+          order_id?: string | null;
+          reject_reason?: string | null;
+          session_id: string;
+          status?: string;
+          team_name: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          answers?: Json;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          event_id?: string;
+          id?: string;
+          member_count?: number;
+          members?: Json;
+          order_id?: string | null;
+          reject_reason?: string | null;
+          session_id?: string;
+          status?: string;
+          team_name?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "team_registrations_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "team_registrations_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "team_registrations_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: true;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "team_registrations_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "event_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "team_registrations_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ticket_templates: {
         Row: {
           category: string;
@@ -1523,8 +1805,39 @@ export type Database = {
           },
         ];
       };
+      ticket_type_sessions: {
+        Row: {
+          session_id: string;
+          ticket_type_id: string;
+        };
+        Insert: {
+          session_id: string;
+          ticket_type_id: string;
+        };
+        Update: {
+          session_id?: string;
+          ticket_type_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ticket_type_sessions_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "event_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ticket_type_sessions_ticket_type_id_fkey";
+            columns: ["ticket_type_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ticket_types: {
         Row: {
+          all_sessions: boolean;
           created_at: string;
           description: string | null;
           event_id: string;
@@ -1532,6 +1845,7 @@ export type Database = {
           name: string;
           price_paisa: number;
           quantity: number;
+          registration_session_id: string | null;
           requires_student_card: boolean;
           sale_ends_at: string | null;
           sale_starts_at: string | null;
@@ -1539,6 +1853,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          all_sessions?: boolean;
           created_at?: string;
           description?: string | null;
           event_id: string;
@@ -1546,6 +1861,7 @@ export type Database = {
           name: string;
           price_paisa: number;
           quantity: number;
+          registration_session_id?: string | null;
           requires_student_card?: boolean;
           sale_ends_at?: string | null;
           sale_starts_at?: string | null;
@@ -1553,6 +1869,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          all_sessions?: boolean;
           created_at?: string;
           description?: string | null;
           event_id?: string;
@@ -1560,6 +1877,7 @@ export type Database = {
           name?: string;
           price_paisa?: number;
           quantity?: number;
+          registration_session_id?: string | null;
           requires_student_card?: boolean;
           sale_ends_at?: string | null;
           sale_starts_at?: string | null;
@@ -1574,6 +1892,13 @@ export type Database = {
             referencedRelation: "events";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "ticket_types_registration_session_id_fkey";
+            columns: ["registration_session_id"];
+            isOneToOne: true;
+            referencedRelation: "event_sessions";
+            referencedColumns: ["id"];
+          },
         ];
       };
       tickets: {
@@ -1585,6 +1910,7 @@ export type Database = {
           checkin_method: Database["public"]["Enums"]["checkin_method"] | null;
           code: string;
           created_at: string;
+          entry_at: string | null;
           event_id: string;
           holder_name: string;
           holder_phone: string | null;
@@ -1611,6 +1937,7 @@ export type Database = {
           checkin_method?: Database["public"]["Enums"]["checkin_method"] | null;
           code: string;
           created_at?: string;
+          entry_at?: string | null;
           event_id: string;
           holder_name: string;
           holder_phone?: string | null;
@@ -1637,6 +1964,7 @@ export type Database = {
           checkin_method?: Database["public"]["Enums"]["checkin_method"] | null;
           code?: string;
           created_at?: string;
+          entry_at?: string | null;
           event_id?: string;
           holder_name?: string;
           holder_phone?: string | null;
@@ -1774,6 +2102,13 @@ export type Database = {
           p_note?: string | null;
         };
         Returns: string;
+      };
+      add_session_manager: {
+        Args: {
+          p_session_id: string | null;
+          p_user_id: string | null;
+        };
+        Returns: undefined;
       };
       admin_delete_university: {
         Args: {
@@ -1955,6 +2290,12 @@ export type Database = {
         };
         Returns: Json;
       };
+      assert_session_capacity: {
+        Args: {
+          p_items: Json | null;
+        };
+        Returns: undefined;
+      };
       assign_printed_tickets: {
         Args: {
           p_event_id: string | null;
@@ -1998,9 +2339,23 @@ export type Database = {
           paid_tickets: number;
         }[];
       };
+      can_manage_session: {
+        Args: {
+          p_session_id: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: boolean;
+      };
       can_scan_event: {
         Args: {
           p_event_id: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: boolean;
+      };
+      can_scan_session: {
+        Args: {
+          p_session_id: string | null;
           p_user_id?: string | null;
         };
         Returns: boolean;
@@ -2019,6 +2374,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      clean_members: {
+        Args: {
+          p_members: Json | null;
+        };
+        Returns: Json;
+      };
+      clean_questions: {
+        Args: {
+          p_questions: Json | null;
+        };
+        Returns: Json;
+      };
       create_order: {
         Args: {
           p_event_id: string | null;
@@ -2027,6 +2394,8 @@ export type Database = {
           p_buyer_phone?: string | null;
           p_code?: string | null;
           p_ref?: string | null;
+          p_answers?: Json | null;
+          p_registration_id?: string | null;
         };
         Returns: Json;
       };
@@ -2062,6 +2431,14 @@ export type Database = {
         };
         Returns: string;
       };
+      decide_team_registration: {
+        Args: {
+          p_registration_id: string | null;
+          p_approve: boolean | null;
+          p_reason?: string | null;
+        };
+        Returns: Json;
+      };
       delete_print_cash: {
         Args: {
           p_entry_id: string | null;
@@ -2086,12 +2463,25 @@ export type Database = {
         };
         Returns: undefined;
       };
+      delete_session: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: undefined;
+      };
       discount_for: {
         Args: {
           p_items: Json | null;
           p_type: string | null;
           p_value: number | null;
           p_type_ids?: string[] | null;
+        };
+        Returns: number;
+      };
+      duplicate_event_sessions: {
+        Args: {
+          p_from_event: string | null;
+          p_to_event: string | null;
         };
         Returns: number;
       };
@@ -2130,6 +2520,32 @@ export type Database = {
           p_event_id: string | null;
         };
         Returns: string;
+      };
+      event_schedule: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          id: string;
+          name: string;
+          kind: string;
+          description: string;
+          venue: string;
+          starts_at: string;
+          ends_at: string;
+          capacity: number;
+          remaining: number;
+          pass_access: boolean;
+          questions: Json;
+          team_min: number;
+          team_max: number;
+          fee_mode: string;
+          fee_paisa: number;
+          needs_approval: boolean;
+          registration_type_id: string;
+          registration_ends_at: string;
+          results: Json;
+        }[];
       };
       event_stats: {
         Args: {
@@ -2240,6 +2656,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      manual_session_check_in: {
+        Args: {
+          p_ticket_id: string | null;
+          p_session_id: string | null;
+          p_device?: string | null;
+        };
+        Returns: Json;
+      };
       mark_printed_sold: {
         Args: {
           p_event_id: string | null;
@@ -2288,6 +2712,21 @@ export type Database = {
           events: number;
         }[];
       };
+      my_managed_sessions: {
+        Args: never;
+        Returns: {
+          session_id: string;
+          session_name: string;
+          kind: string;
+          starts_at: string;
+          ends_at: string;
+          event_id: string;
+          event_name: string;
+          org_name: string;
+          org_slug: string;
+          event_slug: string;
+        }[];
+      };
       my_print_stock: {
         Args: {
           p_event_id: string | null;
@@ -2316,7 +2755,14 @@ export type Database = {
           starts_at: string;
           ends_at: string;
           access: string;
+          sessions_only: boolean;
         }[];
+      };
+      my_scan_sessions: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: Json;
       };
       my_sell_events: {
         Args: never;
@@ -2330,6 +2776,30 @@ export type Database = {
           access: string;
           has_printed: boolean;
           ref_code: string;
+        }[];
+      };
+      my_team_registrations: {
+        Args: never;
+        Returns: {
+          id: string;
+          team_name: string;
+          member_count: number;
+          status: string;
+          reject_reason: string;
+          created_at: string;
+          session_id: string;
+          session_name: string;
+          session_starts_at: string;
+          needs_approval: boolean;
+          event_id: string;
+          event_name: string;
+          event_slug: string;
+          org_slug: string;
+          order_id: string;
+          order_status: Database["public"]["Enums"]["order_status"];
+          hold_expires_at: string;
+          fee_paisa: number;
+          fee_mode: string;
         }[];
       };
       normalize_code: {
@@ -2357,6 +2827,14 @@ export type Database = {
           role: Database["public"]["Enums"]["org_role"];
           joined_at: string;
         }[];
+      };
+      pay_team_registration: {
+        Args: {
+          p_registration_id: string | null;
+          p_code?: string | null;
+          p_ref?: string | null;
+        };
+        Returns: Json;
       };
       perform_check_in: {
         Args: {
@@ -2455,6 +2933,17 @@ export type Database = {
         };
         Returns: Json;
       };
+      register_team: {
+        Args: {
+          p_session_id: string | null;
+          p_team_name: string | null;
+          p_members: Json | null;
+          p_answers?: Json | null;
+          p_code?: string | null;
+          p_ref?: string | null;
+        };
+        Returns: Json;
+      };
       reject_order: {
         Args: {
           p_order_id: string | null;
@@ -2465,6 +2954,13 @@ export type Database = {
       remove_member: {
         Args: {
           p_org_id: string | null;
+          p_user_id: string | null;
+        };
+        Returns: undefined;
+      };
+      remove_session_manager: {
+        Args: {
+          p_session_id: string | null;
           p_user_id: string | null;
         };
         Returns: undefined;
@@ -2551,9 +3047,40 @@ export type Database = {
         };
         Returns: undefined;
       };
+      save_session: {
+        Args: {
+          p_event_id: string | null;
+          p_session_id: string | null;
+          p_data: Json | null;
+        };
+        Returns: string;
+      };
+      save_session_results: {
+        Args: {
+          p_session_id: string | null;
+          p_results: Json | null;
+          p_publish: boolean | null;
+        };
+        Returns: undefined;
+      };
       scanner_attendees: {
         Args: {
           p_event_id: string | null;
+        };
+        Returns: {
+          ticket_id: string;
+          code: string;
+          holder_name: string;
+          ticket_type: string;
+          requires_student_card: boolean;
+          status: Database["public"]["Enums"]["ticket_status"];
+          checked_in_at: string;
+          serial: string;
+        }[];
+      };
+      scanner_session_attendees: {
+        Args: {
+          p_session_id: string | null;
         };
         Returns: {
           ticket_id: string;
@@ -2575,6 +3102,105 @@ export type Database = {
           p_buyer_phone?: string | null;
         };
         Returns: Json;
+      };
+      session_attendees: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: {
+          ticket_id: string;
+          code: string;
+          holder_name: string;
+          ticket_type: string;
+          source: string;
+          serial: string;
+          buyer_name: string;
+          buyer_phone: string;
+          buyer_email: string;
+          order_ref: string;
+          answers: Json;
+          status: Database["public"]["Enums"]["ticket_status"];
+          session_checked_in_at: string;
+        }[];
+      };
+      session_check_in: {
+        Args: {
+          p_ticket_id: string | null;
+          p_session_id: string | null;
+          p_actor: string | null;
+          p_method: Database["public"]["Enums"]["checkin_method"] | null;
+          p_device?: string | null;
+        };
+        Returns: Json;
+      };
+      session_grants: {
+        Args: {
+          p_ticket_type_id: string | null;
+          p_session_id: string | null;
+        };
+        Returns: boolean;
+      };
+      session_registrations: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: {
+          id: string;
+          team_name: string;
+          members: Json;
+          member_count: number;
+          answers: Json;
+          status: string;
+          reject_reason: string;
+          created_at: string;
+          decided_at: string;
+          leader_name: string;
+          leader_email: string;
+          leader_phone: string;
+          order_id: string;
+          order_ref: string;
+          order_status: Database["public"]["Enums"]["order_status"];
+          order_total_paisa: number;
+          hold_expires_at: string;
+          tickets: number;
+          checked_in: number;
+        }[];
+      };
+      session_remaining: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: number;
+      };
+      session_stats: {
+        Args: {
+          p_event_id: string | null;
+        };
+        Returns: {
+          session_id: string;
+          name: string;
+          kind: string;
+          starts_at: string;
+          capacity: number;
+          taken: number;
+          tickets: number;
+          checked_in: number;
+          teams_pending: number;
+          teams_paid: number;
+          managers: number;
+        }[];
+      };
+      session_taken: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: number;
+      };
+      session_teams_taken: {
+        Args: {
+          p_session_id: string | null;
+        };
+        Returns: number;
       };
       set_org_referral: {
         Args: {
@@ -2606,12 +3232,28 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_scanner_sessions: {
+        Args: {
+          p_event_id: string | null;
+          p_user_id: string | null;
+          p_session_ids: string[] | null;
+        };
+        Returns: undefined;
+      };
       set_seller_code: {
         Args: {
           p_seller_id: string | null;
           p_code: string | null;
         };
         Returns: string;
+      };
+      set_ticket_type_access: {
+        Args: {
+          p_ticket_type_id: string | null;
+          p_all: boolean | null;
+          p_session_ids: string[] | null;
+        };
+        Returns: undefined;
       };
       settle_print_seller: {
         Args: {
@@ -2700,6 +3342,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      validate_answers: {
+        Args: {
+          p_questions: Json | null;
+          p_answers: Json | null;
+          p_context: string | null;
+        };
+        Returns: Json;
+      };
       void_printed_tickets: {
         Args: {
           p_batch_id: string | null;
@@ -2709,10 +3359,16 @@ export type Database = {
         };
         Returns: number;
       };
+      withdraw_team_registration: {
+        Args: {
+          p_registration_id: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       checkin_method: "scan" | "manual";
-      checkin_result: "ok" | "invalid" | "expired_code" | "wrong_event" | "already_used" | "cancelled" | "not_allowed" | "not_found" | "not_sold";
+      checkin_result: "ok" | "invalid" | "expired_code" | "wrong_event" | "already_used" | "cancelled" | "not_allowed" | "not_found" | "not_sold" | "wrong_session";
       dispute_status: "open" | "resolved";
       email_status: "sent" | "failed" | "logged";
       event_status: "draft" | "pending_review" | "published" | "rejected" | "cancelled";

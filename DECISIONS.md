@@ -428,3 +428,47 @@ Owner asked for the full ambassador system ("sab kar do"): all three phases in o
 - **TickLO campus ambassadors** (platform level): admins give a user a code; a society owner can
   add that code once within 30 days of registering (also on the register form). Admin page shows
   societies brought, approved, events published and paid tickets sold.
+
+## D-044 Festivals: sessions, session tickets, competitions (owner request, 2026-11-27)
+Owner: an event like "Aurex" has workshops, competitions, a qawwali night… with separate
+tickets. Asked for everything except certificates.
+- **One event with sessions** (not separate events): one page, one checkout, one dashboard;
+  ambassadors, promo codes and printed tickets work across the festival. An event without
+  sessions behaves exactly as before.
+- **Session** = name, kind (workshop / competition / concert / talk / other), time (inside the
+  event's start–end), venue (empty = event venue), optional seats, description, questions.
+  "Included in all-access passes" per session (default on; competitions never).
+- **Ticket type access:** a *pass* (opens every session included in passes – existing ticket types
+  are passes) or *only chosen sessions*. Once tickets are sold, access can only grow (no taking
+  away what people paid for).
+- **Seats:** every ticket that opens a session uses one of its seats – online holds/sales and
+  printed tickets alike – so selling a 40-seat workshop through several ticket types (and passes,
+  if the workshop is included in passes) never oversells. Ticket availability shows the smaller
+  of the ticket type's and the sessions' remaining places.
+- **Scanning:** the scanner picks *Main entry* (once per ticket, as before) or a session (once
+  per ticket per session; "Not valid for this session" when the ticket does not open it). The
+  first scan anywhere marks the ticket as "came" (all existing numbers keep working); main entry
+  keeps its own time (`tickets.entry_at`) so a workshop scan never blocks the main gate. Session
+  scans are verified by the web server with the same QR secret (`QR_SIGNING_SECRET`, already on
+  Hostinger) and recorded by `session_check_in` – the `scan-verify` Edge Function did not change
+  and needs no redeploy.
+- **Scanners** can be limited to some sessions (then they cannot scan main entry). **Session
+  managers** (any team member, also scanner-role members) run their session at `/manage/<id>`:
+  attendees + answers, check-in list, team registrations, shortlisting, results, CSV.
+- **Questions** (up to 10: short text, long text, number, choice, yes/no; required or not) are
+  answered when booking a ticket that opens the session *by name* (passes don't ask) and when
+  registering a team. Stored on the order (`orders.answers`) / registration.
+- **Competitions:** max teams, team size min–max, entry fee per team (one ticket "Team X") or
+  per member (one ticket per member, named after them). The entry fee is a ticket type linked to
+  the competition, created and kept in step by the session form (not shown in the normal ticket
+  list, cannot be printed or booked directly). Registration closes at the chosen time or when the
+  competition starts. Without shortlisting the team pays at once; with shortlisting the team waits
+  → organizer/manager accepts or declines (reason) → the team pays. A place is held by a paid /
+  in-review / unpaid-but-on-hold order (like tickets), so unpaid teams don't block places
+  forever. One active registration per person per competition; team names unique per competition.
+  Team payments are separate from the person's other bookings (D-007 still applies to normal
+  bookings). Results (1st/2nd/3rd… or own labels, optionally linked to a team) are shown on the
+  event page once published.
+- **Duplicate event** copies sessions (same offset from the start), access and competition entry
+  types.
+- **Not built (owner said skip):** certificates.
