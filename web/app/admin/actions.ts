@@ -149,3 +149,41 @@ export async function adminCancelEvent(eventId: string, reason: string): Promise
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Event cancelled and attendees emailed." };
 }
+
+const orgRole = z.enum(["owner", "member", "scanner"]);
+
+/** D-037: make someone a TickLO admin or take admin access away. */
+export async function setPlatformAdmin(userId: string, makeAdmin: boolean): Promise<ActionResult> {
+  const me = await admin();
+  if (!me || !uuid.safeParse(userId).success) return { ok: false, error: "Admins only." };
+  if (userId === me.id) return { ok: false, error: "You cannot change your own admin access." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_platform_admin", { p_user_id: userId, p_is_admin: makeAdmin });
+  if (error) return fail(error);
+  revalidatePath("/admin/users", "layout");
+  return { ok: true, message: makeAdmin ? "Now a TickLO admin." : "Admin access removed." };
+}
+
+/** D-037: set (or add) a user's role in any society. "owner" moves the old owner to member. */
+export async function setOrgRole(orgId: string, userId: string, role: string): Promise<ActionResult> {
+  if (!(await admin()) || !uuid.safeParse(orgId).success || !uuid.safeParse(userId).success) return { ok: false, error: "Admins only." };
+  const parsed = orgRole.safeParse(role);
+  if (!parsed.success) return { ok: false, error: "Please choose a valid role." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_org_role", { p_org_id: orgId, p_user_id: userId, p_role: parsed.data });
+  if (error) return fail(error);
+  revalidatePath("/admin/users", "layout");
+  revalidatePath("/org", "layout");
+  return { ok: true, message: parsed.data === "owner" ? "Owner changed." : "Role updated." };
+}
+
+/** D-037: remove a user from a society (not the owner). */
+export async function removeOrgMember(orgId: string, userId: string): Promise<ActionResult> {
+  if (!(await admin()) || !uuid.safeParse(orgId).success || !uuid.safeParse(userId).success) return { ok: false, error: "Admins only." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_remove_org_member", { p_org_id: orgId, p_user_id: userId });
+  if (error) return fail(error);
+  revalidatePath("/admin/users", "layout");
+  revalidatePath("/org", "layout");
+  return { ok: true, message: "Removed from the society." };
+}

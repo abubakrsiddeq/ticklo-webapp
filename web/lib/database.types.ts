@@ -1108,6 +1108,13 @@ export type Database = {
         Args: never;
         Returns: Json;
       };
+      admin_remove_org_member: {
+        Args: {
+          p_org_id: string | null;
+          p_user_id: string | null;
+        };
+        Returns: undefined;
+      };
       admin_repeat_rejections: {
         Args: {
           p_min?: number | null;
@@ -1138,6 +1145,21 @@ export type Database = {
           p_email_domain: string | null;
         };
         Returns: string;
+      };
+      admin_set_org_role: {
+        Args: {
+          p_org_id: string | null;
+          p_user_id: string | null;
+          p_role: Database["public"]["Enums"]["org_role"] | null;
+        };
+        Returns: undefined;
+      };
+      admin_set_platform_admin: {
+        Args: {
+          p_user_id: string | null;
+          p_is_admin: boolean | null;
+        };
+        Returns: undefined;
       };
       admin_set_user_suspended: {
         Args: {

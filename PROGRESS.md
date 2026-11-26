@@ -108,6 +108,8 @@ If a session stops, resume from the first unchecked milestone below.
   rejections, suspend), ADM-06 users (search, suspend/restore incl. Supabase Auth ban,
   AUTH-09), ADM-07 universities add/edit/delete, ADM-08 audit log (every admin action) +
   email log with failed emails, ADM-09 weekly overview, AUTH-08 deletion requests list.
+- D-037 admin role management: `/admin/users/<id>` – make/remove TickLO admin, set any society
+  role (owner/member/scanner, owner transfer), add to / remove from a society (migration 0900).
 
 ### "Should" items + polish (M10)
 - TKT-06 PWA: manifest (opens My tickets), icons, minimal service worker (offline page only,
@@ -200,5 +202,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 - Resend API key + a verified sending domain (`EMAIL_FROM`), and Resend SMTP in Supabase Auth.
 - Google OAuth client ID/secret (Supabase → Authentication → Providers → Google).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
+- **Apply migration `20261126000900_admin_roles.sql` to the TICkLO project** – the role buttons
+  fail until then: `supabase db push` (or `supabase db query --linked -f` + record the version,
+  D-034). Your own admin account is already created; change its temporary password after login.
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
   limit, privacy/terms author, pilot society).

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { SuspendButton } from "../suspend-button";
 
 export const metadata: Metadata = { title: "Users" };
 
-// ADM-06: search, suspend / restore
+// ADM-06: search, suspend / restore. D-037: open a user to change their roles
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const me = await requireAdmin("/admin/users");
   const sp = await searchParams;
@@ -21,7 +22,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, email, phone, is_admin, is_suspended, suspended_reason, deletion_requested_at, created_at")
+    .select("id, full_name, email, phone, is_admin, is_suspended, suspended_reason, deletion_requested_at, created_at, organization_members(role, organizations(name))")
     .order("created_at", { ascending: false })
     .limit(50);
   if (q) {
@@ -49,11 +50,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         <Button type="submit">Search</Button>
       </form>
       <div className="overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-[760px] text-sm">
           <thead className="bg-secondary/60 text-left text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">User</th>
               <th className="px-3 py-2 font-medium">Phone</th>
+              <th className="px-3 py-2 font-medium">Roles</th>
               <th className="px-3 py-2 font-medium">Joined</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2" />
@@ -63,12 +65,18 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             {(users ?? []).map((u) => (
               <tr key={u.id}>
                 <td className="px-3 py-2">
-                  <div className="font-medium text-navy">
-                    {u.full_name ?? "–"} {u.is_admin ? <Pill tone="info">Admin</Pill> : null}
-                  </div>
+                  <Link href={`/admin/users/${u.id}`} className="font-medium text-navy hover:underline">
+                    {u.full_name ?? "–"}
+                  </Link>{" "}
+                  {u.is_admin ? <Pill tone="info">Admin</Pill> : null}
                   <div className="text-xs text-muted-foreground">{u.email}</div>
                 </td>
                 <td className="px-3 py-2">{formatPhone(u.phone)}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">
+                  {u.organization_members?.length
+                    ? u.organization_members.map((m) => `${m.organizations?.name ?? "Society"}: ${m.role}`).join(", ")
+                    : "Student"}
+                </td>
                 <td className="px-3 py-2">{formatShortDateTime(u.created_at)}</td>
                 <td className="px-3 py-2">
                   {u.is_suspended ? <StatusBadge status="suspended" /> : <StatusBadge status="valid" label="Active" />}
@@ -76,7 +84,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                   {u.deletion_requested_at ? <div className="text-xs text-warning">Deletion requested</div> : null}
                 </td>
                 <td className="px-3 py-2 text-right">
-                  {u.id !== me.id ? <SuspendButton userId={u.id} suspended={u.is_suspended} name={u.full_name ?? u.email ?? "user"} /> : null}
+                  <div className="flex justify-end gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/admin/users/${u.id}`}>Roles</Link>
+                    </Button>
+                    {u.id !== me.id ? <SuspendButton userId={u.id} suspended={u.is_suspended} name={u.full_name ?? u.email ?? "user"} /> : null}
+                  </div>
                 </td>
               </tr>
             ))}

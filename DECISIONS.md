@@ -222,3 +222,16 @@ IDs in brackets refer to the requirements doc (e.g. PAY-09).
   need glibc 2.14, so they work natively.
 - Verified locally with `NEXT_TEST_WASM=1 npm run build` (forces the WASM compiler), then served
   against the live Supabase project.
+
+## D-037 Admins can change anyone's role
+- Asked for by Abubakar: an admin can change any user's role. `/admin/users/<id>` (open from the
+  Users list → "Roles") shows the user's TickLO admin access and every society they are in.
+- **Platform admin** on/off (`admin_set_platform_admin`). An admin cannot change their own flag,
+  so there is always at least one admin left.
+- **Society role** owner / member / scanner for any society, including adding the user to a
+  society (`admin_set_org_role`). A society keeps exactly one owner: making someone owner turns
+  the old owner into a member; the owner cannot be demoted or removed directly.
+- **Remove** from a society (`admin_remove_org_member`), also clears their scanner assignments
+  for that society's events. Every change is in the audit log.
+- Real admin accounts are created with `web/scripts/create-admin.mjs` (service role). Supabase
+  Auth on the hosted project needs passwords of 8+ characters.
