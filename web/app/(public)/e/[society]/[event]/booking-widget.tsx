@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
+import { AlertTriangle, DoorOpen, Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
+import { NativeSelect } from "@/components/native-select";
+import { Textarea } from "@/components/ui/textarea";
+import { checkAnswers, clashes, kindEmoji, type Question } from "@/lib/sessions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +31,19 @@ export interface WidgetTicketType {
   requires_student_card: boolean;
   saleState: "on" | "not_started" | "ended";
   saleStartsAt: string | null;
+  // D-044
+  all_sessions: boolean;
+  session_ids: string[];
+}
+
+export interface WidgetSession {
+  id: string;
+  name: string;
+  kind: string;
+  starts_at: string;
+  ends_at: string;
+  pass_access: boolean;
+  questions: Question[];
 }
 
 export function BookingWidget(props: {
@@ -40,7 +56,9 @@ export function BookingWidget(props: {
   loginHref: string;
   needs: { full_name: string; phone: string } | null;
   referral?: WidgetReferral | null;
+  sessions?: WidgetSession[];
 }) {
+  const sessions = props.sessions ?? [];
   const [qty, setQty] = useState<Record<string, number>>({});
   const [buyer, setBuyer] = useState(props.needs ?? { full_name: "", phone: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,6 +67,8 @@ export function BookingWidget(props: {
   const [codeInput, setCodeInput] = useState("");
   const [applied, setApplied] = useState<CodePreview | null>(null);
   const [checking, startCheck] = useTransition();
+  const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
+  const [answerErrors, setAnswerErrors] = useState<Record<string, Record<string, string>>>({});
 
   const totalQty = Object.values(qty).reduce((a, b) => a + b, 0);
   const total = useMemo(
@@ -56,6 +76,19 @@ export function BookingWidget(props: {
     [qty, props.types],
   );
   const needsCard = props.types.some((t) => t.requires_student_card && (qty[t.id] ?? 0) > 0);
+
+  // FES-04/FES-09: sessions picked by name (not passes) – their questions, and time clashes
+  const chosenSessionIds = new Set(props.types.filter((t) => (qty[t.id] ?? 0) > 0 && !t.all_sessions).flatMap((t) => t.session_ids));
+  const chosenSessions = sessions.filter((x) => chosenSessionIds.has(x.id));
+  const asking = chosenSessions.filter((x) => x.kind !== "competition" && x.questions.length);
+  const clashing = clashes(chosenSessions);
+  const sessionById = new Map(sessions.map((x) => [x.id, x]));
+  const opens = (t: WidgetTicketType) =>
+    t.all_sessions
+      ? sessions.filter((x) => x.pass_access).length
+        ? `Pass: ${sessions.filter((x) => x.pass_access).map((x) => x.name).join(", ")}`
+        : null
+      : t.session_ids.map((id) => sessionById.get(id)).filter(Boolean).map((x) => `${kindEmoji(x!.kind)} ${x!.name} · ${formatDateTime(x!.starts_at)}`).join(" | ");
 
   // AMB-07: same maths as Postgres – one discount per order, the bigger one wins
   const priced: PricedItem[] = props.types.map((t) => ({ ticketTypeId: t.id, quantity: qty[t.id] ?? 0, pricePaisa: t.price_paisa }));
@@ -104,8 +137,19 @@ export function BookingWidget(props: {
       toast.error("Choose at least one ticket.");
       return;
     }
+    const errs: Record<string, Record<string, string>> = {};
+    for (const x of asking) {
+      const e = checkAnswers(x.questions, answers[x.id] ?? {});
+      if (Object.keys(e).length) errs[x.id] = e;
+    }
+    setAnswerErrors(errs);
+    if (Object.keys(errs).length) {
+      toast.error("Please answer the questions for your sessions.");
+      return;
+    }
+    const sent = asking.length ? Object.fromEntries(asking.map((x) => [x.id, answers[x.id] ?? {}])) : null;
     start(async () => {
-      const res = await bookTickets(props.eventId, items, props.needs ? buyer : null, applied?.code ?? null);
+      const res = await bookTickets(props.eventId, items, props.needs ? buyer : null, applied?.code ?? null, sent);
       if (res && !res.ok) {
         setErrors(res.fieldErrors ?? {});
         toast.error(res.error);
@@ -139,6 +183,12 @@ export function BookingWidget(props: {
                   <p className="font-medium text-navy">{t.name}</p>
                   <p className="text-sm font-semibold">{formatPKR(t.price_paisa, { freeLabel: "Free" })}</p>
                   {t.description ? <p className="mt-1 text-sm text-muted-foreground">{t.description}</p> : null}
+                  {sessions.length && opens(t) ? (
+                    <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-700">
+                      <DoorOpen className="mt-0.5 size-3.5 shrink-0 text-brand-strong" aria-hidden />
+                      {opens(t)}
+                    </p>
+                  ) : null}
                   {/* EVT-05 */}
                   {t.requires_student_card ? (
                     <p className="mt-1 flex items-start gap-1.5 text-xs font-medium text-warning">
@@ -196,6 +246,51 @@ export function BookingWidget(props: {
               </FormField>
             </div>
           ) : null}
+          {clashing.length ? (
+            <p className="flex items-start gap-1.5 rounded-xl bg-warning-soft p-3 text-xs text-navy">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
+              <span>
+                These run at the same time: {clashing.map(([a, b]) => `${a.name} & ${b.name}`).join("; ")}. You can still book, but you can only be in one place.
+              </span>
+            </p>
+          ) : null}
+          {asking.map((x) => (
+            <fieldset key={x.id} className="grid gap-3 rounded-lg bg-secondary/60 p-3">
+              <legend className="text-sm font-medium text-navy">
+                {kindEmoji(x.kind)} {x.name} – a few questions
+              </legend>
+              {x.questions.map((q) => {
+                const id = `ans-${x.id}-${q.id}`;
+                const value = answers[x.id]?.[q.id] ?? "";
+                const err = answerErrors[x.id]?.[q.id];
+                const set = (v: string) => setAnswers((a) => ({ ...a, [x.id]: { ...(a[x.id] ?? {}), [q.id]: v } }));
+                return (
+                  <FormField key={q.id} id={id} label={q.label} required={q.required} error={err}>
+                    {q.type === "select" ? (
+                      <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
+                        <option value="">Choose…</option>
+                        {q.options.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    ) : q.type === "yes_no" ? (
+                      <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
+                        <option value="">Choose…</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </NativeSelect>
+                    ) : q.type === "long_text" ? (
+                      <Textarea id={id} value={value} onChange={(e) => set(e.target.value)} maxLength={1000} rows={3} />
+                    ) : (
+                      <Input id={id} value={value} onChange={(e) => set(e.target.value)} inputMode={q.type === "number" ? "decimal" : undefined} maxLength={200} />
+                    )}
+                  </FormField>
+                );
+              })}
+            </fieldset>
+          ))}
           {applied ? (
             <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm text-navy">
               <span className="flex min-w-0 items-center gap-2">

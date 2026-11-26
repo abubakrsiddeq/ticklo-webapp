@@ -1,7 +1,16 @@
 import "server-only";
+import { asQuestions } from "@/lib/sessions";
+
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { serverNow } from "@/lib/time";
+
+export interface SessionResult {
+  place: number;
+  label: string;
+  name: string;
+  registration_id?: string;
+}
 
 const EVENT_CARD_SELECT = `
   id, slug, name, poster_url, venue, starts_at, ends_at, status, visibility,
@@ -72,15 +81,27 @@ export const getEventPage = cache(async (orgSlug: string, eventSlug: string) => 
     .eq("slug", eventSlug)
     .maybeSingle();
   if (!event) return null;
-  const [{ data: types }, { data: availability }] = await Promise.all([
+  const [{ data: types }, { data: availability }, { data: sessions }, { data: access }] = await Promise.all([
     supabase.from("ticket_types").select("*").eq("event_id", event.id).order("sort_order").order("created_at"),
     supabase.rpc("event_availability", { p_event_id: event.id }),
+    supabase.rpc("event_schedule", { p_event_id: event.id }),
+    supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, ticket_types!inner ( event_id )").eq("ticket_types.event_id", event.id),
   ]);
   const remaining = new Map((availability ?? []).map((a) => [a.ticket_type_id, a.remaining]));
   return {
     org,
     event,
-    ticketTypes: (types ?? []).map((t) => ({ ...t, remaining: remaining.get(t.id) ?? 0 })),
+    ticketTypes: (types ?? []).map((t) => ({
+      ...t,
+      remaining: remaining.get(t.id) ?? 0,
+      session_ids: (access ?? []).filter((a) => a.ticket_type_id === t.id).map((a) => a.session_id),
+    })),
+    // D-044: festival sessions (empty for a simple event)
+    sessions: (sessions ?? []).map((x) => ({
+      ...x,
+      questions: asQuestions(x.questions),
+      results: (Array.isArray(x.results) ? x.results : []) as unknown as SessionResult[],
+    })),
   };
 });
 

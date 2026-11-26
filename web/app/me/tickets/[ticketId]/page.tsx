@@ -7,7 +7,8 @@ import { TicketQr } from "@/components/ticket-qr";
 import { ticketQrDataUrl } from "@/lib/qr";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatEventRange } from "@/lib/format";
+import { formatEventRange, formatShortDateTime, formatTime } from "@/lib/format";
+import { kindEmoji } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 import { TicketLinkButton } from "./share-link";
 
@@ -22,9 +23,9 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   const { data: ticket } = await supabase
     .from("tickets")
     .select(
-      `id, code, status, checked_in_at, holder_name, order_id, owner_id,
-       ticket_types!inner ( name, requires_student_card ),
-       events!inner ( name, venue, starts_at, ends_at, status, organizations!inner ( name ) )`,
+      `id, code, status, checked_in_at, entry_at, holder_name, order_id, owner_id, ticket_type_id,
+       ticket_types!inner ( name, requires_student_card, all_sessions ),
+       events!inner ( id, name, venue, starts_at, ends_at, status, organizations!inner ( name ) )`,
     )
     .eq("id", ticketId)
     .eq("owner_id", user.id)
@@ -33,15 +34,21 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
   // Printed tickets have no owner, so they never show up here.
   if (!ticket?.order_id) redirect("/not-allowed");
 
-  const { data: siblings } = await supabase
-    .from("tickets")
-    .select("id, code, ticket_types!inner ( name )")
-    .eq("order_id", ticket.order_id)
-    .order("created_at");
+  const [{ data: siblings }, { data: sessions }, { data: links }, { data: scans }] = await Promise.all([
+    supabase.from("tickets").select("id, code, ticket_types!inner ( name )").eq("order_id", ticket.order_id).order("created_at"),
+    supabase.from("event_sessions").select("id, name, kind, starts_at, pass_access").eq("event_id", ticket.events.id).order("starts_at"),
+    supabase.from("ticket_type_sessions").select("session_id").eq("ticket_type_id", ticket.ticket_type_id),
+    supabase.from("session_checkins").select("session_id, checked_in_at").eq("ticket_id", ticket.id),
+  ]);
 
   const ev = ticket.events;
   const status = ev.status === "cancelled" ? "cancelled" : ticket.status;
-  const qrDataUrl = status === "valid" ? await ticketQrDataUrl(ticket.id) : null;
+  // D-044: a festival ticket opens several sessions – keep the QR after the first scan
+  const linked = new Set((links ?? []).map((l) => l.session_id));
+  const opens = (sessions ?? []).filter((x) => linked.has(x.id) || (ticket.ticket_types.all_sessions && x.pass_access));
+  const multiUse = Boolean(sessions?.length);
+  const scannedAt = new Map((scans ?? []).map((x) => [x.session_id, x.checked_in_at]));
+  const qrDataUrl = status === "valid" || (multiUse && status === "checked_in") ? await ticketQrDataUrl(ticket.id) : null;
 
   return (
     <div className="mx-auto grid max-w-md gap-5">
@@ -63,7 +70,28 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
           </p>
         </div>
         <div className="p-5">
-          <TicketQr ticketId={ticket.id} code={ticket.code} qrDataUrl={qrDataUrl} initialStatus={status} initialCheckedInAt={ticket.checked_in_at} />
+          <TicketQr ticketId={ticket.id} code={ticket.code} qrDataUrl={qrDataUrl} initialStatus={status} initialCheckedInAt={ticket.checked_in_at} multiUse={multiUse} />
+          {multiUse ? (
+            <div className="mt-4 rounded-2xl bg-secondary/60 p-3 text-sm">
+              <p className="mb-1 font-medium text-navy">This ticket opens</p>
+              <ul className="grid gap-1">
+                {ticket.ticket_types.all_sessions ? (
+                  <li className="flex justify-between gap-2">
+                    <span>Main entry</span>
+                    <span className="text-xs text-muted-foreground">{ticket.entry_at ? `✓ ${formatTime(ticket.entry_at)}` : ""}</span>
+                  </li>
+                ) : null}
+                {opens.map((x) => (
+                  <li key={x.id} className="flex justify-between gap-2">
+                    <span>
+                      {kindEmoji(x.kind)} {x.name} <span className="text-xs text-muted-foreground">· {formatShortDateTime(x.starts_at)}</span>
+                    </span>
+                    <span className="text-xs text-brand-strong">{scannedAt.get(x.id) ? `✓ ${formatTime(scannedAt.get(x.id)!)}` : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div className="mt-5 grid grid-cols-2 gap-3 border-t pt-4 text-sm">
             <div>
               <div className="text-muted-foreground">Name</div>
@@ -84,8 +112,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
             </p>
           ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
-            Show this QR at the gate – it also works without internet (save it or use the one in your email). Each ticket can be
-            scanned only once, so don&apos;t share it.
+            Show this QR at the gate – it also works without internet (save it or use the one in your email).{" "}
+            {multiUse ? "It is scanned once at each session it opens" : "Each ticket can be scanned only once"}, so don&apos;t share it.
           </p>
         </div>
       </div>

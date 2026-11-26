@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { effectiveStatus } from "@/lib/queries/orders";
 import { formatEventRange, formatPKR } from "@/lib/format";
 import { serverNow } from "@/lib/time";
+import { MyTeams, type MyTeam } from "@/components/sessions/my-teams";
 
 export const metadata: Metadata = { title: "My tickets", robots: { index: false } };
 
@@ -22,7 +23,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
   // The user id comes from the verified session, so the lists load alongside the profile check (D-038).
   const session = (await getSession()) ?? (await requireUser("/me/tickets"));
   const supabase = await createClient();
-  const [, { data: tickets }, { data: orders }] = await Promise.all([
+  const [, { data: tickets }, { data: orders }, { data: teams }] = await Promise.all([
     requireUser("/me/tickets"), // still blocks suspended accounts
     supabase
       .from("tickets")
@@ -39,6 +40,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
       .eq("user_id", session.id)
       .in("status", ["awaiting_payment", "under_review", "rejected"])
       .order("created_at", { ascending: false }),
+    supabase.rpc("my_team_registrations"),
   ]);
 
   const now = serverNow();
@@ -104,6 +106,12 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">My tickets</h1>
       </div>
       {upcoming.length ? <InstallHint /> : null}
+      {sp.team === "applied" ? (
+        <Alert>
+          <AlertDescription>Application sent! You will see here when the organizer accepts your team – then you can pay.</AlertDescription>
+        </Alert>
+      ) : null}
+      <MyTeams teams={((teams ?? []) as MyTeam[]).filter((t) => t.status !== "withdrawn" && new Date(t.session_starts_at).getTime() > now - 7 * 86400000)} now={now} />
       {sp.password === "updated" ? (
         <Alert>
           <AlertDescription>Your password was updated.</AlertDescription>

@@ -46,6 +46,9 @@ const FRIENDLY: Record<string, string> = {
   APPLICATIONS_CLOSED: "This event is not taking ambassador applications.",
   ALREADY_APPLIED: "You have already applied for this event.",
   ALREADY_AMBASSADOR: "You are already an ambassador for this event.",
+  ANSWERS_REQUIRED: "Please answer the organizer's questions.",
+  ACCESS_LOCKED: "Tickets are already sold – you can give more access, not less.",
+  ALREADY_REGISTERED: "You have already registered a team for this competition.",
 };
 
 interface ErrorLike {

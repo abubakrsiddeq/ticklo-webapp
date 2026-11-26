@@ -24,6 +24,7 @@ export async function bookTickets(
   items: { ticket_type_id: string; quantity: number }[],
   buyer: { full_name: string; phone: string } | null,
   code: string | null = null,
+  answers: Record<string, Record<string, string>> | null = null,
 ): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in to book tickets." };
@@ -54,6 +55,8 @@ export async function bookTickets(
     p_buyer_phone: buyerPhone,
     p_code: typed,
     p_ref: remembered && remembered.length <= 16 ? remembered : null,
+    // FES-09: answers per session; the database checks them against the questions
+    p_answers: answers && JSON.stringify(answers).length <= 20000 ? answers : null,
   });
   if (error) return fail(error);
 

@@ -399,7 +399,10 @@ create policy ticket_type_sessions_read on public.ticket_type_sessions
   using (exists (select 1 from public.ticket_types tt where tt.id = ticket_type_id));
 create policy session_checkins_read on public.session_checkins
   for select to authenticated
-  using (public.can_manage_session(session_id) or public.can_scan_session(session_id) or public.is_admin());
+  using (
+    public.can_manage_session(session_id) or public.can_scan_session(session_id) or public.is_admin()
+    or exists (select 1 from public.tickets t where t.id = ticket_id and t.owner_id = (select auth.uid()))
+  );
 create policy session_managers_read on public.session_managers
   for select to authenticated
   using (user_id = (select auth.uid()) or public.can_manage_session(session_id) or public.is_admin());

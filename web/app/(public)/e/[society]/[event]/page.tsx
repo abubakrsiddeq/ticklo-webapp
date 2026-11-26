@@ -20,6 +20,7 @@ import { normalizeCode, refCookieName, rewardLabel, REF_PARAM, type DiscountType
 import { BookingWidget, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
 import { RefCapture } from "./ref-capture";
 import { AmbassadorCta } from "./ambassador-cta";
+import { PublicSchedule } from "@/components/sessions/public-schedule";
 
 type Params = { society: string; event: string };
 
@@ -80,7 +81,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   const sp = await searchParams;
   const [data, user] = await Promise.all([getEventPage(society, eventSlug), getCurrentUser()]);
   if (!data) notFound();
-  const { event, org, ticketTypes } = data;
+  const { event, org, ticketTypes, sessions } = data;
   const urlRef = normalizeCode(typeof sp[REF_PARAM] === "string" ? sp[REF_PARAM] : null);
   const { referral, fromUrl, info } = await referralContext(event.id, event.status === "published", urlRef);
 
@@ -90,7 +91,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   const cancelled = event.status === "cancelled";
   const isPreview = event.status !== "published" && !cancelled; // organizer/admin viewing a draft
 
-  const types: WidgetTicketType[] = ticketTypes.map((t) => {
+  // D-044: competition entry fees are paid through team registration, not the ticket list
+  const types: WidgetTicketType[] = ticketTypes.filter((t) => !t.registration_session_id).map((t) => {
     const start = t.sale_starts_at ? new Date(t.sale_starts_at).getTime() : null;
     const end = new Date(t.sale_ends_at ?? event.starts_at).getTime();
     const saleState = start && now < start ? "not_started" : now >= end ? "ended" : "on";
@@ -103,6 +105,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
       requires_student_card: t.requires_student_card,
       saleState,
       saleStartsAt: t.sale_starts_at,
+      all_sessions: t.all_sessions,
+      session_ids: t.session_ids,
     };
   });
 
@@ -215,9 +219,20 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               <div className="whitespace-pre-line leading-relaxed text-slate-700">{event.description}</div>
             </section>
           ) : null}
+          {sessions.length ? (
+            <PublicSchedule
+              sessions={sessions}
+              eventVenue={event.venue}
+              registerBase={`${pagePath}/register`}
+              eventUrl={absoluteUrl(pagePath)}
+              open={!cancelled && !ended && event.status === "published"}
+              now={now}
+            />
+          ) : null}
         </div>
 
         <aside className="lg:sticky lg:top-28 lg:self-start">
+          {types.length ? (
           <BookingWidget
             eventId={event.id}
             types={types}
@@ -228,7 +243,9 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             loginHref={`/login?next=${encodeURIComponent(pagePath)}`}
             needs={needs}
             referral={referral}
+            sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions }))}
           />
+          ) : null}
           <p className="mt-3 text-center text-xs text-muted-foreground">
             You pay {org.name} directly by bank transfer or wallet. TickLO charges no fees.
           </p>

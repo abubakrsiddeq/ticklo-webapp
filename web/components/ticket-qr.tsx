@@ -17,12 +17,15 @@ export function TicketQr({
   qrDataUrl,
   initialStatus,
   initialCheckedInAt,
+  multiUse = false,
 }: {
   ticketId: string;
   code: string;
   qrDataUrl: string | null;
   initialStatus: string;
   initialCheckedInAt: string | null;
+  /** D-044: festival ticket – scanned at several sessions, so the QR stays after the first scan */
+  multiUse?: boolean;
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [usedAt, setUsedAt] = useState(initialCheckedInAt);
@@ -43,7 +46,7 @@ export function TicketQr({
     };
   }, [ticketId, initialStatus]);
 
-  if (status === "checked_in") {
+  if (status === "checked_in" && !multiUse) {
     return (
       <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-2xl bg-slate-100 p-6 text-center">
         <CheckCircle2 className="size-16 text-slate-500" aria-hidden />
