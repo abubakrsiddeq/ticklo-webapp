@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import type { Enums, Tables } from "@/lib/database.types";
@@ -19,6 +20,7 @@ export interface CurrentUser {
 
 /** The signed-in user with profile, or null. Cached for one request. */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  await cookies(); // always per-request, even when env vars are missing at build time
   if (!isSupabaseConfigured) return null;
   const supabase = await createClient();
   const {

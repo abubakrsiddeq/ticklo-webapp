@@ -14,11 +14,11 @@ If a session stops, resume from the first unchecked milestone below.
       branding, formatting helpers, email infrastructure.
 - [x] **M5 Auth + public pages** – login/signup/reset, Google, home, events list, event page,
       society page, share previews.
-- [ ] **M6 Booking + tickets** – checkout, payment proof upload, status page, My tickets,
+- [x] **M6 Booking + tickets** – checkout, payment proof upload, status page, My tickets,
       rotating QR.
-- [ ] **M7 Organizer dashboard** – society register, events, ticket types, payment accounts,
+- [x] **M7 Organizer dashboard** – society register, events, ticket types, payment accounts,
       team, payments review, live dashboard, attendees, scanners, cancel, report.
-- [ ] **M8 Web scanner** – `/scan`, camera scan, results, offline warning, manual list.
+- [x] **M8 Web scanner** – `/scan`, camera scan, results, offline warning, manual list.
 - [ ] **M9 Admin panel** – approvals, orders/disputes, fraud list, users, universities, logs.
 - [ ] **M10 "Should" items + polish** – PWA, reminders, final README.
 
@@ -63,6 +63,41 @@ If a session stops, resume from the first unchecked milestone below.
   student-card notice, EVT-06 cancelled banner, EVT-07 society page, EVT-08 Google
   Calendar button, EVT-09 past events tab, link-only visibility.
 - Booking widget (PAY-01) with inline name/phone (AUTH-06).
+
+### Booking + tickets (M6)
+- PAY-02 60-minute hold with on-screen timer, PAY-03 payment screen (amount, reference code,
+  accounts, Copy buttons, remarks instruction), PAY-04 upload (screenshot ≤5 MB jpg/png/webp,
+  transaction ID, sender name, account paid into, student card when required), PAY-05
+  "Review mein hai" status page (auto-refresh), PAY-08 re-upload after rejection, PAY-10
+  expired view, PAY-12 free tickets straight to "ready", NFR-13 retry button on failed upload.
+- Disputes from the order page (ADM-04, "paise bheje magar approve nahi hua").
+- TKT-01 My tickets (upcoming/past + bookings in progress), TKT-02 live QR (new signed token
+  every 30 s), TKT-03 countdown ring + ticking PKT clock + pulsing border + sheen, TKT-04
+  "Used at 4:12 PM" (realtime flip), TKT-05 one QR + own link per ticket, AUTH-04 profile
+  (name, phone, university, photo), AUTH-08 deletion request. Other people's tickets/orders →
+  "Not allowed".
+
+### Organizer dashboard (M7)
+- ORG-01 register society (+ proof upload, pending until approved, resubmit after rejection),
+  society profile editing, ORG-02 payment accounts (owner) + per-event selection, ORG-03 team
+  invites by email with roles, change/remove (owner), invite acceptance page, ORG-04 event
+  form (poster ≤5 MB, PKT times, capacity, visibility, max per order), ORG-05 ticket types
+  (price, quantity, sale window, student card), ORG-06 draft → submit, ORG-07 locked
+  price/eligibility after booking (DB trigger + UI), ORG-08 live dashboard (realtime + 20 s
+  polling): review count, sold by type, collected, check-ins, capacity %, ORG-09 attendee list
+  with search + CSV, ORG-10 scanner assignment (expires 6 h after event), ORG-11 cancel with
+  confirmation + emails, ORG-12 report (by account, by type, orders; print-to-PDF + CSV),
+  ORG-13 manual check-in logged with name, ORG-14 duplicate event.
+- PAY-06 verification list (zoomable screenshot + card, expected amount, ref code, TID, sender,
+  upload time, approve / reject with reason), PAY-07 emails, PAY-09 red "Possible duplicate"
+  banner linking the other orders, PAY-14 "Review baqi" counts + organizer email.
+
+### Web scanner (M8)
+- SCN-01 `/scan` event picker (only current scanner access), SCN-02 camera via @zxing/browser
+  with clear permission help, SCN-03 server verification, SCN-04 full-screen green/red results
+  ("Entry OK", "Invalid", "Not valid here", "Already used at …"), SCN-05 sound + vibration,
+  SCN-06 atomic (DB), SCN-07 auto-close after 2 s, SCN-08 live count, SCN-09 big offline
+  banner + manual list (cached for lookup), SCN-10 every scan logged with device label.
 
 ## Left to do
 See unchecked milestones above.

@@ -117,3 +117,17 @@ export async function removeFiles(bucket: Bucket, paths: string[]) {
   if (!paths.length) return;
   await createAdminClient().storage.from(bucket).remove(paths);
 }
+
+/** Many signed URLs in one request. Returns path → url. */
+export async function signedUrls(bucket: Bucket, paths: (string | null | undefined)[], expiresInSeconds = 600): Promise<Map<string, string>> {
+  const list = [...new Set(paths.filter((p): p is string => Boolean(p)))];
+  const out = new Map<string, string>();
+  if (!list.length) return out;
+  const { data, error } = await createAdminClient().storage.from(bucket).createSignedUrls(list, expiresInSeconds);
+  if (error) {
+    console.error("signed urls failed", bucket, error.message);
+    return out;
+  }
+  for (const item of data ?? []) if (item.path && item.signedUrl) out.set(item.path, item.signedUrl);
+  return out;
+}
