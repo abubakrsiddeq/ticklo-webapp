@@ -30,7 +30,8 @@ export default async function TicketPage({ params }: { params: Promise<{ ticketI
     .eq("owner_id", user.id)
     .maybeSingle();
   // Someone else's ticket (or a wrong link) → "Not allowed" (acceptance criteria)
-  if (!ticket) redirect("/not-allowed");
+  // Printed tickets have no owner, so they never show up here.
+  if (!ticket?.order_id) redirect("/not-allowed");
 
   const { data: siblings } = await supabase
     .from("tickets")

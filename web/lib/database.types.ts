@@ -835,6 +835,79 @@ export type Database = {
           },
         ];
       };
+      print_batches: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          design: Json;
+          download_count: number;
+          event_id: string;
+          first_serial: number;
+          id: string;
+          label: string | null;
+          last_downloaded_at: string | null;
+          prefix: string;
+          quantity: number;
+          template_key: string | null;
+          ticket_type_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          design: Json;
+          download_count?: number;
+          event_id: string;
+          first_serial: number;
+          id?: string;
+          label?: string | null;
+          last_downloaded_at?: string | null;
+          prefix: string;
+          quantity: number;
+          template_key?: string | null;
+          ticket_type_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          design?: Json;
+          download_count?: number;
+          event_id?: string;
+          first_serial?: number;
+          id?: string;
+          label?: string | null;
+          last_downloaded_at?: string | null;
+          prefix?: string;
+          quantity?: number;
+          template_key?: string | null;
+          ticket_type_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "print_batches_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_batches_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "print_batches_ticket_type_id_fkey";
+            columns: ["ticket_type_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_types";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -910,6 +983,54 @@ export type Database = {
         Relationships: [
         ];
       };
+      ticket_templates: {
+        Row: {
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          design: Json;
+          id: string;
+          name: string;
+          org_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          design: Json;
+          id?: string;
+          name: string;
+          org_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          design?: Json;
+          id?: string;
+          name?: string;
+          org_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ticket_templates_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ticket_templates_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ticket_types: {
         Row: {
           created_at: string;
@@ -965,6 +1086,7 @@ export type Database = {
       };
       tickets: {
         Row: {
+          batch_id: string | null;
           cancelled_at: string | null;
           checked_in_at: string | null;
           checked_in_by: string | null;
@@ -973,13 +1095,17 @@ export type Database = {
           created_at: string;
           event_id: string;
           holder_name: string;
+          holder_phone: string | null;
           id: string;
-          order_id: string;
-          owner_id: string;
+          order_id: string | null;
+          owner_id: string | null;
+          serial_no: number | null;
+          source: string;
           status: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id: string;
         };
         Insert: {
+          batch_id?: string | null;
           cancelled_at?: string | null;
           checked_in_at?: string | null;
           checked_in_by?: string | null;
@@ -988,13 +1114,17 @@ export type Database = {
           created_at?: string;
           event_id: string;
           holder_name: string;
+          holder_phone?: string | null;
           id?: string;
-          order_id: string;
-          owner_id: string;
+          order_id?: string | null;
+          owner_id?: string | null;
+          serial_no?: number | null;
+          source?: string;
           status?: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id: string;
         };
         Update: {
+          batch_id?: string | null;
           cancelled_at?: string | null;
           checked_in_at?: string | null;
           checked_in_by?: string | null;
@@ -1003,13 +1133,23 @@ export type Database = {
           created_at?: string;
           event_id?: string;
           holder_name?: string;
+          holder_phone?: string | null;
           id?: string;
-          order_id?: string;
-          owner_id?: string;
+          order_id?: string | null;
+          owner_id?: string | null;
+          serial_no?: number | null;
+          source?: string;
           status?: Database["public"]["Enums"]["ticket_status"];
           ticket_type_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "tickets_batch_id_fkey";
+            columns: ["batch_id"];
+            isOneToOne: false;
+            referencedRelation: "print_batches";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "tickets_checked_in_by_fkey";
             columns: ["checked_in_by"];
@@ -1227,6 +1367,18 @@ export type Database = {
         };
         Returns: string;
       };
+      create_print_batch: {
+        Args: {
+          p_event_id: string | null;
+          p_ticket_type_id: string | null;
+          p_quantity: number | null;
+          p_prefix: string | null;
+          p_design: Json | null;
+          p_template_key?: string | null;
+          p_label?: string | null;
+        };
+        Returns: Json;
+      };
       event_availability: {
         Args: {
           p_event_id: string | null;
@@ -1388,6 +1540,19 @@ export type Database = {
         };
         Returns: Json;
       };
+      print_design_problem: {
+        Args: {
+          p_design: Json | null;
+        };
+        Returns: string;
+      };
+      print_serial_label: {
+        Args: {
+          p_prefix: string | null;
+          p_serial: number | null;
+        };
+        Returns: string;
+      };
       rate_limit_hit: {
         Args: {
           p_key: string | null;
@@ -1395,6 +1560,13 @@ export type Database = {
           p_window_seconds: number | null;
         };
         Returns: boolean;
+      };
+      record_print_download: {
+        Args: {
+          p_batch_id: string | null;
+          p_layout?: string | null;
+        };
+        Returns: undefined;
       };
       reject_order: {
         Args: {
@@ -1454,7 +1626,16 @@ export type Database = {
           requires_student_card: boolean;
           status: Database["public"]["Enums"]["ticket_status"];
           checked_in_at: string;
+          serial: string;
         }[];
+      };
+      set_printed_ticket_buyer: {
+        Args: {
+          p_ticket_id: string | null;
+          p_name: string | null;
+          p_phone?: string | null;
+        };
+        Returns: undefined;
       };
       shares_org_as_staff: {
         Args: {
@@ -1507,6 +1688,22 @@ export type Database = {
           p_role: Database["public"]["Enums"]["org_role"] | null;
         };
         Returns: undefined;
+      };
+      update_print_batch_design: {
+        Args: {
+          p_batch_id: string | null;
+          p_design: Json | null;
+        };
+        Returns: undefined;
+      };
+      void_printed_tickets: {
+        Args: {
+          p_batch_id: string | null;
+          p_from: number | null;
+          p_to: number | null;
+          p_reason: string | null;
+        };
+        Returns: number;
       };
     };
     Enums: {
