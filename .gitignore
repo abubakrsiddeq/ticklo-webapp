@@ -19,3 +19,6 @@ supabase/functions/.env
 # Hostinger env import file (contains secrets)
 env.txt
 hostinger-cron.txt
+
+# Apple Sign in private keys (never commit)
+*.p8

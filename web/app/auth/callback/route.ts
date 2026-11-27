@@ -4,7 +4,7 @@ import { safeNext } from "@/lib/site";
 import { publicEnv } from "@/lib/env";
 import { sellerLandingPath } from "@/lib/seller-landing";
 
-// OAuth (Google, AUTH-02) and PKCE email links land here with ?code=...
+// OAuth (Google/Apple, AUTH-02) and PKCE email links land here with ?code=...
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const code = url.searchParams.get("code");

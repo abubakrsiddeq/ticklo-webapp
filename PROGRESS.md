@@ -63,7 +63,7 @@ If a session stops, resume from the first unchecked milestone below.
   Supabase Auth templates for EML-01 in `supabase/templates`.
 
 ### Auth + public pages (M5)
-- AUTH-01 email/password signup + confirmation link, AUTH-02 Google, AUTH-03 reset,
+- AUTH-01 email/password signup + confirmation link, AUTH-02 Google + Apple (D-053), AUTH-03 reset,
   AUTH-05 any email, AUTH-07 return to the page you came from (`?next=`, open-redirect safe),
   AUTH-09 suspended users signed out.
 - EVT-01 home, EVT-02 university filter + search, EVT-03 event page with remaining tickets
@@ -393,6 +393,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   run `supabase config push`).
 - Resend API key + a verified sending domain (`EMAIL_FROM`), and Resend SMTP in Supabase Auth.
 - Google OAuth client ID/secret (Supabase → Authentication → Providers → Google).
+- Sign in with Apple (D-053, README 2.3): App ID + Services ID + key in Apple Developer, secret from
+  `web/scripts/apple-client-secret.mjs` pasted in Supabase → Providers → Apple, sender registered for
+  Apple's private email relay. Renew the secret every 6 months (next: ~2027-05).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
 - Optional speed-up: the Supabase project is in Seoul. When creating the production project,
   pick **Mumbai (ap-south-1)** – every database query gets ~2x faster from Pakistan (D-038).

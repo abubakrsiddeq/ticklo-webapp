@@ -559,3 +559,20 @@ one-time token; (2) the default template's `?code=` only works in the browser th
   same answer for every email).
 - Needs the TickLO templates (token_hash) pasted in Supabase → Auth → Emails; until then
   the default template still works through the `?code=` path, but without the scanner fix.
+
+## D-053 Sign in with Apple (owner request, 2026-11-27)
+- Login and signup show "Continue with Google" and "Continue with Apple" (`components/oauth-buttons.tsx`,
+  replaces `google-button.tsx`). Both use Supabase OAuth and the existing `/auth/callback`, so the
+  first login creates the account (no separate signup), the profile trigger fills name/photo, suspended
+  users are blocked and the person returns to `next`. Same verified email → Supabase links the identity
+  to the existing account.
+- Apple often sends no name on the web, and "Hide my email" gives a `@privaterelay.appleid.com`
+  address (a separate account from an email/password one). No extra "add your name" page: checkout
+  already asks for name and phone when the profile lacks them (AUTH-06).
+- Supabase needs a JWT client secret made from the `.p8` key; Apple caps it at ~6 months.
+  `web/scripts/apple-client-secret.mjs` makes it locally (180 days) and copies it to the clipboard.
+  `*.p8` is git-ignored.
+- Apple only forwards mail to relay addresses from registered senders: register
+  `noreply@ticklo.bkrtechsolutions.com` under "Sign in with Apple for Email Communication" (SPF on
+  `ticklo.bkrtechsolutions.com` already includes Hostinger).
+- The Apple button shows even before Apple is turned on in Supabase; deploy after it is set up.

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoogleButton } from "@/components/google-button";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext } from "@/lib/site";
 import { SignupForm } from "./signup-form";
@@ -21,7 +21,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         <CardDescription>TickLO se ticket lo, befikar raho!</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <GoogleButton next={next} label="Sign up with Google" />
+        <OAuthButtons next={next} verb="Sign up" />
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" /> or with email <span className="h-px flex-1 bg-border" />
         </div>

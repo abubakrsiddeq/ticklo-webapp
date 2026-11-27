@@ -137,6 +137,14 @@ See `supabase/functions/README.md` for the function API (also used by the Flutte
 - **Google (AUTH-02):** create an OAuth client in Google Cloud (Authorized redirect URI:
   `https://<project-ref>.supabase.co/auth/v1/callback`) and paste the client ID/secret in
   Providers → Google.
+- **Apple (D-053):** Apple Developer → Identifiers: an App ID with "Sign In with Apple", then a
+  Services ID (this is the Client ID) with domain `<project-ref>.supabase.co` and return URL
+  `https://<project-ref>.supabase.co/auth/v1/callback`. Keys: a "Sign in with Apple" key (download
+  the `.p8`, note Key ID and Team ID). Make the secret with
+  `cd web && node scripts/apple-client-secret.mjs <TEAM_ID> <KEY_ID> <SERVICES_ID> <AuthKey.p8>`
+  and paste Client ID + secret in Providers → Apple. **The secret expires after 6 months** – run the
+  script again before then. Also register `noreply@ticklo.bkrtechsolutions.com` under "Sign in with
+  Apple for Email Communication" so "Hide my email" users get ticket emails.
 
 ### 2.4 Realtime and cron
 

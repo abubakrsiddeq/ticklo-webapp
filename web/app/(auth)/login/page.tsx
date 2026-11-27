@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GoogleButton } from "@/components/google-button";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { getCurrentUser } from "@/lib/auth";
 import { safeNext } from "@/lib/site";
 import { LoginForm } from "./login-form";
@@ -38,7 +38,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <AlertDescription>{ERRORS[sp.error]}</AlertDescription>
           </Alert>
         ) : null}
-        <GoogleButton next={next} />
+        <OAuthButtons next={next} />
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" /> or with email <span className="h-px flex-1 bg-border" />
         </div>
