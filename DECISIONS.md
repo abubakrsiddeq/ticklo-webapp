@@ -857,3 +857,25 @@ registered – the same thing the existing "already registered" error already di
   hidden instead of removed, types stay, nothing becomes required (`set_ticket_form`).
 - Festivals keep no event-level form (D-065). Session manager pages and CSV exports, and the
   event attendee export, show the answers under their labels (files as links on the page).
+
+## D-070 Festivals: sidebar in parts, session pages, sessions on the Events page (owner request, 2026-11-27)
+- **Festival sidebar ("Get in"):** "From Rs …" (cheapest ticket on sale), then **🎟 Festival
+  passes** (with "Includes: …"), **🎫 Tickets for one event** (sorted by the event's start) and
+  **🚪 Entry tickets** (no session). Competitions of a festival are also shown in the sidebar as
+  **🏆 Compete** with Register buttons. Single and competition events keep their layout.
+- **Phones:** a sticky bottom bar "From Rs … · Get tickets" (or Register) jumps to the sidebar.
+- **Schedule cards:** the session name opens its own page; "Get ticket · Rs …" when it has its
+  own ticket on sale; "✓ Included in pass" only while a pass is on sale.
+- **Session pages:** `/e/<society>/<event>/s/<slug>` with the session poster, time, venue,
+  "Part of 🎪 …", the way in (register / own ticket / included in a pass), description, results
+  and its own share preview (Open Graph with the session poster). `event_sessions.slug` is made
+  from the name when the session is created and does not change on rename (shared links keep
+  working); unique per event (`-2`, `-3`).
+- **Events page:** type filters (All, 🎪 Festivals, 🏆 Competitions, 🛠 Workshops, 🎤 Concerts &
+  nights). Sessions an organizer lists (`event_sessions.listed`, "Show on the Events page" in the
+  session dialog; on by default for competitions, workshops and concerts) appear as their own
+  cards under "🎪 Inside festivals" (upcoming, public, approved societies; first page), and
+  alone for Workshops / Concerts. Search matches session names. Event cards show 🎪 / 🏆.
+- **Organizer help (schedule):** "No way in yet" on sessions without their own ticket or a pass,
+  "On Events page" and "Open page ↗" per session, and a note when passes include only one event
+  (suggests naming it after that event).

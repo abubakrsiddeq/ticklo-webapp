@@ -317,6 +317,13 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: festival sidebar, session pages, sessions on Events (D-070)
+- Festival sidebar in parts (passes / one-event tickets / entry, From price, Compete), phone
+  bottom bar, session pages with their own share preview, Events page type filters and
+  "Inside festivals" cards (organizer switch per session), organizer warnings.
+- Migration `20261127002600_session_pages.sql` (**not applied to TICkLO yet**). DB test: 1 new,
+  129 pass.
+
 ## Change 2026-11-27: form builder for every session and event ticket (D-069)
 - Workshops, concerts, talks, qawwali nights and single / competition events have a ticket form
   (builder in ticket mode; default asks nothing). Session tickets ask their session's form,
@@ -454,6 +461,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127002600_session_pages.sql` to TICkLO** (Mumbai) before deploying the
+  build with session pages (D-070) – the new build reads `event_schedule.slug`.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

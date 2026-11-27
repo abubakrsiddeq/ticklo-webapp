@@ -39,6 +39,8 @@ export interface SessionFormValues {
   member_required?: string[];
   /** D-068: the competition's registration form */
   form?: unknown;
+  /** D-070: show on the Events page */
+  listed?: boolean;
   /** D-069: every other session – the form asked for every ticket holder */
   ticket_fields?: unknown;
   /** D-065: festival sessions – holder details on each ticket (off / optional / required) */
@@ -126,6 +128,10 @@ export async function saveSession(
     p_data: data as unknown as Json,
   });
   if (error) return fail(error);
+  if (typeof v.listed === "boolean") {
+    const { error: listError } = await supabase.rpc("set_session_listing", { p_session_id: String(id), p_listed: v.listed });
+    if (listError) return fail(listError);
+  }
   if (posterUrl) {
     const { error: posterError } = await supabase.rpc("set_session_poster", { p_session_id: String(id), p_url: posterUrl });
     if (posterError) return fail(posterError);

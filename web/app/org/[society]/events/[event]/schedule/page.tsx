@@ -27,7 +27,7 @@ export default async function SchedulePage({
   const sp = await searchParams;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/schedule`);
   const supabase = await createClient();
-  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }] = await Promise.all([
+  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }, { data: evTypes }, { data: evAccess }] = await Promise.all([
     supabase.rpc("event_schedule", { p_event_id: event.id }),
     supabase.rpc("session_stats", { p_event_id: event.id }),
     supabase.from("session_managers").select("session_id, user_id, event_sessions!inner ( event_id )").eq("event_sessions.event_id", event.id),
@@ -41,7 +41,16 @@ export default async function SchedulePage({
       .order("created_at", { ascending: false })
       .limit(30),
     supabase.from("team_registrations").select("session_id").eq("event_id", event.id).in("status", ["pending", "approved"]),
+    // D-070: how people get into each session (own ticket or a pass)
+    supabase.from("ticket_types").select("id, name, all_sessions, registration_session_id").eq("event_id", event.id),
+    supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, ticket_types!inner ( event_id )").eq("ticket_types.event_id", event.id),
   ]);
+  const passTypes = (evTypes ?? []).filter((t) => t.all_sessions && !t.registration_session_id);
+  const ownTicketSessions = new Set(
+    (evAccess ?? []).filter((a) => (evTypes ?? []).some((t) => t.id === a.ticket_type_id && !t.all_sessions && !t.registration_session_id)).map((a) => a.session_id),
+  );
+  const noWayIn = (s: { id: string; kind: string; pass_access: boolean }) =>
+    s.kind !== "competition" && !ownTicketSessions.has(s.id) && !(s.pass_access && passTypes.length > 0);
   const registeredSessions = new Set((regs ?? []).map((r) => r.session_id));
   const formSourcesFor = (exceptId: string | null) =>
     (otherComps ?? [])
@@ -97,6 +106,15 @@ export default async function SchedulePage({
         ) : null}
       </div>
 
+      {/* D-070: a pass that opens only one event reads like a ticket for it */}
+      {passTypes.length && list.filter((x) => x.pass_access && x.kind !== "competition").length === 1 ? (
+        <p className="rounded-xl bg-warning-soft p-3 text-sm text-navy">
+          Your pass{passTypes.length > 1 ? "es" : ""} ({passTypes.map((t) => t.name).join(", ")}) include only one event:{" "}
+          <strong>{list.find((x) => x.pass_access && x.kind !== "competition")?.name}</strong>. Consider naming it after that event (e.g. &quot;
+          {list.find((x) => x.pass_access && x.kind !== "competition")?.name} ticket&quot;), or include more events in passes.
+        </p>
+      ) : null}
+
       {list.length ? (
         groupByDay(list).map((day) => (
           <section key={day.day} className="grid gap-3">
@@ -125,6 +143,7 @@ export default async function SchedulePage({
                   attendee_university: s.attendee_university,
                   poster_url: s.poster_url,
                   form: s.form,
+                  listed: s.listed,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
@@ -146,6 +165,11 @@ export default async function SchedulePage({
                         <p className="font-semibold text-navy">{s.name}</p>
                         {/* D-066 */}
                         {s.poster_url ? null : <Pill tone="warning">Poster missing</Pill>}
+                        {noWayIn(s) ? <Pill tone="danger">No way in yet – add a ticket or include it in a pass</Pill> : null}
+                        {s.listed ? <Pill tone="info">On Events page</Pill> : null}
+                        <a href={`/e/${org.slug}/${event.slug}/s/${s.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-brand-strong hover:underline">
+                          Open page ↗
+                        </a>
                         <Pill tone="neutral">{kindLabel(s.kind)}</Pill>
                         {s.pass_access ? <Pill tone="success">In passes</Pill> : null}
                         {competition && s.needs_approval ? <Pill tone="info">Shortlisting</Pill> : null}

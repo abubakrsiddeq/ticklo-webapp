@@ -52,6 +52,7 @@ export interface SessionValue {
   attendee_university?: string;
   poster_url?: string | null;
   form?: unknown;
+  listed?: boolean;
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -90,6 +91,9 @@ export function SessionDialog({
   const [kind, setKind] = useState(session?.kind ?? defaultKind);
   const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
+  // D-070: on the Events page – on by default for competitions, workshops and concerts
+  const [listed, setListed] = useState<boolean | null>(session ? (session.listed ?? false) : null);
+  const listedNow = listed ?? ["competition", "workshop", "concert"].includes(kind);
   // Competitions: individuals or teams (min–max members). New competitions start with teams.
   const [participation, setParticipation] = useState<Participation>(session ? participationOf(session.team_max) : "team");
   const solo = participation === "individual";
@@ -135,6 +139,7 @@ export function SessionDialog({
                 pass_access: passAccess,
                 questions: [],
                 participation,
+                listed: listedNow,
                 form: competition ? regForm : undefined,
                 ticket_fields: competition ? undefined : ticketForm.member,
                 team_min: String(fd.get("team_min") ?? "1"),
@@ -234,6 +239,15 @@ export function SessionDialog({
                 <Input id={`${p}-poster`} name="poster" type="file" accept="image/jpeg,image/png,image/webp" className="pt-2" />
               </div>
             </FormField>
+            <label className="flex items-start gap-3 rounded-xl border border-navy/10 p-3 text-sm">
+              <Checkbox checked={listedNow} onCheckedChange={(v) => setListed(v === true)} className="mt-0.5" />
+              <span>
+                <span className="font-medium text-navy">Show on the Events page</span>
+                <span className="block text-xs text-muted-foreground">
+                  Listed as its own card (with this poster) so people find it without opening the festival. Good for competitions, workshops and nights.
+                </span>
+              </span>
+            </label>
             <FormField id={`${p}-desc`} label="Description (optional)">
               <Textarea id={`${p}-desc`} name="description" defaultValue={session?.description ?? ""} maxLength={2000} rows={3} placeholder="What happens, who should come, what to bring…" />
             </FormField>
