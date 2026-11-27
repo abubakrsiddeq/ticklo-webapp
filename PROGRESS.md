@@ -323,7 +323,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   result, search, pages. Approvals shows the earlier history of a resubmitted society or event.
 - Migration `20261128000300_decision_history.sql`: audit log append-only (no edit / delete /
   truncate), society registered / resubmitted and event sent-for-review recorded, deleted
-  university keeps its name. **Not yet applied to TICkLO** (see Needs from Abubakar).
+  university keeps its name. Applied to TICkLO (2026-11-28, D-034 method, recorded in the
+  migration history) and checked: all 6 triggers exist, and an edit to the log is refused with
+  "The audit log is a permanent record and cannot be changed.".
 - Unit tests: 4 new, 100 pass. DB tests: 5 new, 139 pass. Typecheck, lint and build pass.
 - Test: Admin → Approvals → reject a society with a reason → Decisions shows it as Rejected with
   the reason → owner resubmits → Approvals shows the "History" box → approve → Decisions → filter
@@ -514,14 +516,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261128000300_decision_history.sql` to TICkLO (D-076):** my attempt was
-  blocked by the permission check. Run `supabase db push` (or the D-034 method:
-  `supabase db query --linked -f supabase/migrations/20261128000300_decision_history.sql`, then
-  record version `20261128000300` / `decision_history` in `supabase_migrations.schema_migrations`),
-  then deploy the web build. The Decisions page works before the migration too; only the
-  register / resubmit / submit steps and the edit lock need it.
-- **Deploy the new web build on Hostinger (D-073, D-074):** both migrations are applied; until the
-  build is deployed the live site still shows the full-page error screen when a form fails.
+- **Deploy the new web build on Hostinger (D-073, D-074, D-076):** the migrations are applied; until the
+  build is deployed the live site still shows the full-page error screen when a form fails, and
+  the admin Decisions tab is not there yet.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
