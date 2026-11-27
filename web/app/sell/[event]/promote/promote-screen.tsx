@@ -43,7 +43,7 @@ export interface PromoteData {
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
     <div className={cn("rounded-2xl p-3 text-center", accent ? "bg-brand text-navy" : "bg-white/10")}>
-      <p className="font-heading text-2xl font-bold tabular-nums">{value}</p>
+      <p className="font-heading text-xl leading-tight font-bold tabular-nums sm:text-2xl">{value}</p>
       <p className={cn("text-xs", accent ? "text-navy/80" : "text-slate-300")}>{label}</p>
     </div>
   );
@@ -135,9 +135,9 @@ export function PromoteScreen({ data: d }: { data: PromoteData }) {
       {d.live && !d.closed ? (
         <section className="grid gap-3 rounded-3xl bg-white p-4 text-navy">
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Your code</p>
-              <p className="font-mono text-3xl font-bold tracking-wider">{d.code}</p>
+              <p className="font-mono text-2xl font-bold tracking-wider break-all sm:text-3xl">{d.code}</p>
             </div>
             {d.discount ? <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-strong">Friends get {d.discount}</span> : null}
           </div>
@@ -147,13 +147,13 @@ export function PromoteScreen({ data: d }: { data: PromoteData }) {
             </a>
           </Button>
           <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" onClick={copyLink}>
+            <Button variant="outline" className="h-auto flex-col gap-1 px-1 py-2.5 text-xs" onClick={copyLink}>
               {copied ? <Check className="text-brand-strong" /> : <Copy />} {copied ? "Copied" : "Link"}
             </Button>
-            <Button variant="outline" onClick={shareNative}>
+            <Button variant="outline" className="h-auto flex-col gap-1 px-1 py-2.5 text-xs" onClick={shareNative}>
               <Share2 /> Share
             </Button>
-            <Button variant="outline" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr}>
+            <Button variant="outline" className="h-auto flex-col gap-1 px-1 py-2.5 text-xs" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr}>
               <QrCode /> QR
             </Button>
           </div>

@@ -603,3 +603,20 @@ registered – the same thing the existing "already registered" error already di
 - Same `QR_SIGNING_SECRET` / `CRON_SECRET` as before. Auth config copied through the
   Management API; OAuth secrets are not returned by the API, so Google/Apple stay off until
   re-entered. All users must log in again (new project, new JWT keys).
+
+## D-056 Mobile overflow sweep (owner request, 2026-11-27)
+- Every public/auth page was measured in headless Chrome at 320, 360, 375 and 768 px (no
+  sideways scroll). Logged-in pages could not be rendered (production has real data only, no
+  seed accounts), so they were audited in code.
+- Root cause found: grid items default to `min-width: auto`, so a wide table inside an
+  `overflow-x-auto` box (min-w 460–760 px) stretched its `grid gap-*` parent and the whole
+  organizer/admin page scrolled sideways on phones (reproduced: 360 px viewport → 736 px page).
+  Fix in `globals.css`: `.grid > * { min-width: 0 }` (base layer, so `min-w-[…]` utilities still
+  win) plus `overflow-wrap: break-word` on body so long emails/links/codes wrap.
+- Dialogs got `max-h-[calc(100dvh-2rem)] overflow-y-auto`, so tall forms (ambassador application,
+  promo code) scroll on short phones instead of being cut off at top and bottom.
+- Ticket design canvas: `justify-center-safe` (zoomed or wider-than-box canvas was clipped on the
+  left with no way to scroll) and padding no longer subtracted twice in the fit width.
+- Smaller fixes: `min-w-0` on flex rows with emails (team invites, admin, fraud, manage teams),
+  `break-all` on big ambassador codes, promote screen buttons stack icon over label to fit 320 px,
+  admin ambassador stat cards tighter on phones.

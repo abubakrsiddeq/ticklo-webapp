@@ -105,7 +105,7 @@ export default async function AdminOverviewPage() {
           <ul className="divide-y text-sm">
             {deletions.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span>
+                <span className="min-w-0">
                   {d.full_name ?? "–"} · {d.email}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">

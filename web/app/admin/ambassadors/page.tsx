@@ -38,17 +38,17 @@ export default async function AdminAmbassadorsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06]">
-          <div className="text-sm text-muted-foreground">Societies brought</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-card ring-1 ring-navy/[0.06]">
+          <div className="text-xs sm:text-sm text-muted-foreground">Societies brought</div>
           <div className="font-heading text-2xl font-bold text-navy">{totals.societies}</div>
         </div>
-        <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06]">
-          <div className="text-sm text-muted-foreground">Approved</div>
+        <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-card ring-1 ring-navy/[0.06]">
+          <div className="text-xs sm:text-sm text-muted-foreground">Approved</div>
           <div className="font-heading text-2xl font-bold text-navy">{totals.approved}</div>
         </div>
-        <div className="rounded-2xl bg-brand-soft p-4 shadow-card ring-1 ring-navy/[0.06]">
-          <div className="text-sm text-muted-foreground">Paid tickets sold by them</div>
+        <div className="rounded-2xl bg-brand-soft p-3 sm:p-4 shadow-card ring-1 ring-navy/[0.06]">
+          <div className="text-xs sm:text-sm text-muted-foreground">Paid tickets sold by them</div>
           <div className="font-heading text-2xl font-bold text-navy">{totals.tickets}</div>
         </div>
       </div>

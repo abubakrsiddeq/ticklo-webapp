@@ -143,6 +143,14 @@
       radial-gradient(60rem 30rem at 100% -10%, rgb(15 157 88 / 0.07), transparent 60%),
       radial-gradient(50rem 26rem at -10% 0%, rgb(11 31 58 / 0.06), transparent 60%);
     background-repeat: no-repeat;
+    /* Long emails, links and reference codes wrap instead of pushing the page sideways on phones */
+    overflow-wrap: break-word;
+  }
+  /* Grid items default to min-width:auto, so a wide table inside an overflow-x-auto box
+     (or any long unbreakable text) stretched the whole grid past the phone screen.
+     Utilities like min-w-[…] still win (base layer). */
+  .grid > * {
+    min-width: 0;
   }
   ::selection {
     background: rgb(15 157 88 / 0.22);

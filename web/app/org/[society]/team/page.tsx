@@ -80,7 +80,7 @@ export default async function TeamPage({ params }: { params: Promise<{ society: 
                 const expired = new Date(i.expires_at).getTime() < now;
                 return (
                   <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium text-navy">{i.email}</p>
                       <p className="text-sm text-muted-foreground">
                         {i.role} · sent {formatDate(i.created_at)} · expires {formatDate(i.expires_at)}

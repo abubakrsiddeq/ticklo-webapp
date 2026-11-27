@@ -133,7 +133,7 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                 return (
                   <article key={r.id} className={`grid gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] ${r.status === "rejected" || r.status === "withdrawn" ? "opacity-60" : ""}`}>
                     <div className="flex items-start justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-navy">{r.team_name}</p>
                         <p className="text-xs text-muted-foreground">
                           {r.leader_name} · {formatPhone(r.leader_phone)} · {r.leader_email} · {formatShortDateTime(r.created_at)}

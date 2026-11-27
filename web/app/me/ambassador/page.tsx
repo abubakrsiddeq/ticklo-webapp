@@ -120,7 +120,7 @@ export default async function MyAmbassadorPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-2xl bg-white p-3 text-navy">
-            <span className="flex-1 font-mono text-2xl font-bold tracking-wider">{campus.code}</span>
+            <span className="min-w-0 flex-1 font-mono text-2xl font-bold tracking-wider break-all">{campus.code}</span>
             <CopyButton value={campus.code} label="Campus ambassador code" />
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">

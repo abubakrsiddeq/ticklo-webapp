@@ -102,7 +102,7 @@ export function DesignCanvas({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => setFitWidth(Math.max(280, entries[0].contentRect.width - 32)));
+    const ro = new ResizeObserver((entries) => setFitWidth(Math.max(220, entries[0].contentRect.width - 8)));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -239,7 +239,7 @@ export function DesignCanvas({
   }
 
   return (
-    <div ref={wrapRef} className="relative flex min-h-48 w-full justify-center overflow-auto rounded-2xl bg-[repeating-conic-gradient(#e2e8f0_0_25%,#f8fafc_0_50%)] bg-[length:20px_20px] p-4">
+    <div ref={wrapRef} className="relative flex min-h-48 w-full justify-center-safe overflow-auto rounded-2xl bg-[repeating-conic-gradient(#e2e8f0_0_25%,#f8fafc_0_50%)] bg-[length:20px_20px] p-4">
       <div ref={hostRef} className="shrink-0 shadow-xl ring-1 ring-black/10" />
       {!ready ? (
         <div className="absolute inset-0 flex items-center justify-center">

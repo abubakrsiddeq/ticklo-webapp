@@ -96,7 +96,7 @@ export default async function FraudPage() {
           <ul className="divide-y rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06]">
             {repeat.map((r) => (
               <li key={r.user_id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-navy">
                     {r.full_name ?? "–"} {r.is_suspended ? <StatusBadge status="suspended" /> : null}
                   </p>
