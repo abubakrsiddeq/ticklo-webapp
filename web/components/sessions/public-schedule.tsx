@@ -165,8 +165,12 @@ export function PublicSchedule(props: {
                   <Button asChild size="sm" variant="brand">
                     <Link href={`${props.registerBase}/${s.id}`}>{competitionCta(s)}</Link>
                   </Button>
-                ) : state === "full" || state === "closed" ? (
-                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600">{state === "full" ? "Full" : "Registration closed"}</span>
+                ) : state === "full" ? (
+                  <Link href={`${props.registerBase}/${s.id}`} className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600 hover:text-navy">
+                    Full · Join waitlist
+                  </Link>
+                ) : state === "closed" ? (
+                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600">Registration closed</span>
                 ) : null}
                 {ticket && !full ? (
                   <Button asChild size="sm" variant="outline">

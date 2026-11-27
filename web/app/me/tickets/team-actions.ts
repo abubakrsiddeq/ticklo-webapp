@@ -10,6 +10,7 @@ import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/no
 import { cookies } from "next/headers";
 import { normalizeCode, refCookieName } from "@/lib/referrals";
 import { normalizePhone } from "@/lib/phone";
+import { runWaitlist } from "@/lib/waitlist";
 
 /** FES-11: an accepted team (or one whose unpaid order expired) pays now. D-064: with a promo / ambassador code. */
 export async function payTeam(registrationId: string, eventId: string, code: string | null = null): Promise<ActionResult> {
@@ -76,6 +77,7 @@ export async function withdrawTeam(registrationId: string): Promise<ActionResult
   const supabase = await createClient();
   const { error } = await supabase.rpc("withdraw_team_registration", { p_registration_id: registrationId });
   if (error) return fail(error);
+  await runWaitlist(); // D-071: a place may have opened
   revalidatePath("/me/tickets");
   return ok(undefined, "Registration withdrawn.");
 }

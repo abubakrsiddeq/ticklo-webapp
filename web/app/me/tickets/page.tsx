@@ -14,6 +14,7 @@ import { effectiveStatus } from "@/lib/queries/orders";
 import { formatEventRange, formatPKR } from "@/lib/format";
 import { serverNow } from "@/lib/time";
 import { MyTeams, type MyTeam } from "@/components/sessions/my-teams";
+import { WaitlistButton } from "@/components/waitlist-button";
 
 export const metadata: Metadata = { title: "My tickets", robots: { index: false } };
 
@@ -23,7 +24,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
   // The user id comes from the verified session, so the lists load alongside the profile check (D-038).
   const session = (await getSession()) ?? (await requireUser("/me/tickets"));
   const supabase = await createClient();
-  const [, { data: tickets }, { data: orders }, { data: teams }] = await Promise.all([
+  const [, { data: tickets }, { data: orders }, { data: teams }, { data: waits }] = await Promise.all([
     requireUser("/me/tickets"), // still blocks suspended accounts
     supabase
       .from("tickets")
@@ -41,6 +42,7 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
       .in("status", ["awaiting_payment", "under_review", "rejected"])
       .order("created_at", { ascending: false }),
     supabase.rpc("my_team_registrations"),
+    supabase.rpc("my_waitlist"),
   ]);
 
   const now = serverNow();
@@ -110,6 +112,40 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
         <Alert>
           <AlertDescription>Application sent! You will see here when the organizer accepts your team – then you can pay.</AlertDescription>
         </Alert>
+      ) : null}
+      {/* D-071 */}
+      {waits?.length ? (
+        <section id="waitlists" className="grid gap-3">
+          <h2 className="text-xl font-bold text-navy">🔔 Waitlists</h2>
+          <ul className="grid gap-3">
+            {waits.map((w) => {
+              const base = `/e/${w.org_slug}/${w.event_slug}`;
+              const href = w.session_id ? `${base}/register/${w.session_id}` : `${base}?ticket=${w.ticket_type_id}#tickets`;
+              return (
+                <li key={w.id} className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-navy">{w.target_name}</p>
+                    <p className="text-sm text-muted-foreground">{w.event_name}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {w.status === "offered" ? (
+                      <Link href={href} className="inline-flex h-9 items-center rounded-full bg-brand-strong px-4 text-sm font-semibold text-white hover:bg-brand-strong/90">
+                        Book now – held for you
+                      </Link>
+                    ) : null}
+                    <WaitlistButton
+                      ticketTypeId={w.ticket_type_id}
+                      sessionId={w.session_id}
+                      entry={{ id: w.id, status: w.status, line_position: w.line_position, offer_expires_at: w.offer_expires_at }}
+                      loggedIn
+                      loginHref="/login"
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
       <MyTeams teams={((teams ?? []) as MyTeam[]).filter((t) => t.status !== "withdrawn" && new Date(t.session_starts_at).getTime() > now - 7 * 86400000)} now={now} />
       {sp.password === "updated" ? (

@@ -317,6 +317,11 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: waitlist in line order (D-071)
+- Join the waitlist of sold-out tickets / full competitions; the next person in line gets a
+  2-hour held offer by email, then the next. My tickets lists waitlists; organizers see counts.
+- Migration `20261127002700_waitlist.sql` (**not applied to TICkLO yet**). DB tests: 2 new, 131 pass.
+
 ## Change 2026-11-27: festival sidebar, session pages, sessions on Events (D-070)
 - Festival sidebar in parts (passes / one-event tickets / entry, From price, Compete), phone
   bottom bar, session pages with their own share preview, Events page type filters and
@@ -462,6 +467,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127002700_waitlist.sql` to TICkLO** (Mumbai) before deploying the build
+  with the waitlist (D-071).
+- **Hostinger cron:** add job 4 from `hostinger-cron.txt` (`/api/cron/waitlist`, every 5 minutes).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { runWaitlist } from "@/lib/waitlist";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -35,6 +36,7 @@ export async function cancelBooking(orderId: string, backTo: string): Promise<Ac
   const supabase = await createClient();
   const { error } = await supabase.rpc("cancel_my_order", { p_order_id: orderId });
   if (error) return fail(error);
+  await runWaitlist(); // D-071: a place may have opened
   revalidatePath("/me/tickets");
   redirect(backTo.startsWith("/e/") ? backTo : "/me/tickets");
 }

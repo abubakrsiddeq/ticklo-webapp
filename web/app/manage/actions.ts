@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { notifyTeamDecision } from "@/lib/emails/notify";
+import { runWaitlist } from "@/lib/waitlist";
 
 // Session managers and organizers (D-044). Postgres checks can_manage_session.
 const uuid = z.string().uuid();
@@ -17,6 +18,7 @@ export async function decideTeam(sessionId: string, registrationId: string, appr
   const { data, error } = await supabase.rpc("decide_team_registration", { p_registration_id: registrationId, p_approve: approve, p_reason: reason });
   if (error) return fail(error);
   if ((data as { changed?: boolean } | null)?.changed) await notifyTeamDecision(registrationId);
+  if (!approve) await runWaitlist(); // D-071: a declined team may free a place
   revalidatePath(`/manage/${sessionId}`);
   return ok(undefined, approve ? "Team accepted – they have been emailed to pay." : "Team declined – they have been emailed.");
 }

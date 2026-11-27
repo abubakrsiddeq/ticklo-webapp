@@ -2209,7 +2209,12 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "waitlist_entries_event_id_fkey"; columns: ["event_id"]; isOneToOne: false; referencedRelation: "events"; referencedColumns: ["id"] },
+          { foreignKeyName: "waitlist_entries_ticket_type_id_fkey"; columns: ["ticket_type_id"]; isOneToOne: false; referencedRelation: "ticket_types"; referencedColumns: ["id"] },
+          { foreignKeyName: "waitlist_entries_session_id_fkey"; columns: ["session_id"]; isOneToOne: false; referencedRelation: "event_sessions"; referencedColumns: ["id"] },
+          { foreignKeyName: "waitlist_entries_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ];
       };
     };
     Views: {

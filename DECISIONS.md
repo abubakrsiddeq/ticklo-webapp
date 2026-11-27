@@ -881,3 +881,23 @@ registered – the same thing the existing "already registered" error already di
 - **Organizer help (schedule):** "No way in yet" on sessions without their own ticket or a pass,
   "On Events page" and "Open page ↗" per session, and a note when passes include only one event
   (suggests naming it after that event).
+
+## D-071 Waitlist in line order (owner request, 2026-11-27)
+- When a ticket type is sold out, or a competition without shortlisting is full, logged-in
+  people can **join its waitlist** ("You are #3 in line", leave any time). Joining is refused
+  while places are free (`TL:NOT_FULL`) or after the sale / registration closed.
+- **Line order:** when a place opens, `waitlist_process()` offers it to the next person in line
+  for **2 hours** (or until the sale ends, if sooner). The offered place is **held**: ticket
+  counts (`ticket_type_taken`, `session_teams_taken`) include active offers for everybody except
+  the person offered, so only they can book it. If they do not book in time the offer expires
+  and the next person is offered. Booking / registering closes the offer (triggers on
+  `order_items` and `team_registrations`), so the booking functions did not change.
+- **When it runs:** right after places open in the app (buyer cancels a booking, a team
+  withdraws, an organizer declines a team or rejects a payment, ticket quantity or competition
+  places are raised) and every 5 minutes by cron (`/api/cron/waitlist`, for expired 60-minute
+  holds and 48-hour pay windows). Offered people get an email with a "Book now" link.
+- **Where:** sold-out tickets in the booking widget, the Compete / Register card, the register
+  page and "Full · Join waitlist" on the schedule; a "Waitlists" section in My tickets with
+  "Book now – held for you"; organizers see "N on the waitlist" on the schedule and per ticket
+  type on the event edit page (a sign to add places).
+- Not for competitions with shortlisting (they keep taking applications while full).

@@ -11,6 +11,7 @@ import { fieldErrors } from "@/lib/validation/common";
 import { paymentAccountSchema, rejectSchema } from "@/lib/validation/payments";
 import { inviteSchema } from "@/lib/validation/team";
 import { notifyOrderConfirmed, notifyPaymentRejected, notifyTeamInvite } from "@/lib/emails/notify";
+import { runWaitlist } from "@/lib/waitlist";
 
 const uuid = z.string().uuid();
 
@@ -45,6 +46,7 @@ export async function rejectOrder(orgSlug: string, orderId: string, input: unkno
   const { data, error } = await supabase.rpc("reject_order", { p_order_id: orderId, p_reason: parsed.data.reason });
   if (error) return fail(error);
   if (!(data as { already_rejected: boolean }).already_rejected) await notifyPaymentRejected(orderId); // EML-06
+  await runWaitlist(); // D-071: the rejected booking's places may go to the waitlist
   revalidatePath(`/org/${orgSlug}`, "layout");
   return { ok: true, message: "Rejected – the student was emailed." };
 }

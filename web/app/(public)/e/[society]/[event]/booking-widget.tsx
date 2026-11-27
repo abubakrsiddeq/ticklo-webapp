@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { AlertTriangle, DoorOpen, Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
 import { clashes, kindEmoji, type Question } from "@/lib/sessions";
 import { FormRenderer } from "@/components/sessions/form-renderer";
+import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import {
   checkAnswers as checkFormAnswers,
   mergeBuiltins,
@@ -84,6 +85,9 @@ export function BookingWidget(props: {
   format?: string;
   /** D-069: the event's ticket form (single / competition events) */
   eventFields?: FormFieldDef[];
+  /** D-071: my waitlist entries by ticket type, and whether sold-out tickets take a waitlist */
+  waitlist?: Record<string, WaitlistEntry>;
+  waitlistOpen?: boolean;
 }) {
   const sessions = props.sessions ?? [];
   const [qty, setQty] = useState<Record<string, number>>(() => {
@@ -257,6 +261,10 @@ export function BookingWidget(props: {
                             ? `Only ${t.remaining} left`
                             : `${t.remaining} available`}
                   </p>
+                  {/* D-071 */}
+                  {soldOut && props.waitlistOpen && t.saleState !== "ended" ? (
+                    <WaitlistButton ticketTypeId={t.id} entry={props.waitlist?.[t.id]} loggedIn={props.loggedIn} loginHref={props.loginHref} className="mt-2" />
+                  ) : null}
                 </div>
                 {soldOut ? (
                   <span className="shrink-0 rounded-full bg-danger-soft px-3 py-1 text-xs font-bold text-red-800">Sold out</span>
@@ -301,6 +309,11 @@ export function BookingWidget(props: {
         <p className="mt-0.5 text-sm text-muted-foreground">From {formatPKR(fromPrice, { freeLabel: "Free" })}</p>
       ) : null}
       <div className="mb-4" />
+      {Object.values(props.waitlist ?? {}).some((w) => w.status === "offered") ? (
+        <p className="mb-4 rounded-2xl bg-brand-soft p-3 text-sm font-medium text-navy">
+          🎉 A place opened for you from the waitlist – it is held for you only, book it below.
+        </p>
+      ) : null}
       {ambassador && !applied ? (
         <p className="mb-4 flex items-start gap-2 rounded-2xl bg-brand-soft p-3 text-sm text-navy">
           <Gift className="mt-0.5 size-4 shrink-0 text-brand-strong" aria-hidden />

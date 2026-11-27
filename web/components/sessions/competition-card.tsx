@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import { formatDateTime, formatEventRange } from "@/lib/format";
 import { competitionCta, competitionState, feeLabel, seatsLabel, teamSizeLabel } from "@/lib/sessions";
 
@@ -29,6 +30,9 @@ export function CompetitionCard({
   eventOpen,
   notOpenText,
   title,
+  waitlist,
+  loggedIn = false,
+  loginHref = "/login",
 }: {
   competitions: CardCompetition[];
   registerBase: string;
@@ -38,6 +42,10 @@ export function CompetitionCard({
   notOpenText: string;
   /** D-070: e.g. "🏆 Compete" inside a festival */
   title?: string;
+  /** D-071: my waitlist entries by competition */
+  waitlist?: Record<string, WaitlistEntry>;
+  loggedIn?: boolean;
+  loginHref?: string;
 }) {
   return (
     <section id="register" aria-labelledby="register-heading" className="scroll-mt-28 rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
@@ -66,7 +74,10 @@ export function CompetitionCard({
                   <Link href={`${registerBase}/${s.id}`}>{competitionCta(s)}</Link>
                 </Button>
               ) : state === "full" ? (
-                <p className="rounded-lg bg-secondary p-2 text-center text-sm font-medium text-navy">Full</p>
+                <div className="grid gap-2 rounded-lg bg-secondary p-2 text-center">
+                  <p className="text-sm font-medium text-navy">Full</p>
+                  <WaitlistButton sessionId={s.id} entry={waitlist?.[s.id]} loggedIn={loggedIn} loginHref={loginHref} className="justify-self-center" />
+                </div>
               ) : state === "closed" ? (
                 <p className="rounded-lg bg-secondary p-2 text-center text-sm font-medium text-navy">Registration closed</p>
               ) : (

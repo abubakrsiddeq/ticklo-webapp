@@ -9,6 +9,7 @@ import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
 import { parseTeamSize } from "@/lib/sessions";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
+import { runWaitlist } from "@/lib/waitlist";
 
 // Festival sessions (D-044). Every write is a Postgres function that checks the
 // organizer again; these actions only parse forms.
@@ -158,6 +159,7 @@ export async function saveSession(
     if (holderError) return fail(holderError);
   }
   refresh(orgSlug);
+  await runWaitlist(); // D-071: more places may have been added
   return ok({ id: String(id) }, sessionId ? "Session saved." : "Session added.");
 }
 

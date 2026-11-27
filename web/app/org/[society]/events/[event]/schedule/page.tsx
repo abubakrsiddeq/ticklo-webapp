@@ -45,6 +45,9 @@ export default async function SchedulePage({
     supabase.from("ticket_types").select("id, name, all_sessions, registration_session_id").eq("event_id", event.id),
     supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, ticket_types!inner ( event_id )").eq("ticket_types.event_id", event.id),
   ]);
+  // D-071: people waiting for full competitions (a sign to add places)
+  const { data: waitCounts } = await supabase.rpc("event_waitlist_counts", { p_event_id: event.id });
+  const waitingFor = new Map((waitCounts ?? []).filter((w) => w.session_id).map((w) => [w.session_id as string, w.waiting + w.offered]));
   const passTypes = (evTypes ?? []).filter((t) => t.all_sessions && !t.registration_session_id);
   const ownTicketSessions = new Set(
     (evAccess ?? []).filter((a) => (evTypes ?? []).some((t) => t.id === a.ticket_type_id && !t.all_sessions && !t.registration_session_id)).map((a) => a.session_id),
@@ -167,6 +170,7 @@ export default async function SchedulePage({
                         {s.poster_url ? null : <Pill tone="warning">Poster missing</Pill>}
                         {noWayIn(s) ? <Pill tone="danger">No way in yet – add a ticket or include it in a pass</Pill> : null}
                         {s.listed ? <Pill tone="info">On Events page</Pill> : null}
+                        {waitingFor.get(s.id) ? <Pill tone="warning">🔔 {waitingFor.get(s.id)} on the waitlist</Pill> : null}
                         <a href={`/e/${org.slug}/${event.slug}/s/${s.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-brand-strong hover:underline">
                           Open page ↗
                         </a>

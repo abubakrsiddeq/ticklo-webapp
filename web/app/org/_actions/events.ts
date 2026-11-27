@@ -9,6 +9,7 @@ import { fail, friendlyError, type ActionResult } from "@/lib/errors";
 import type { TablesUpdate } from "@/lib/database.types";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
+import { runWaitlist } from "@/lib/waitlist";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
@@ -206,6 +207,7 @@ export async function saveTicketType(
     }
   }
   revalidateEvent(orgSlug, event.slug);
+  await runWaitlist(); // D-071: more tickets may have been added
   return { ok: true, message: "Ticket type saved." };
 }
 

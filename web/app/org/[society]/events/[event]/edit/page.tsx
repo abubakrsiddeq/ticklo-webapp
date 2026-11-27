@@ -28,6 +28,11 @@ export default async function EditEventPage({
   const sp = await searchParams;
   const { org, event, isOwner } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/edit`);
   const supabase = await createClient();
+  const { data: waitCounts } = await supabase.rpc("event_waitlist_counts", { p_event_id: event.id });
+  const typeNames = new Map(((await supabase.from("ticket_types").select("id, name").eq("event_id", event.id)).data ?? []).map((t) => [t.id, t.name]));
+  const waitingTypes = (waitCounts ?? [])
+    .filter((w) => w.ticket_type_id && w.waiting + w.offered > 0)
+    .map((w) => ({ name: typeNames.get(w.ticket_type_id as string) ?? "Ticket", count: w.waiting + w.offered }));
   // D-069: the ticket form is locked once tickets were booked (not team entries)
   const { count: bookedOrders } = await supabase
     .from("orders")
@@ -120,6 +125,12 @@ export default async function EditEventPage({
         </Card>
       ) : null}
 
+      {/* D-071: sold-out tickets with people waiting – a sign to add tickets */}
+      {waitingTypes.length ? (
+        <p className="rounded-xl bg-warning-soft p-3 text-sm text-navy">
+          🔔 Waitlist: {waitingTypes.map((w) => `${w.name} – ${w.count} waiting`).join(" · ")}. Raise the quantity and the next people in line get 2 hours to book.
+        </p>
+      ) : null}
       <Card id="tickets" className="scroll-mt-28">
         <CardHeader>
           <CardTitle>{format === "competition" ? "Audience tickets (optional)" : format === "festival" ? "Tickets & passes" : "Ticket types"}</CardTitle>

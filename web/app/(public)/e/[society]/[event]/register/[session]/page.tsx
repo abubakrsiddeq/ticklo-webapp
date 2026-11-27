@@ -13,6 +13,7 @@ import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
 import { competitionState, feeLabel, participationOf, seatsLabel, teamSizeLabel } from "@/lib/sessions";
 import { TeamForm } from "./team-form";
+import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import { asForm } from "@/lib/registration-form";
 
 export const metadata: Metadata = { title: "Register", robots: { index: false } };
@@ -38,6 +39,10 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
   const full = state === "full";
   const closed = state === "closed" || state === "not_open";
   const solo = participationOf(s.team_max) === "individual";
+  // D-071: my place on this competition's waitlist
+  const { data: waits } = await supabase.rpc("my_waitlist");
+  const w = (waits ?? []).find((x) => x.session_id === s.id);
+  const myWait: WaitlistEntry | null = w ? { id: w.id, status: w.status, line_position: w.line_position, offer_expires_at: w.offer_expires_at } : null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -87,6 +92,14 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
           <Alert>
             <AlertTitle>{full ? "This competition is full" : "Registration is closed"}</AlertTitle>
             <AlertDescription>
+              {full ? (
+                <span className="mb-2 block">
+                  Join the waitlist: when a place opens, the next person in line gets it for 2 hours.
+                  <span className="mt-2 block">
+                    <WaitlistButton sessionId={s.id} entry={myWait} loggedIn loginHref={back} />
+                  </span>
+                </span>
+              ) : null}
               <Button asChild variant="outline" size="sm" className="mt-2">
                 <Link href={back}>Back to the event</Link>
               </Button>
