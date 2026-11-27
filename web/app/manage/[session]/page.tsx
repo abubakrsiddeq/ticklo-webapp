@@ -11,6 +11,8 @@ import { formatEventRange, formatPKR, formatShortDateTime, formatTime } from "@/
 import { formatPhone } from "@/lib/phone";
 import { answerText, asQuestions, feeLabel, kindEmoji, kindLabel, teamSizeLabel, type TeamMember } from "@/lib/sessions";
 import { serverNow } from "@/lib/time";
+import { signedUrls } from "@/lib/storage";
+import { answerLabel, asForm, type FormField } from "@/lib/registration-form";
 import { ResultsEditor, SessionCheckInButton, TeamDecision } from "@/components/sessions/manage-forms";
 
 export const metadata: Metadata = { title: "Session" };
@@ -42,6 +44,28 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
   const live = ev.status === "published" && now <= new Date(ev.ends_at).getTime() + 6 * 3600 * 1000;
   const c = (counts as { checked_in: number; total_tickets: number } | null) ?? { checked_in: 0, total_tickets: 0 };
   const registrations = regs ?? [];
+  // D-068: answers follow the competition's registration form; files open through short signed links
+  const regForm = asForm(s.form);
+  const fileIds = new Set([...regForm.member, ...regForm.team].filter((f) => f.type === "file").map((f) => f.id));
+  const filePaths = registrations.flatMap((r) => {
+    const team = Object.entries((r.answers ?? {}) as Record<string, unknown>);
+    const mem = ((Array.isArray(r.members) ? r.members : []) as { answers?: Record<string, unknown> }[]).flatMap((m) => Object.entries(m.answers ?? {}));
+    return [...team, ...mem].filter(([k, v]) => fileIds.has(k) && typeof v === "string").map(([, v]) => v as string);
+  });
+  const fileUrls = competition ? await signedUrls("registration-files", filePaths, 900) : new Map<string, string>();
+  const show = (f: FormField, v: unknown) =>
+    f.type === "file" && typeof v === "string" ? (
+      fileUrls.get(v) ? (
+        <a href={fileUrls.get(v)} target="_blank" rel="noopener noreferrer" className="text-brand-strong underline">
+          Open file
+        </a>
+      ) : (
+        "File"
+      )
+    ) : (
+      answerLabel(f, v) || "-"
+    );
+  const customMember = regForm.member.filter((f) => !f.builtin);
   const paidTeams = registrations.filter((r) => r.status === "approved" && r.order_status === "approved");
   const results = (Array.isArray(s.results) ? s.results : []) as unknown as { label: string; name: string; registration_id?: string }[];
 
@@ -114,8 +138,8 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
           {registrations.length ? (
             <div className="grid gap-3 md:grid-cols-2">
               {registrations.map((r) => {
-                const members = (Array.isArray(r.members) ? r.members : []) as unknown as TeamMember[];
-                const answers = (r.answers ?? {}) as Record<string, string>;
+                const members = (Array.isArray(r.members) ? r.members : []) as unknown as (TeamMember & { answers?: Record<string, unknown> })[];
+                const answers = (r.answers ?? {}) as Record<string, unknown>;
                 const payment =
                   r.status === "pending"
                     ? "Waiting for your decision"
@@ -146,18 +170,27 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                       {members.map((m, i) => (
                         <li key={i}>
                           {i + 1}. <strong>{m.name}</strong>
-                          {[m.roll_no, m.university, m.phone ? formatPhone(m.phone) : null].filter(Boolean).length ? ` · ${[m.roll_no, m.university, m.phone ? formatPhone(m.phone) : null].filter(Boolean).join(" · ")}` : ""}
+                          {[m.roll_no, m.university, m.phone ? formatPhone(m.phone) : null, m.email].filter(Boolean).length
+                            ? ` · ${[m.roll_no, m.university, m.phone ? formatPhone(m.phone) : null, m.email].filter(Boolean).join(" · ")}`
+                            : ""}
+                          {customMember.filter((f) => m.answers?.[f.id] !== undefined).map((f) => (
+                            <span key={f.id} className="block pl-4 text-muted-foreground">
+                              {f.label}: <span className="text-navy">{show(f, m.answers?.[f.id])}</span>
+                            </span>
+                          ))}
                         </li>
                       ))}
                     </ol>
-                    {questions.length ? (
+                    {regForm.team.some((f) => answers[f.id] !== undefined || !f.hidden) ? (
                       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-                        {questions.map((q) => (
-                          <div key={q.id} className="contents">
-                            <dt className="text-muted-foreground">{q.label}</dt>
-                            <dd>{answerText(q, answers[q.id]) || "-"}</dd>
-                          </div>
-                        ))}
+                        {regForm.team
+                          .filter((f) => answers[f.id] !== undefined || !f.hidden)
+                          .map((f) => (
+                            <div key={f.id} className="contents">
+                              <dt className="text-muted-foreground">{f.label}</dt>
+                              <dd>{show(f, answers[f.id])}</dd>
+                            </div>
+                          ))}
                       </dl>
                     ) : null}
                     {r.order_status === "approved" ? (

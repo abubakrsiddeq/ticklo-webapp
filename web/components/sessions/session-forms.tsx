@@ -12,8 +12,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
-import { MEMBER_FIELDS, QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
+import { QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
+import { FormBuilder, type FormSource } from "@/components/sessions/form-builder";
+import { DEFAULT_FORM, asForm, checkForm, type RegistrationForm } from "@/lib/registration-form";
 import type { ActionResult } from "@/lib/errors";
 import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
 
@@ -49,6 +51,7 @@ export interface SessionValue {
   attendee_names?: string;
   attendee_university?: string;
   poster_url?: string | null;
+  form?: unknown;
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -72,6 +75,8 @@ export function SessionDialog({
   defaultKind = "workshop",
   defaultOpen = false,
   addLabel = "Add session",
+  formSources = [],
+  formLocked = false,
 }: {
   orgSlug: string;
   eventId: string;
@@ -81,8 +86,14 @@ export function SessionDialog({
   defaultKind?: string;
   defaultOpen?: boolean;
   addLabel?: string;
+  /** D-068: other competitions of the society (copy their form) */
+  formSources?: FormSource[];
+  /** D-068: people registered for this competition */
+  formLocked?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const savedForm = session?.form ? asForm(session.form) : null;
+  const [regForm, setRegForm] = useState<RegistrationForm>(() => savedForm ?? { member: DEFAULT_FORM.member.map((f) => ({ ...f })), team: [] });
   const [kind, setKind] = useState(session?.kind ?? defaultKind);
   const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
@@ -93,7 +104,7 @@ export function SessionDialog({
   // D-065: festivals ask ticket-holder details per session (not for competitions – they have member details)
   const [holderNames, setHolderNames] = useState(session?.attendee_names ?? "off");
   const [holderUniversity, setHolderUniversity] = useState(session?.attendee_university ?? "off");
-  const [memberRequired, setMemberRequired] = useState<string[]>(session?.member_required ?? ["phone", "university"]);
+
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     (session?.questions ?? []).map((q) => ({ label: q.label, type: q.type, options: q.options.join(", "), required: q.required })),
   );
@@ -129,9 +140,9 @@ export function SessionDialog({
                 ends_at: String(fd.get("ends_at") ?? ""),
                 capacity: String(fd.get("capacity") ?? ""),
                 pass_access: passAccess,
-                questions: questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
+                questions: competition ? [] : questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
                 participation,
-                member_required: memberRequired,
+                form: competition ? regForm : undefined,
                 attendee_names: holderNames,
                 attendee_university: holderUniversity,
                 team_min: String(fd.get("team_min") ?? "1"),
@@ -141,6 +152,12 @@ export function SessionDialog({
                 needs_approval: needsApproval,
                 registration_ends_at: String(fd.get("registration_ends_at") ?? ""),
               };
+              // D-068: the registration form must make sense before it is sent
+              const formProblem = competition ? checkForm(regForm) : null;
+              if (formProblem) {
+                toast.error(formProblem);
+                return;
+              }
               // D-066: a poster is required (new sessions, and older ones that have none)
               const posterFile = fd.get("poster");
               const hasFile = posterFile instanceof File && posterFile.size > 0;
@@ -305,21 +322,7 @@ export function SessionDialog({
                     </FormField>
                   )}
                 </div>
-                <div className="grid gap-2">
-                  <p className="text-sm font-medium text-navy">Required from every {solo ? "participant" : "member"}</p>
-                  <p className="-mt-1 text-xs text-muted-foreground">Name is always asked. Ticked details must be filled in; the rest are optional.</p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    {MEMBER_FIELDS.map((f) => (
-                      <label key={f.key} className="flex min-h-11 items-center gap-2 text-sm text-navy">
-                        <Checkbox
-                          checked={memberRequired.includes(f.key)}
-                          onCheckedChange={(v) => setMemberRequired((all) => (v === true ? [...all.filter((x) => x !== f.key), f.key] : all.filter((x) => x !== f.key)))}
-                        />
-                        {f.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                <FormBuilder value={regForm} onChange={setRegForm} solo={solo} sources={formSources} locked={formLocked} saved={savedForm} />
                 <FormField id={`${p}-regend`} label="Registration closes (PKT)" hint="Empty = when the competition starts" error={errors.registration_ends_at}>
                   <Input id={`${p}-regend`} name="registration_ends_at" type="datetime-local" defaultValue={toPKTInputValue(session?.registration_ends_at)} className="sm:max-w-xs" />
                 </FormField>
@@ -369,6 +372,8 @@ export function SessionDialog({
               </>
             )}
 
+            {/* D-068: competitions ask through their registration form */}
+            {competition ? null : (
             <div className="grid gap-2">
               <p className="text-sm font-medium text-navy">Questions (optional)</p>
               <p className="-mt-1 text-xs text-muted-foreground">
@@ -425,6 +430,7 @@ export function SessionDialog({
                 </Button>
               ) : null}
             </div>
+            )}
 
             <DialogFooter>
               <Button type="submit" variant="brand" disabled={pending}>

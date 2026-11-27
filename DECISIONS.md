@@ -803,3 +803,34 @@ registered – the same thing the existing "already registered" error already di
   competitions in it), a competition event's number of competitions, and a warning while a
   festival has no sessions or a competition event no competition. The event pages show the
   same badge.
+
+## D-068 Registration form builder for competitions (owner request, 2026-11-27)
+- Each competition has a Google-Form-like **registration form** (`event_sessions.form`) with two
+  parts: **asked for every participant** and **asked once per team** (individuals: "extra
+  questions"). It replaces D-064's required-detail checkboxes and the competition questions.
+- **Built-in member fields** come pre-filled: Full name (always required, cannot be hidden),
+  Mobile, University (both required by default), Email, Roll / student ID (optional), and a
+  hidden "Department / semester". Built-ins can be renamed, made optional or hidden; their type is
+  fixed. They stay on the member object (`name`, `phone`, `email`, `roll_no`, `university`) so
+  tickets, duplicate checks and emails keep working; other answers go to `member.answers` and
+  team answers to `team_registrations.answers`.
+- **Field types:** short text, paragraph, number, dropdown, checkboxes, yes/no, email, mobile,
+  link, date, file (PDF or image, 5 MB, private `registration-files` bucket under the uploader's
+  folder; organizers open it through 15-minute signed links). Settings: label, help, required /
+  optional / hidden, options (1–20), min / max (numbers or characters), and a **condition**
+  ("show only if an earlier choice question is …").
+- **Builder:** add / reorder (up / down, works on phones) / delete fields, 4 templates (Hackathon,
+  MUN, Sports, Quiz / speech), copy the form of another competition of the society (custom field
+  ids are renewed), live preview, 25-field limit, warning on sensitive labels (CNIC, gender,
+  address…).
+- **After people registered** (`set_session_form` refuses otherwise): fields cannot be removed
+  (hide them), their type cannot change, and nothing can become required; new fields must be
+  optional. The builder shows this and disables those options.
+- Postgres checks every answer (`validate_form_answers`, `clean_members_form`): types, options,
+  ranges, required, conditions; hidden and not-shown fields are dropped. The app checks the same
+  in the browser. File answers must be in the uploader's own folder.
+- Competitions without a saved form use the default form built from their older settings
+  (`session_form`), so the live build and older competitions keep working.
+- The manager page and the teams CSV show every answer under its label (files as links on the
+  page). The team lead can change the team's answers too ("Change members").
+- Not in this step: the same builder for workshop / event tickets (they keep D-064 / D-065).

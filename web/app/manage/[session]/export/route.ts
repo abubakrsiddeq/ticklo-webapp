@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { csvResponse, toCsv } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
 import { answerText, asQuestions, type TeamMember } from "@/lib/sessions";
+import { answerLabel, asForm } from "@/lib/registration-form";
 
 // FES-12: session attendees (with answers) or competition teams (with members) as CSV
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ session: string }> }) {
@@ -13,17 +14,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("can_manage_session", { p_session_id: sessionId, p_user_id: user.id });
   if (!allowed) return new Response("Not allowed", { status: 403 });
-  const { data: s } = await supabase.from("event_sessions").select("name, kind, questions").eq("id", sessionId).maybeSingle();
+  const { data: s } = await supabase.from("event_sessions").select("name, kind, questions, form, member_required").eq("id", sessionId).maybeSingle();
   if (!s) return new Response("Not found", { status: 404 });
   const questions = asQuestions(s.questions);
   const slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40) || "session";
 
   if (s.kind === "competition") {
+    // D-068: columns follow the registration form
+    const regForm = asForm(s.form);
+    const teamFields = regForm.team;
+    const customMember = regForm.member.filter((f) => !f.builtin);
     const { data: regs } = await supabase.rpc("session_registrations", { p_session_id: sessionId });
     const maxMembers = Math.max(1, ...(regs ?? []).map((r) => r.member_count));
     const rows = (regs ?? []).map((r) => {
-      const members = (Array.isArray(r.members) ? r.members : []) as unknown as TeamMember[];
-      const answers = (r.answers ?? {}) as Record<string, string>;
+      const members = (Array.isArray(r.members) ? r.members : []) as unknown as (TeamMember & { answers?: Record<string, unknown> })[];
+      const answers = (r.answers ?? {}) as Record<string, unknown>;
       return [
         r.team_name,
         r.status,
@@ -35,15 +40,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
         r.leader_email,
         formatDateTime(r.created_at),
         `${r.checked_in}/${r.tickets}`,
-        ...questions.map((q) => answerText(q, answers[q.id])),
+        ...teamFields.map((f) => answerLabel(f, answers[f.id])),
         ...Array.from({ length: maxMembers }, (_, i) => {
           const m = members[i];
-          return m ? [m.name, m.roll_no, m.university, m.phone, m.email].filter(Boolean).join(" | ") : "";
+          if (!m) return "";
+          const custom = customMember.filter((f) => m.answers?.[f.id] !== undefined).map((f) => `${f.label}: ${answerLabel(f, m.answers?.[f.id])}`);
+          return [m.name, m.roll_no, m.university, m.phone, m.email, ...custom].filter(Boolean).join(" | ");
         }),
       ];
     });
     const csv = toCsv(
-      ["Team", "Status", "Payment", "Order", "Paid (Rs)", "Lead", "Lead phone", "Lead email", "Registered (PKT)", "Checked in", ...questions.map((q) => q.label), ...Array.from({ length: maxMembers }, (_, i) => `Member ${i + 1}`)],
+      ["Team", "Status", "Payment", "Order", "Paid (Rs)", "Lead", "Lead phone", "Lead email", "Registered (PKT)", "Checked in", ...teamFields.map((f) => f.label), ...Array.from({ length: maxMembers }, (_, i) => `Member ${i + 1}`)],
       rows,
     );
     return csvResponse(`${slug}-teams.csv`, csv);

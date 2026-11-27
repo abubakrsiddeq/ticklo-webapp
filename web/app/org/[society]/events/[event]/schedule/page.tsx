@@ -27,12 +27,26 @@ export default async function SchedulePage({
   const sp = await searchParams;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/schedule`);
   const supabase = await createClient();
-  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }] = await Promise.all([
+  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }] = await Promise.all([
     supabase.rpc("event_schedule", { p_event_id: event.id }),
     supabase.rpc("session_stats", { p_event_id: event.id }),
     supabase.from("session_managers").select("session_id, user_id, event_sessions!inner ( event_id )").eq("event_sessions.event_id", event.id),
     supabase.rpc("org_team", { p_org_id: org.id }),
+    // D-068: forms of this society's other competitions (to copy) and who already registered (locks the form)
+    supabase
+      .from("event_sessions")
+      .select("id, name, form, events!inner ( name, org_id )")
+      .eq("kind", "competition")
+      .eq("events.org_id", org.id)
+      .order("created_at", { ascending: false })
+      .limit(30),
+    supabase.from("team_registrations").select("session_id").eq("event_id", event.id).in("status", ["pending", "approved"]),
   ]);
+  const registeredSessions = new Set((regs ?? []).map((r) => r.session_id));
+  const formSourcesFor = (exceptId: string | null) =>
+    (otherComps ?? [])
+      .filter((x) => x.id !== exceptId && Array.isArray((x.form as { member?: unknown[] } | null)?.member) && ((x.form as { member: unknown[] }).member.length > 0))
+      .map((x) => ({ id: x.id, label: `${x.name} – ${x.events.name}`, form: x.form }));
   const list = sessions ?? [];
   const statOf = new Map((stats ?? []).map((s) => [s.session_id, s]));
   const teamOptions = (team ?? []).map((m) => ({ user_id: m.user_id, name: m.full_name || m.email || "Team member" }));
@@ -78,6 +92,7 @@ export default async function SchedulePage({
             defaultKind={isCompetition || sp.add === "competition" ? "competition" : "workshop"}
             defaultOpen={sp.add === "competition" && !list.length}
             addLabel={isCompetition ? "Add competition" : "Add session"}
+            formSources={formSourcesFor(null)}
           />
         ) : null}
       </div>
@@ -109,6 +124,7 @@ export default async function SchedulePage({
                   attendee_names: s.attendee_names,
                   attendee_university: s.attendee_university,
                   poster_url: s.poster_url,
+                  form: competition ? s.form : undefined,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
@@ -182,7 +198,15 @@ export default async function SchedulePage({
                       </Button>
                       {editable ? (
                         <div className="flex">
-                          <SessionDialog orgSlug={org.slug} eventId={event.id} session={value} defaultStart={defaultStart} eventVenue={event.venue} />
+                          <SessionDialog
+                            orgSlug={org.slug}
+                            eventId={event.id}
+                            session={value}
+                            defaultStart={defaultStart}
+                            eventVenue={event.venue}
+                            formSources={formSourcesFor(s.id)}
+                            formLocked={registeredSessions.has(s.id)}
+                          />
                           <DeleteSessionButton orgSlug={org.slug} sessionId={s.id} name={s.name} />
                         </div>
                       ) : null}

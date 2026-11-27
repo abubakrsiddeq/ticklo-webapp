@@ -37,6 +37,8 @@ export interface SessionFormValues {
   participation?: string;
   /** D-064: member details the organizer requires (competitions). */
   member_required?: string[];
+  /** D-068: the competition's registration form */
+  form?: unknown;
   /** D-065: festival sessions – holder details on each ticket (off / optional / required) */
   attendee_names?: string;
   attendee_university?: string;
@@ -127,11 +129,14 @@ export async function saveSession(
     if (posterError) return fail(posterError);
   }
   if (competition) {
-    const { error: fieldsError } = await supabase.rpc("set_session_member_fields", {
-      p_session_id: String(id),
-      p_required: (v.member_required ?? []).filter((f) => ["phone", "email", "roll_no", "university"].includes(f)),
-    });
-    if (fieldsError) return fail(fieldsError);
+    // D-068: the registration form (Postgres checks its structure and the rules once people registered)
+    const { error: formError } = v.form
+      ? await supabase.rpc("set_session_form", { p_session_id: String(id), p_form: v.form as Json })
+      : await supabase.rpc("set_session_member_fields", {
+          p_session_id: String(id),
+          p_required: (v.member_required ?? []).filter((f) => ["phone", "email", "roll_no", "university"].includes(f)),
+        });
+    if (formError) return fail(formError, { form: "Check the registration form" });
   } else {
     const level = (v2: string | undefined) => (v2 === "optional" || v2 === "required" ? v2 : "off");
     const { error: holderError } = await supabase.rpc("set_session_attendee_fields", {
