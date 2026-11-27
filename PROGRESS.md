@@ -321,8 +321,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **My history** (`/me/history`, user menu + My tickets): payments, payment reports, team
   registrations and ambassador applications with who / when / reason. Deciders are shown as the
   society or "TickLO team". Order status page shows all decisions on that order.
-- Migration `20261128000500_my_decision_history.sql` (function `my_decision_history`).
-  **Not yet applied to TICkLO** (see Needs from Abubakar).
+- Migration `20261128000500_my_decision_history.sql` (function `my_decision_history`). Applied to
+  TICkLO (2026-11-28, D-034 method, recorded in the migration history) and checked: logged-in
+  users can call it, visitors cannot, and a call without a login gets "Please log in.".
 - Unit tests: 1 new, 102 pass. DB tests: 2 new, 143 pass. Typecheck, lint and build pass.
 - Test: book a paid ticket → organizer rejects with a reason → My history shows "Payment not
   approved" by the society with the reason → upload again → approve → order status page shows
@@ -539,9 +540,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261128000500_my_decision_history.sql` to TICkLO (D-078):** `supabase db push`
-  or ask Claude to apply it. It only adds one read function. Without it My history shows "Your
-  history could not be loaded" (the order status page just hides the card).
 - **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077, D-078):** the migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails, and
   the admin Decisions tab, organizer History tab and student My history are not there yet.
