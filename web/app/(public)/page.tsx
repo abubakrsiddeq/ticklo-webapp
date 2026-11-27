@@ -115,9 +115,9 @@ function HeroVisual() {
 }
 
 const STATS = [
-  { icon: WifiOff, value: "0 MB", label: "Internet needed at the gate" },
-  { icon: Ticket, value: "Rs 0", label: "TickLO fees" },
-  { icon: ScanLine, value: "1 tap", label: "Gate check-in" },
+  { icon: WifiOff, value: "0 MB", label: "Internet needed at the gate", short: "Internet at gate" },
+  { icon: Ticket, value: "Rs 0", label: "TickLO fees", short: "TickLO fees" },
+  { icon: ScanLine, value: "1 tap", label: "Gate check-in", short: "Gate check-in" },
 ];
 
 const STEPS = [
@@ -144,32 +144,44 @@ export default async function HomePage() {
           <div className="absolute top-0 left-1/3 h-80 w-[44rem] rounded-full bg-white/80 blur-3xl" />
         </div>
         <SellerBanner className="mx-auto max-w-6xl px-3 pt-4 sm:px-4" />
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-10 pb-6 lg:grid-cols-[1.1fr_0.9fr] lg:pt-14 lg:pb-10">
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-6 pb-6 sm:pt-10 lg:grid-cols-[1.1fr_0.9fr] lg:pt-14 lg:pb-10">
           <div>
-            <p className="inline-flex items-center gap-2.5 rounded-full bg-white/70 px-4 py-2 text-sm font-semibold text-navy shadow-sm ring-1 ring-white backdrop-blur">
+            <p className="inline-flex items-center gap-2.5 rounded-full bg-white/70 px-3.5 py-1.5 text-[13px] font-semibold sm:px-4 sm:py-2 sm:text-sm text-navy shadow-sm ring-1 ring-white backdrop-blur">
               <span className="relative flex size-2.5" aria-hidden>
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-60 motion-reduce:hidden" />
                 <span className="relative size-2.5 rounded-full bg-brand" />
               </span>
               Verified society events · Zero fees
             </p>
-            <h1 className="mt-6 text-5xl leading-[1.02] font-bold tracking-tight text-navy sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 text-[2.75rem] leading-[1.02] font-bold tracking-tight text-navy sm:mt-6 sm:text-6xl lg:text-7xl">
               Campus events,{" "}
               <span className="bg-gradient-to-r from-brand-strong to-brand bg-clip-text text-transparent">tickets you can</span> trust.
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-6 sm:text-xl">
               {TAGLINE} Book university society events across Pakistan – and enter with one scan.
             </p>
-            <div className="mt-8 max-w-2xl">
+            <div className="mt-7 max-w-2xl sm:mt-8">
               <EventFilters universities={universities} className="p-2 shadow-lift ring-white" />
             </div>
-            <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-5">
-              {STATS.map(({ icon: Icon, value, label }, i) => (
-                <div key={label} className={cn("flex items-start gap-3", i > 0 && "sm:border-l sm:border-navy/10 sm:pl-8")}>
-                  <Icon className="mt-1 size-7 shrink-0 text-navy" aria-hidden />
-                  <div className="flex flex-col-reverse">
-                    <dt className="max-w-[9rem] text-sm leading-snug text-slate-500">{label}</dt>
-                    <dd className="font-heading text-2xl font-bold text-navy">{value}</dd>
+            {/* Phone: one row of three in a glass card. sm+: inline with dividers. */}
+            <dl className="mt-8 grid grid-cols-3 rounded-3xl bg-white/75 py-4 shadow-card ring-1 ring-white backdrop-blur sm:mt-10 sm:flex sm:flex-wrap sm:gap-y-5 sm:rounded-none sm:bg-transparent sm:py-0 sm:shadow-none sm:ring-0 sm:backdrop-blur-none">
+              {STATS.map(({ icon: Icon, value, label, short }, i) => (
+                <div
+                  key={label}
+                  className={cn(
+                    "flex min-w-0 flex-col items-center gap-2 px-1.5 text-center sm:flex-row sm:items-start sm:gap-3 sm:px-0 sm:text-left",
+                    i > 0 && "border-l border-navy/10 sm:ml-8 sm:pl-8",
+                  )}
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong sm:mt-1 sm:size-auto sm:rounded-none sm:bg-transparent sm:text-navy">
+                    <Icon className="size-5 sm:size-7" aria-hidden />
+                  </span>
+                  <div className="flex min-w-0 flex-col-reverse">
+                    <dt className="text-[11px] leading-tight text-slate-500 sm:max-w-[9rem] sm:text-sm sm:leading-snug">
+                      <span className="sm:hidden">{short}</span>
+                      <span className="hidden sm:inline">{label}</span>
+                    </dt>
+                    <dd className="font-heading text-xl leading-tight font-bold text-navy sm:text-2xl">{value}</dd>
                   </div>
                 </div>
               ))}
