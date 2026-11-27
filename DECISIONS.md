@@ -962,7 +962,7 @@ registered – the same thing the existing "already registered" error already di
   "check your internet connection", which was usually wrong) and has a Go to home button.
 
 
-## D-073 App cron jobs run by Supabase, not Hostinger (owner request, 2026-11-28)
+## D-075 App cron jobs run by Supabase, not Hostinger (owner request, 2026-11-28)
 - Setting up Hostinger cron jobs was confusing, so Supabase calls the app instead: `pg_net` is
   enabled and `pg_cron` runs `public.call_app_cron(path)`, which requests
   `https://ticklo.bkrtechsolutions.com/api/cron/<job>` with the cron secret.

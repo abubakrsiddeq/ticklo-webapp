@@ -342,7 +342,7 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - How to test: register for a competition with `+44…`, `ali@gmail`, `abc` in a link field or the
   same number twice: each is refused with a message under the field.
 
-## Change 2026-11-28: app cron jobs run by Supabase (D-073)
+## Change 2026-11-28: app cron jobs run by Supabase (D-075)
 - Supabase pg_cron + pg_net call `/api/cron/waitlist` (every 5 min) and `/api/cron/reminders`
   (every 15 min) with the secret from Vault; set up on TICkLO and tested (200). No Hostinger cron
   jobs needed. Setup script: `supabase/ops/app-cron.sql`.

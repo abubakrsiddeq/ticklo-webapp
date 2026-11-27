@@ -1,5 +1,5 @@
 -- =============================================================================
--- TickLO – app cron jobs run by Supabase (D-073), instead of Hostinger cron
+-- TickLO – app cron jobs run by Supabase (D-075), instead of Hostinger cron
 --
 -- Not a migration (the local test database has no pg_net / Vault / pg_cron).
 -- Run once per project in the SQL editor. First store the secrets in Vault:
