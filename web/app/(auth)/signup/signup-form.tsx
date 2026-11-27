@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,7 @@ import { signupAction } from "../actions";
 export function SignupForm({ next }: { next: string }) {
   const [pending, start] = useTransition();
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [exists, setExists] = useState(false);
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
     defaultValues: { full_name: "", email: "", password: "" },
@@ -24,8 +26,9 @@ export function SignupForm({ next }: { next: string }) {
     start(async () => {
       const res = await signupAction(values, next);
       if (!res) return;
+      setExists(!res.ok && res.code === "exists");
       if (!res.ok) {
-        toast.error(res.error);
+        if (res.code !== "exists") toast.error(res.error);
         for (const [k, v] of Object.entries(res.fieldErrors ?? {})) form.setError(k as keyof SignupInput, { message: v });
         return;
       }
@@ -57,6 +60,21 @@ export function SignupForm({ next }: { next: string }) {
       <FormField id="password" label="Password" hint="At least 8 characters." error={errors.password?.message}>
         <Input type="password" autoComplete="new-password" {...fieldAria("password", errors.password?.message, true)} {...form.register("password")} />
       </FormField>
+      {exists ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+          <p className="font-medium">This email already has a TickLO account.</p>
+          <p className="mt-1">
+            <Link href={`/login?next=${encodeURIComponent(next)}`} className="font-semibold underline underline-offset-4">
+              Log in
+            </Link>{" "}
+            instead. Signed up with Google? Use the Google button above. No password yet or forgot it?{" "}
+            <Link href="/reset-password" className="font-semibold underline underline-offset-4">
+              Set a password
+            </Link>
+            .
+          </p>
+        </div>
+      ) : null}
       <SubmitButton pending={pending} pendingText="Creating account…" variant="brand" className="w-full">
         Create account
       </SubmitButton>

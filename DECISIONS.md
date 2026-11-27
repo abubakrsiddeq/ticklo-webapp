@@ -585,3 +585,11 @@ reply and click "Not spam". Code side: auth templates got a proper <head>, previ
 copy-paste link and a "why you got this" footer; app emails can send a Reply-To
 (`EMAIL_REPLY_TO`, optional). Reputation steps (Postmaster Tools, DMARC quarantine, warm-up)
 are listed in PROGRESS "Needs from Abubakar". No code can promise 0 % spam.
+
+## D-054 Signup with an already-registered email (owner report, 2026-11-27)
+Supabase does not send any email when someone signs up again with a registered email; it
+returns a fake user with an empty `identities` list (anti-enumeration). The app showed
+"Check your email" and nothing ever arrived (seen with an account first made via Google).
+Signup now detects the empty `identities` and shows "This email already has a TickLO
+account" with Log in / Google / Set a password links. This tells a visitor that the email is
+registered – the same thing the existing "already registered" error already did, so no new leak.

@@ -67,6 +67,15 @@ export async function signupAction(input: unknown, next: string): Promise<Action
     if (/password/i.test(error.message)) return { ok: false, error: error.message };
     return { ok: false, error: "Could not create your account. Please try again." };
   }
+  // Supabase answers an already-registered email with a fake user (no identities) and
+  // sends NO email – say so instead of "check your email" (D-054).
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return {
+      ok: false,
+      code: "exists",
+      error: "This email already has a TickLO account. Please log in instead.",
+    };
+  }
   if (data.session) redirect(dest); // email confirmation turned off
   return { ok: true, data: { needsConfirmation: true } };
 }
