@@ -25,7 +25,7 @@ export default async function ApprovalsPage() {
     supabase
       .from("events")
       .select(
-        `id, slug, name, venue, starts_at, ends_at, capacity, visibility, description, poster_url, submitted_at,
+        `id, slug, name, venue, starts_at, ends_at, capacity, visibility, format, description, poster_url, submitted_at,
          organizations!inner ( slug, name, status ), ticket_types ( name, price_paisa, quantity, requires_student_card )`,
       )
       .eq("status", "pending_review")
@@ -141,7 +141,7 @@ export default async function ApprovalsPage() {
                   </Link>
                 </div>
                 <p className="text-sm">
-                  {formatEventRange(e.starts_at, e.ends_at)} · {e.venue} · capacity {e.capacity} · {e.visibility === "public" ? "public" : "link only"}
+                  {formatEventRange(e.starts_at, e.ends_at)} · {e.venue} · {e.format === "festival" ? "festival (seats per session)" : `capacity ${e.capacity}`} · {e.visibility === "public" ? "public" : "link only"}
                 </p>
                 <ul className="text-sm">
                   {e.ticket_types.map((t) => (

@@ -31,6 +31,17 @@ describe("shared zod schemas (NFR-05)", () => {
     expect(eventSchema.safeParse(noFormat).success).toBe(false);
   });
 
+  it("does not ask a festival for capacity or max per order (D-062)", () => {
+    const { capacity: _c, max_tickets_per_order: _m, ...noLimits } = validEvent;
+    void _c;
+    void _m;
+    expect(eventSchema.safeParse({ ...noLimits, format: "festival" }).success).toBe(true);
+    const single = eventSchema.safeParse({ ...noLimits, format: "single" });
+    expect(single.success).toBe(false);
+    expect(single.error?.issues.map((i) => i.path[0]).sort()).toEqual(["capacity", "max_tickets_per_order"]);
+    expect(eventSchema.safeParse({ ...validEvent, format: "competition", capacity: "0" }).success).toBe(false);
+  });
+
   it("validates ticket types (price in rupees, 0 = free)", () => {
     const base = { name: "VIP", description: "", price: "2500", quantity: "100", sale_starts_at: "", sale_ends_at: "", requires_student_card: false };
     expect(ticketTypeSchema.safeParse(base).success).toBe(true);

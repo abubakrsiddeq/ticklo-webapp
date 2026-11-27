@@ -53,7 +53,7 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
         </Card>
       ) : null}
 
-      {stats ? <LiveStats eventId={event.id} initial={stats as unknown as EventStats} paymentsHref={`${base}/payments`} /> : null}
+      {stats ? <LiveStats eventId={event.id} initial={stats as unknown as EventStats} paymentsHref={`${base}/payments`} showCapacity={event.format !== "festival"} /> : null}
 
       {sessions.length ? (
         <Card>

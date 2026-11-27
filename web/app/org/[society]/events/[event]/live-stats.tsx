@@ -44,7 +44,18 @@ function Stat({ icon: Icon, label, value, sub, href }: { icon: typeof Ticket; la
 }
 
 /** ORG-08: live numbers – check-ins update without a page refresh (Supabase Realtime + polling fallback). */
-export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string; initial: EventStats; paymentsHref: string }) {
+export function LiveStats({
+  eventId,
+  initial,
+  paymentsHref,
+  showCapacity = true,
+}: {
+  eventId: string;
+  initial: EventStats;
+  paymentsHref: string;
+  /** false for a festival – seats are per session (D-062) */
+  showCapacity?: boolean;
+}) {
   const [stats, setStats] = useState(initial);
   const [live, setLive] = useState(false);
 
@@ -92,7 +103,9 @@ export function LiveStats({ eventId, initial, paymentsHref }: { eventId: string;
           sub={
             stats.printed_tickets
               ? `${stats.online_tickets ?? 0} online · ${stats.printed_sold ?? 0} paper${stats.printed_comp ? ` · ${stats.printed_comp} free passes` : ""}`
-              : `${capPct}% of ${stats.capacity} capacity`
+              : showCapacity
+                ? `${capPct}% of ${stats.capacity} capacity`
+                : undefined
           }
         />
         <Stat icon={Banknote} label="Collected" value={formatPKR(collected)} sub={

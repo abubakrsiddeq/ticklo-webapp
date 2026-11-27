@@ -165,7 +165,7 @@ export default async function EditEventPage({
                 venue: event.venue,
                 starts_at: toPKTInputValue(event.starts_at),
                 ends_at: toPKTInputValue(event.ends_at),
-                capacity: String(event.capacity),
+                capacity: event.format === "festival" ? "" : String(event.capacity),
                 visibility: event.visibility,
                 max_tickets_per_order: String(event.max_tickets_per_order),
                 format: asEventFormat(event.format),

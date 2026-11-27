@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/errors";
 
 // ORG-04: name, description, poster, venue, start/end (PKT), capacity, visibility, max per order
+// (capacity and max per order are not asked for a festival – D-062)
 export function EventForm({
   defaults,
   action,
@@ -125,26 +126,38 @@ export function EventForm({
           <Input type="datetime-local" {...fieldAria("ends_at", errors.ends_at?.message)} {...form.register("ends_at")} />
         </FormField>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <FormField
-          id="capacity"
-          label="Capacity"
-          hint={format === "festival" ? "Total people across the festival (sessions get their own seats later)." : format === "competition" ? "Participants + audience in total." : "Total people allowed in."}
-          error={errors.capacity?.message}
-          required
-        >
-          <Input type="number" inputMode="numeric" min={1} {...fieldAria("capacity", errors.capacity?.message, true)} {...form.register("capacity")} />
-        </FormField>
-        <FormField id="max_tickets_per_order" label="Max tickets per order" error={errors.max_tickets_per_order?.message} required>
-          <Input type="number" inputMode="numeric" min={1} max={20} {...fieldAria("max_tickets_per_order", errors.max_tickets_per_order?.message)} {...form.register("max_tickets_per_order")} />
-        </FormField>
-        <FormField id="visibility" label="Visibility" error={errors.visibility?.message} required>
-          <NativeSelect {...fieldAria("visibility", errors.visibility?.message)} {...form.register("visibility")}>
-            <option value="public">Public – listed on TickLO</option>
-            <option value="link_only">Link only – not listed</option>
-          </NativeSelect>
-        </FormField>
-      </div>
+      {format === "festival" ? (
+        // D-062: no festival-wide capacity or per-order limit – each session gets its own seats
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField id="visibility" label="Visibility" hint="Seats are set per session on the next step." error={errors.visibility?.message} required>
+            <NativeSelect {...fieldAria("visibility", errors.visibility?.message)} {...form.register("visibility")}>
+              <option value="public">Public – listed on TickLO</option>
+              <option value="link_only">Link only – not listed</option>
+            </NativeSelect>
+          </FormField>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FormField
+            id="capacity"
+            label="Capacity"
+            hint={format === "competition" ? "Participants + audience in total." : "Total people allowed in."}
+            error={errors.capacity?.message}
+            required
+          >
+            <Input type="number" inputMode="numeric" min={1} {...fieldAria("capacity", errors.capacity?.message, true)} {...form.register("capacity", { shouldUnregister: true })} />
+          </FormField>
+          <FormField id="max_tickets_per_order" label="Max tickets per order" error={errors.max_tickets_per_order?.message} required>
+            <Input type="number" inputMode="numeric" min={1} max={20} {...fieldAria("max_tickets_per_order", errors.max_tickets_per_order?.message)} {...form.register("max_tickets_per_order", { shouldUnregister: true })} />
+          </FormField>
+          <FormField id="visibility" label="Visibility" error={errors.visibility?.message} required>
+            <NativeSelect {...fieldAria("visibility", errors.visibility?.message)} {...form.register("visibility")}>
+              <option value="public">Public – listed on TickLO</option>
+              <option value="link_only">Link only – not listed</option>
+            </NativeSelect>
+          </FormField>
+        </div>
+      )}
       <FormField id="poster" label="Poster" hint="JPG, PNG or WebP, up to 5 MB. Portrait (4:5) looks best." error={posterError}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {preview ? (

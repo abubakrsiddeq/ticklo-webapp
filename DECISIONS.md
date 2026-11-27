@@ -701,3 +701,18 @@ registered – the same thing the existing "already registered" error already di
   society back for review; admins can see the change in the audit log.
 - If the saved head is "someone else" (or "self" by a different owner), the form opens on
   "Someone else" with the saved details, and switching back to it restores them.
+
+## D-062 Festivals are not asked for capacity or max tickets per order (owner request, 2026-11-27)
+- A festival's seats live on its sessions, so the event form hides **Capacity** and **Max
+  tickets per order** when "Festival – many sessions" is picked. Single events and
+  competitions still ask for both.
+- The columns are still `not null`, so the server saves a festival with `capacity = 100000`
+  (the column's max: no festival-wide limit, the ticket-quantity check never blocks passes or
+  competition entry tickets) and `max_tickets_per_order = 10`
+  (`FESTIVAL_CAPACITY` / `FESTIVAL_MAX_PER_ORDER` in `lib/sessions.ts`).
+- Switching an existing festival back to a single event or competition shows the fields again,
+  with capacity empty, so the organizer types a real number.
+- "x / capacity" is hidden for festivals on the society events list, the event dashboard's
+  live numbers, the ticket types editor and Admin → Approvals (shows "festival (seats per
+  session)").
+- Migration `20261127002000_festival_capacity.sql` raises existing festivals to 100000.

@@ -148,4 +148,9 @@ export const EVENT_FORMATS = [
   },
 ] as const;
 export type EventFormat = (typeof EVENT_FORMATS)[number]["key"];
+/** D-062: a festival has no festival-wide seat limit (sessions have their own), so it is stored at the max. */
+export const FESTIVAL_CAPACITY = 100000;
+/** D-062: per-order limit used for festivals (not asked on the form). */
+export const FESTIVAL_MAX_PER_ORDER = 10;
+
 export const asEventFormat = (v: string | null | undefined): EventFormat => (v === "festival" || v === "competition" ? v : "single");

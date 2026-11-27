@@ -401,6 +401,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Festival capacity (D-062):** run `supabase/migrations/20261127002000_festival_capacity.sql`
+  on TICkLO (Mumbai). It only raises existing festivals to capacity 100000 (no festival-wide
+  limit). Safe to run before or after the deploy.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

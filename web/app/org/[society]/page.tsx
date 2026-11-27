@@ -22,7 +22,7 @@ export default async function OrgDashboardPage({
   const supabase = await createClient();
   const { data: events } = await supabase
     .from("events")
-    .select("id, slug, name, status, starts_at, ends_at, capacity, visibility")
+    .select("id, slug, name, status, starts_at, ends_at, capacity, visibility, format")
     .eq("org_id", org.id)
     .order("starts_at", { ascending: false });
   const ids = (events ?? []).map((e) => e.id);
@@ -99,7 +99,7 @@ export default async function OrgDashboardPage({
                   <div className="flex items-center gap-3 text-sm">
                     {pending ? <Pill tone="info">{pending} to review</Pill> : null}
                     <span className="tabular-nums text-slate-700">
-                      {sold}/{e.capacity} tickets
+                      {e.format === "festival" ? `${sold} tickets` : `${sold}/${e.capacity} tickets`}
                     </span>
                     <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
                   </div>

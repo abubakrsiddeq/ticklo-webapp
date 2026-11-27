@@ -17,15 +17,27 @@ export const eventSchema = z
     venue: requiredText("Venue", 2, 200),
     starts_at: pktDateTime("Start time"),
     ends_at: pktDateTime("End time"),
-    capacity: intString("Capacity", 1, 100000),
+    // D-062: not asked for a festival (each session has its own seats); checked below for the rest
+    capacity: z.string().trim().optional(),
     visibility: z.enum(["public", "link_only"]),
-    max_tickets_per_order: intString("Max tickets per order", 1, 20),
+    max_tickets_per_order: z.string().trim().optional(),
     // FES-15: single event, festival with sessions, or competition / registration
     format: z.enum(["single", "festival", "competition"], { message: "Choose what kind of event this is" }),
   })
   .refine((v) => (fromPKTInputValue(v.ends_at) ?? "") > (fromPKTInputValue(v.starts_at) ?? ""), {
     message: "End time must be after the start time",
     path: ["ends_at"],
+  })
+  .superRefine((v, ctx) => {
+    if (v.format === "festival") return;
+    const checks = [
+      ["capacity", intString("Capacity", 1, 100000)],
+      ["max_tickets_per_order", intString("Max tickets per order", 1, 20)],
+    ] as const;
+    for (const [key, schema] of checks) {
+      const r = schema.safeParse(v[key] ?? "");
+      if (!r.success) ctx.addIssue({ code: "custom", message: r.error.issues[0]?.message ?? "Invalid", path: [key] });
+    }
   });
 
 export type EventInput = z.infer<typeof eventSchema>;

@@ -219,9 +219,11 @@ export function TicketTypesEditor({
 
   return (
     <div className="grid gap-3">
-      <p className="text-sm text-muted-foreground">
-        {total} of {capacity} capacity allocated to ticket types.
-      </p>
+      {format === "festival" ? null : (
+        <p className="text-sm text-muted-foreground">
+          {total} of {capacity} capacity allocated to ticket types.
+        </p>
+      )}
       <ul className="grid gap-3">
         {types.map((t) =>
           editing === t.id ? (

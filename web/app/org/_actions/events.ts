@@ -13,6 +13,7 @@ import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { cancelEventSchema, eventSchema, ticketTypeSchema } from "@/lib/validation/event";
 import { notifyEventCancelled } from "@/lib/emails/notify";
+import { FESTIVAL_CAPACITY, FESTIVAL_MAX_PER_ORDER } from "@/lib/sessions";
 
 const uuid = z.string().uuid();
 
@@ -43,9 +44,9 @@ function eventFields(data: z.infer<typeof eventSchema>) {
     venue: data.venue,
     starts_at: fromPKTInputValue(data.starts_at)!,
     ends_at: fromPKTInputValue(data.ends_at)!,
-    capacity: Number(data.capacity),
+    capacity: data.format === "festival" ? FESTIVAL_CAPACITY : Number(data.capacity),
     visibility: data.visibility,
-    max_tickets_per_order: Number(data.max_tickets_per_order),
+    max_tickets_per_order: data.format === "festival" ? FESTIVAL_MAX_PER_ORDER : Number(data.max_tickets_per_order),
     format: data.format,
   };
 }
