@@ -319,3 +319,19 @@ describe("ticket forms for every session and event (D-069)", () => {
     await setTF(SEED.organizer, eventId, null, [nameReq, { ...phone, hidden: true }, { id: "diet", type: "short_text", label: "Diet", required: false, hidden: false }]);
   });
 });
+
+describe("session pages and listing (D-070)", () => {
+  it("sessions get a stable link of their own; organizers choose what is listed", async () => {
+    const { eventId } = await createEvent(c, [{ price: 0 }]);
+    const a = await session(eventId, { name: "Web Dev Competition!", kind: "competition", capacity: 10, team_min: 1, team_max: 3, fee_paisa: 0 });
+    const b = await session(eventId, { name: "Web Dev Competition", kind: "workshop" });
+    const slugs = (await c.query("select id, slug, listed from public.event_sessions where id = any($1) order by created_at", [[a, b]])).rows;
+    expect(slugs.map((x) => x.slug)).toEqual(["web-dev-competition", "web-dev-competition-2"]);
+    await c.query("update public.event_sessions set name = 'Renamed' where id = $1", [a]);
+    expect((await c.query("select slug from public.event_sessions where id = $1", [a])).rows[0].slug).toBe("web-dev-competition");
+    await expectTL(asUser(c, (await buyer()).id, () => rpc(c, "set_session_listing", [a, true], ["uuid", "boolean"])), "FORBIDDEN");
+    await org(() => rpc(c, "set_session_listing", [a, true], ["uuid", "boolean"]));
+    const row = (await c.query("select slug, listed from public.event_schedule($1) where id = $2", [eventId, a])).rows[0];
+    expect(row).toEqual({ slug: "web-dev-competition", listed: true });
+  });
+});
