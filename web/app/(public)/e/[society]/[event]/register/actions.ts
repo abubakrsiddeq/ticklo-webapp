@@ -9,24 +9,34 @@ import { fail, type ActionResult } from "@/lib/errors";
 import { normalizePhone } from "@/lib/phone";
 import { normalizeCode, refCookieName } from "@/lib/referrals";
 import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/notify";
-import type { TeamMember } from "@/lib/sessions";
 import { buyerDetailsSchema } from "@/lib/validation/profile";
+import { readUpload, uploadPrivate } from "@/lib/storage";
+import { rateLimit } from "@/lib/rate-limit";
 
+// D-068: built-in details on the member, the organizer's other fields in answers (Postgres checks them)
+const answerValue = z.union([z.string().max(2000), z.array(z.string().max(100)).max(20)]);
+const answersSchema = z.record(z.string().regex(/^[a-z0-9_]{1,40}$/), answerValue);
 const memberSchema = z.object({
   name: z.string().trim().min(2, "Name").max(80),
   phone: z.string().trim().max(20).optional(),
   email: z.union([z.literal(""), z.string().trim().toLowerCase().email("Check the email").max(120)]).optional(),
   roll_no: z.string().trim().max(40).optional(),
   university: z.string().trim().max(120).optional(),
+  answers: answersSchema.optional(),
 });
+
+/** Every file answer must be one this person uploaded (their own folder). */
+function ownFiles(userId: string, values: unknown[]): boolean {
+  return values.every((v) => typeof v !== "string" || !/^[0-9a-f-]{36}\//.test(v) || v.startsWith(`${userId}/`));
+}
 
 /** FES-10: register a team for a competition (pays at once, or waits for shortlisting). */
 export async function registerTeam(input: {
   eventId: string;
   sessionId: string;
   teamName: string;
-  members: TeamMember[];
-  answers: Record<string, string>;
+  members: unknown[];
+  answers: Record<string, unknown>;
   code: string | null;
   /** D-064: the lead's own name and phone when the account has none yet */
   leaderProfile?: { full_name: string; phone: string } | null;
@@ -39,6 +49,11 @@ export async function registerTeam(input: {
   const badPhone = parsed.data.find((m) => m.phone && !normalizePhone(m.phone));
   if (badPhone) return { ok: false, error: `Check the mobile number of ${badPhone.name}.` };
   const members = parsed.data.map((m) => ({ ...m, phone: m.phone ? normalizePhone(m.phone)! : undefined, email: m.email || undefined }));
+  const teamAnswers = answersSchema.safeParse(input.answers ?? {});
+  if (!teamAnswers.success) return { ok: false, error: "Please check your answers." };
+  if (!ownFiles(user.id, [...members.flatMap((m) => Object.values(m.answers ?? {})), ...Object.values(teamAnswers.data)])) {
+    return { ok: false, error: "Please upload the files again." };
+  }
   const typed = normalizeCode(input.code);
   const remembered = normalizeCode((await cookies()).get(refCookieName(input.eventId))?.value);
   const supabase = await createClient();
@@ -55,7 +70,7 @@ export async function registerTeam(input: {
     p_session_id: input.sessionId,
     p_team_name: input.teamName,
     p_members: members,
-    p_answers: input.answers,
+    p_answers: teamAnswers.data,
     p_code: typed && typed.length <= 16 ? typed : null,
     p_ref: remembered && remembered.length <= 16 ? remembered : null,
   });
@@ -67,4 +82,18 @@ export async function registerTeam(input: {
     else await notifyPaymentInstructions(res.order.order_id);
   }
   redirect(res.order.status === "approved" ? `/checkout/${res.order.order_id}/status?new=1` : `/checkout/${res.order.order_id}`);
+}
+
+/** D-068: a file for a registration form field (CV, student card…), stored privately under the user's folder. */
+export async function uploadRegistrationFile(form: FormData): Promise<ActionResult<{ path: string }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Please log in again." };
+  if (!(await rateLimit(`regfile:${user.id}`, 30, 3600))) return { ok: false, error: "Too many uploads. Please wait a while." };
+  const file = await readUpload(form.get("file"), { label: "File", required: true, allowPdf: true });
+  if (file.error || !file.file) return { ok: false, error: file.error ?? "Choose a file." };
+  try {
+    return { ok: true, data: { path: await uploadPrivate("registration-files", user.id, file.file) } };
+  } catch (e) {
+    return fail(e);
+  }
 }

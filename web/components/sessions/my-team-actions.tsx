@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
-import { MemberFields, checkMember } from "@/components/sessions/member-fields";
-import type { TeamMember } from "@/lib/sessions";
+import { FormRenderer } from "@/components/sessions/form-renderer";
+import { checkAnswers, memberPayload, memberToAnswers, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
 import { payTeam, updateTeam } from "@/app/me/tickets/team-actions";
 
 /** D-064: pay for an accepted team, optionally with a promo / ambassador code. */
@@ -40,14 +40,15 @@ export function PayTeamButton({ registrationId, eventId, label, withCode }: { re
   );
 }
 
-/** D-064: the lead changes members (someone dropped out, a detail was wrong) until the competition starts. */
+/** D-064 / D-068: the lead changes members and the team's answers until the competition starts. */
 export function EditTeamButton(props: {
   registrationId: string;
   teamName: string;
-  members: TeamMember[];
+  members: Record<string, unknown>[];
+  teamAnswers: Answers;
   teamMin: number;
   teamMax: number;
-  memberRequired: string[];
+  form: RegistrationForm;
   /** paid or payment sent: the number of members stays the same */
   fixedCount: boolean;
 }) {
@@ -55,27 +56,32 @@ export function EditTeamButton(props: {
   const solo = props.teamMax <= 1;
   const [open, setOpen] = useState(false);
   const [team, setTeam] = useState(props.teamName);
-  const [members, setMembers] = useState<TeamMember[]>(props.members);
+  const [members, setMembers] = useState<Answers[]>(() => props.members.map(memberToAnswers));
+  const [teamAnswers, setTeamAnswers] = useState<Answers>(props.teamAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, start] = useTransition();
   const min = props.fixedCount ? props.members.length : props.teamMin;
   const max = props.fixedCount ? props.members.length : props.teamMax;
-  const blank: TeamMember = { name: "", phone: "", email: "", roll_no: "", university: "" };
-  const setMember = (i: number, k: keyof TeamMember, v: string) => setMembers((all) => all.map((m, j) => (j === i ? { ...m, [k]: v } : m)));
 
   function save() {
     const errs: Record<string, string> = {};
     if (!solo && team.trim().length < 2) errs.team = "Team name";
     members.forEach((m, i) => {
-      for (const [k, v] of Object.entries(checkMember(m, props.memberRequired))) errs[`m${i}-${k}`] = v;
+      for (const [k, v] of Object.entries(checkAnswers(props.form.member, m))) errs[`m${i}-${k}`] = v;
     });
+    for (const [k, v] of Object.entries(checkAnswers(props.form.team, teamAnswers))) errs[`t-${k}`] = v;
     setErrors(errs);
     if (Object.keys(errs).length) {
       toast.error("Please fill in the highlighted fields.");
       return;
     }
     start(async () => {
-      const res = await updateTeam(props.registrationId, solo ? "" : team, members);
+      const res = await updateTeam(
+        props.registrationId,
+        solo ? "" : team,
+        members.map((m) => memberPayload(props.form.member, m)),
+        teamPayload(props.form.team, teamAnswers),
+      );
       if (res.ok) {
         toast.success(res.message ?? "Saved");
         setOpen(false);
@@ -84,8 +90,8 @@ export function EditTeamButton(props: {
     });
   }
 
-  const memberErrors = (i: number) =>
-    Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(`m${i}-`)).map(([k, v]) => [k.slice(`m${i}-`.length), v]));
+  const scoped = (prefix: string) =>
+    Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
 
   return (
     <>
@@ -118,13 +124,25 @@ export function EditTeamButton(props: {
                     </Button>
                   ) : null}
                 </div>
-                <MemberFields prefix={`e${i}`} member={m} required={props.memberRequired} errors={memberErrors(i)} onChange={(k, v) => setMember(i, k, v)} />
+                <FormRenderer
+                  fields={props.form.member}
+                  answers={m}
+                  errors={scoped(`m${i}-`)}
+                  prefix={`e${i}`}
+                  onChange={(id, v) => setMembers((all) => all.map((x, j) => (j === i ? { ...x, [id]: v } : x)))}
+                />
               </div>
             ))}
             {members.length < max ? (
-              <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, { ...blank }])}>
+              <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, {}])}>
                 <Plus /> Add member
               </Button>
+            ) : null}
+            {props.form.team.some((f) => !f.hidden) ? (
+              <div className="grid gap-2 rounded-2xl border border-navy/10 p-3">
+                <p className="text-sm font-medium text-navy">{solo ? "More details" : "About your team"}</p>
+                <FormRenderer fields={props.form.team} answers={teamAnswers} errors={scoped("t-")} prefix="et" onChange={(id, v) => setTeamAnswers((a) => ({ ...a, [id]: v }))} />
+              </div>
             ) : null}
             <SubmitButton type="button" variant="brand" pending={pending} pendingText="Saving…" onClick={save} className="sm:justify-self-start">
               Save

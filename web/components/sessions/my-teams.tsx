@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/action-button";
 import { formatDateTime, formatPKR } from "@/lib/format";
 import { withdrawTeam } from "@/app/me/tickets/team-actions";
 import { EditTeamButton, PayTeamButton } from "@/components/sessions/my-team-actions";
-import type { TeamMember } from "@/lib/sessions";
+import { asForm, type Answers } from "@/lib/registration-form";
 
 export interface MyTeam {
   id: string;
@@ -29,6 +29,8 @@ export interface MyTeam {
   team_min: number;
   team_max: number;
   member_required: string[];
+  answers: unknown;
+  form: unknown;
 }
 
 function view(t: MyTeam, now: number): { text: string; tone: string; pay: boolean; withdraw: boolean; orderHref: string | null } {
@@ -83,10 +85,11 @@ export function MyTeams({ teams, now }: { teams: MyTeam[]; now: number }) {
                   <EditTeamButton
                     registrationId={t.id}
                     teamName={t.team_name}
-                    members={(Array.isArray(t.members) ? t.members : []) as TeamMember[]}
+                    members={(Array.isArray(t.members) ? t.members : []) as Record<string, unknown>[]}
+                    teamAnswers={(t.answers && typeof t.answers === "object" ? t.answers : {}) as Answers}
                     teamMin={t.team_min}
                     teamMax={t.team_max}
-                    memberRequired={t.member_required ?? []}
+                    form={asForm(t.form)}
                     fixedCount={t.order_status === "approved" || t.order_status === "under_review"}
                   />
                 ) : null}

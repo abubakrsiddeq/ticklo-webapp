@@ -13,6 +13,7 @@ import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
 import { competitionState, feeLabel, participationOf, seatsLabel, teamSizeLabel } from "@/lib/sessions";
 import { TeamForm } from "./team-form";
+import { asForm } from "@/lib/registration-form";
 
 export const metadata: Metadata = { title: "Register", robots: { index: false } };
 
@@ -100,8 +101,7 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
             feePaisa={s.fee_paisa ?? 0}
             feeMode={s.fee_mode}
             needsApproval={s.needs_approval}
-            questions={s.questions}
-            memberRequired={s.member_required ?? []}
+            form={asForm(s.form)}
             profileIncomplete={!user.profile.full_name || !user.profile.phone}
             leader={{ name: user.profile.full_name ?? "", phone: formatPhone(user.profile.phone), email: user.email }}
           />

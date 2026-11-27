@@ -5,18 +5,16 @@ import { Plus, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/form-field";
-import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
+import { FormRenderer } from "@/components/sessions/form-renderer";
 import { formatPKR } from "@/lib/format";
 import { normalizePhone } from "@/lib/phone";
-import { checkAnswers, type Question, type TeamMember } from "@/lib/sessions";
-import { MemberFields, checkMember } from "@/components/sessions/member-fields";
+import { checkAnswers, memberPayload, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
 import { registerTeam } from "../actions";
 
-/** FES-10: team name, members (min–max), questions, optional code. D-064: individuals, required details. */
+/** FES-10 / D-064 / D-068: team name, members (min–max) and the organizer's form, optional code. */
 export function TeamForm(props: {
   eventId: string;
   sessionId: string;
@@ -25,31 +23,27 @@ export function TeamForm(props: {
   feePaisa: number;
   feeMode: string;
   needsApproval: boolean;
-  questions: Question[];
-  memberRequired: string[];
+  form: RegistrationForm;
   leader: { name: string; phone: string; email: string };
   /** The account has no name or phone yet: ask them here and save them to the profile. */
   profileIncomplete: boolean;
 }) {
   const solo = props.teamMax <= 1;
-  const blank: TeamMember = { name: "", phone: "", email: "", roll_no: "", university: "" };
-  const fromLeader: TeamMember = { ...blank, name: props.leader.name, phone: props.leader.phone, email: props.leader.email };
+  const fromLeader: Answers = { name: props.leader.name, phone: props.leader.phone, email: props.leader.email };
   const [team, setTeam] = useState("");
   const [leadPlays, setLeadPlays] = useState(true);
-  const [members, setMembers] = useState<TeamMember[]>(() => [fromLeader, ...Array.from({ length: Math.max(0, props.teamMin - 1) }, () => ({ ...blank }))]);
+  const [members, setMembers] = useState<Answers[]>(() => [fromLeader, ...Array.from({ length: Math.max(0, props.teamMin - 1) }, () => ({}))]);
+  const [teamAnswers, setTeamAnswers] = useState<Answers>({});
   const [profile, setProfile] = useState({ full_name: props.leader.name, phone: props.leader.phone });
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [code, setCode] = useState("");
   const [showCode, setShowCode] = useState(false);
   const [pending, start] = useTransition();
   const total = props.feeMode === "per_member" ? props.feePaisa * members.length : props.feePaisa;
 
-  const setMember = (i: number, k: keyof TeamMember, v: string) => setMembers((all) => all.map((m, j) => (j === i ? { ...m, [k]: v } : m)));
-
   function toggleLeadPlays(on: boolean) {
     setLeadPlays(on);
-    setMembers((all) => [on ? fromLeader : { ...blank }, ...all.slice(1)]);
+    setMembers((all) => [on ? fromLeader : {}, ...all.slice(1)]);
   }
 
   function submit() {
@@ -60,10 +54,9 @@ export function TeamForm(props: {
     }
     if (!solo && team.trim().length < 2) errs.team = "Give your team a name";
     members.forEach((m, i) => {
-      for (const [k, v] of Object.entries(checkMember(m, props.memberRequired))) errs[`m${i}-${k}`] = v;
+      for (const [k, v] of Object.entries(checkAnswers(props.form.member, m))) errs[`m${i}-${k}`] = v;
     });
-    const qa = checkAnswers(props.questions, answers);
-    for (const [k, v] of Object.entries(qa)) errs[`q-${k}`] = v;
+    for (const [k, v] of Object.entries(checkAnswers(props.form.team, teamAnswers))) errs[`t-${k}`] = v;
     setErrors(errs);
     if (Object.keys(errs).length) {
       toast.error("Please fill in the highlighted fields.");
@@ -74,8 +67,8 @@ export function TeamForm(props: {
         eventId: props.eventId,
         sessionId: props.sessionId,
         teamName: solo ? "" : team,
-        members,
-        answers,
+        members: members.map((m) => memberPayload(props.form.member, m)),
+        answers: teamPayload(props.form.team, teamAnswers),
         code: code || null,
         leaderProfile: props.profileIncomplete ? profile : null,
       });
@@ -83,8 +76,8 @@ export function TeamForm(props: {
     });
   }
 
-  const memberErrors = (i: number) =>
-    Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(`m${i}-`)).map(([k, v]) => [k.slice(`m${i}-`.length), v]));
+  const scoped = (prefix: string) =>
+    Object.fromEntries(Object.entries(errors).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
 
   return (
     <form
@@ -138,48 +131,26 @@ export function TeamForm(props: {
                 </Button>
               ) : null}
             </div>
-            <MemberFields prefix={`m${i}`} member={m} required={props.memberRequired} errors={memberErrors(i)} onChange={(k, v) => setMember(i, k, v)} />
+            <FormRenderer
+              fields={props.form.member}
+              answers={m}
+              errors={scoped(`m${i}-`)}
+              prefix={`m${i}`}
+              onChange={(id, v) => setMembers((all) => all.map((x, j) => (j === i ? { ...x, [id]: v } : x)))}
+            />
           </div>
         ))}
         {members.length < props.teamMax ? (
-          <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, { ...blank }])}>
+          <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, {}])}>
             <Plus /> Add member
           </Button>
         ) : null}
       </fieldset>
 
-      {props.questions.length ? (
+      {props.form.team.some((f) => !f.hidden) ? (
         <fieldset className="grid gap-3">
-          <legend className="mb-1 text-sm font-semibold text-navy">Questions from the organizer</legend>
-          {props.questions.map((q) => {
-            const id = `q-${q.id}`;
-            const value = answers[q.id] ?? "";
-            const set = (v: string) => setAnswers((a) => ({ ...a, [q.id]: v }));
-            return (
-              <FormField key={q.id} id={id} label={q.label} required={q.required} error={errors[id]}>
-                {q.type === "select" ? (
-                  <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
-                    <option value="">Choose…</option>
-                    {q.options.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                ) : q.type === "yes_no" ? (
-                  <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
-                    <option value="">Choose…</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </NativeSelect>
-                ) : q.type === "long_text" ? (
-                  <Textarea id={id} value={value} onChange={(e) => set(e.target.value)} rows={3} maxLength={1000} />
-                ) : (
-                  <Input id={id} value={value} onChange={(e) => set(e.target.value)} inputMode={q.type === "number" ? "decimal" : undefined} maxLength={200} />
-                )}
-              </FormField>
-            );
-          })}
+          <legend className="mb-1 text-sm font-semibold text-navy">{solo ? "A few more details" : "About your team"}</legend>
+          <FormRenderer fields={props.form.team} answers={teamAnswers} errors={scoped("t-")} prefix="t" onChange={(id, v) => setTeamAnswers((a) => ({ ...a, [id]: v }))} />
         </fieldset>
       ) : null}
 
