@@ -27,7 +27,14 @@ insert into public.universities (id, name, short_name, city, email_domain) value
   ('10000000-0000-4000-8000-000000000012', 'Habib University', 'Habib', 'Karachi', 'habib.edu.pk'),
   ('10000000-0000-4000-8000-000000000013', 'Quaid-i-Azam University', 'QAU', 'Islamabad', 'qau.edu.pk'),
   ('10000000-0000-4000-8000-000000000014', 'Air University', 'AU', 'Islamabad', 'au.edu.pk'),
-  ('10000000-0000-4000-8000-000000000015', 'University of Central Punjab', 'UCP', 'Lahore', 'ucp.edu.pk')
+  ('10000000-0000-4000-8000-000000000015', 'University of Central Punjab', 'UCP', 'Lahore', 'ucp.edu.pk'),
+  ('10000000-0000-4000-8000-000000000016', 'Bahria University (Islamabad)', 'Bahria Islamabad', 'Islamabad', 'bahria.edu.pk'),
+  ('10000000-0000-4000-8000-000000000017', 'Pakistan Institute of Engineering and Applied Sciences', 'PIEAS', 'Islamabad', 'pieas.edu.pk'),
+  ('10000000-0000-4000-8000-000000000018', 'COMSATS University (Lahore)', 'COMSATS Lahore', 'Lahore', 'cuilahore.edu.pk'),
+  ('10000000-0000-4000-8000-000000000019', 'Information Technology University', 'ITU', 'Lahore', 'itu.edu.pk'),
+  ('10000000-0000-4000-8000-000000000020', 'Aga Khan University', 'AKU', 'Karachi', 'aku.edu'),
+  ('10000000-0000-4000-8000-000000000021', 'University of Karachi', 'KU', 'Karachi', 'uok.edu.pk'),
+  ('10000000-0000-4000-8000-000000000022', 'Bahria University (Karachi)', 'Bahria Karachi', 'Karachi', 'bahria.edu.pk')
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------------
