@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Client } from "pg";
-import { SEED, asService, asUser, connect, createEvent, createUser, expectTL, rpc } from "./helpers";
+import { SEED, asAnon, asService, asUser, book, connect, createEvent, createUser, expectTL, items, rpc, submitProof } from "./helpers";
 
 const ORG_T = ["text", "text", "uuid", "org_type", "text", "text", "jsonb", "text"];
 const REVIEW_T = ["uuid", "boolean", "text"];
@@ -69,5 +69,52 @@ describe("decision history (D-076)", () => {
     await c.query("delete from auth.users where id = $1", [actor.id]);
     const h = await historyOf(eventId);
     expect(h.at(-1)).toMatchObject({ action: "event.approve", actor_id: null });
+  });
+});
+
+describe("decision history for organizers (D-077)", () => {
+  type Row = { action: string; actor_name: string | null; by_ticklo: boolean; subject: string; extra: string | null; reason: string | null; event_name: string | null; total_count: string };
+  const history = (userId: string, orgId: string, opts: { actions?: string[] | null; eventId?: string | null; q?: string | null } = {}) =>
+    asUser(c, userId, async () =>
+      (await c.query<Row>(`select * from public.org_decision_history($1::uuid, $2::text[], $3::uuid, $4::text, 200, 0)`, [orgId, opts.actions ?? null, opts.eventId ?? null, opts.q ?? null])).rows,
+    );
+
+  it("shows the society's events and payments, with TickLO admins shown as 'TickLO team'", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 50000, quantity: 10 }], { status: "draft" });
+    await asUser(c, SEED.member, () => rpc(c, "submit_event", [eventId], ["uuid"]));
+    await asUser(c, SEED.admin, () => rpc(c, "review_event", [eventId, false, "Add a poster"], REVIEW_T));
+    await asUser(c, SEED.member, () => rpc(c, "submit_event", [eventId], ["uuid"]));
+    await asUser(c, SEED.admin, () => rpc(c, "review_event", [eventId, true, null], REVIEW_T));
+    const buyer = await createUser(c, "Paying Student");
+    const o = await book(c, buyer.id, eventId, items([typeIds[0], 1]));
+    await submitProof(c, buyer.id, o.order_id);
+    await asUser(c, SEED.organizer, () => rpc(c, "reject_order", [o.order_id, "Amount does not match"], ["uuid", "text"]));
+
+    const rows = await history(SEED.member, SEED.org, { eventId });
+    expect(rows.map((r) => r.action)).toEqual(["order.reject", "event.approve", "event.submit", "event.reject", "event.submit"]);
+    expect(rows[0]).toMatchObject({ subject: o.ref_code, extra: "Paying Student", reason: "Amount does not match", by_ticklo: false });
+    expect(rows[0].actor_name).not.toBe("TickLO team");
+    expect(rows[3]).toMatchObject({ actor_name: "TickLO team", by_ticklo: true, reason: "Add a poster", subject: "Test Event" });
+    expect(Number(rows[0].total_count)).toBe(5);
+
+    const rejected = await history(SEED.organizer, SEED.org, { eventId, actions: ["event.reject", "order.reject", "user.suspend"] });
+    expect(rejected.map((r) => r.action)).toEqual(["order.reject", "event.reject"]);
+    expect((await history(SEED.organizer, SEED.org, { eventId, q: "paying" })).map((r) => r.action)).toEqual(["order.reject"]);
+  });
+
+  it("shows the society's own review path, but only to its owners and members", async () => {
+    const owner = await createUser(c, "Path Owner");
+    const orgId = await asUser(c, owner.id, () =>
+      rpc<string>(c, "create_organization", ["Path Society", `path-soc-${owner.id.slice(0, 6)}`, null, "society", "", null, "{}", null], ORG_T),
+    );
+    await asUser(c, SEED.admin, () => rpc(c, "review_organization", [orgId, false, "Logo missing"], REVIEW_T));
+    const rows = await history(owner.id, orgId);
+    expect(rows.map((r) => [r.action, r.actor_name, r.reason])).toEqual([
+      ["org.reject", "TickLO team", "Logo missing"],
+      ["org.register", "Path Owner", null],
+    ]);
+    await expectTL(history(SEED.organizer, orgId), "FORBIDDEN");
+    await expectTL(history(SEED.scanner, SEED.org), "FORBIDDEN");
+    await expect(asAnon(c, () => c.query("select * from public.org_decision_history($1::uuid)", [orgId]))).rejects.toThrow(/permission denied/);
   });
 });

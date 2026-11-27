@@ -15,6 +15,7 @@ export default async function SocietyLayout({ children, params }: { children: Re
     { href: base, label: "Dashboard", match: [`${base}/events`] },
     ...(isOwner ? [{ href: `${base}/team`, label: "Team" }, { href: `${base}/payment-accounts`, label: "Payment accounts & reports" }] : []),
     { href: `${base}/settings`, label: "Society profile" },
+    { href: `${base}/history`, label: "History" },
   ];
 
   return (
@@ -53,7 +54,12 @@ export default async function SocietyLayout({ children, params }: { children: Re
         <Alert variant="destructive" className="mb-4">
           <AlertTitle>Society not approved</AlertTitle>
           <AlertDescription className="grid gap-2">
-            <span>Reason: {org.review_note ?? "Not given"}</span>
+            <span>
+              Reason: {org.review_note ?? "Not given"} ·{" "}
+              <Link href={`${base}/history`} className="underline">
+                See history
+              </Link>
+            </span>
             {isOwner ? (
               <span>
                 Update your details in Society profile, then{" "}

@@ -3097,6 +3097,30 @@ export type Database = {
         };
         Returns: string;
       };
+      org_decision_history: {
+        Args: {
+          p_org_id: string | null;
+          p_actions?: string[] | null;
+          p_event_id?: string | null;
+          p_q?: string | null;
+          p_limit?: number | null;
+          p_offset?: number | null;
+        };
+        Returns: {
+          id: number;
+          action: string;
+          created_at: string;
+          actor_name: string;
+          by_ticklo: boolean;
+          event_id: string;
+          event_name: string;
+          subject: string;
+          extra: string;
+          reason: string;
+          order_id: string;
+          total_count: number;
+        }[];
+      };
       org_role_of: {
         Args: {
           p_org_id: string | null;

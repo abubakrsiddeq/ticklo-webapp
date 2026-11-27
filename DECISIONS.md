@@ -996,3 +996,21 @@ registered – the same thing the existing "already registered" error already di
     (with `resubmitted`). So a history reads registered → rejected → resubmitted → approved.
   - `admin_delete_university` now keeps the deleted university's name, city and status.
 - Organizer-side history was not added; this request was about the admin record.
+
+## D-077 Organizers see their society's decision history too (owner request, 2026-11-28)
+- **Society dashboard → History** (`/org/<society>/history`) and **event → History**
+  (`/org/<society>/events/<event>/history`): every approval and rejection for the society, with
+  who decided, when and the reason. Covers TickLO's society review (registered, rejected,
+  resubmitted, approved), event reviews (sent, approved, rejected, cancelled), payments
+  (approved / rejected, with `TL-` reference and buyer), team registrations and ambassador
+  applications. Filters by type and result, search, 50 per page. The rejected-society alert
+  links to it.
+- Shown to the society's owners and members (same people who see the dashboard), not scanners.
+- The audit log stays admins-only. Organizers read it only through
+  `org_decision_history(org, actions, event, q, limit, offset)` (migration
+  `20261128000400_org_decision_history.sql`), which checks `is_org_staff` and returns only rows
+  about that society, its events and its events' orders.
+- A TickLO admin who decided is shown as **"TickLO team"**, not by name (admins' names are not
+  shared with organizers). Organizers who decided are shown by name.
+- Rows about an event that was later deleted drop out of the organizer view (they stay in the
+  admin Decisions page). Only drafts can be deleted, so this hides nothing that was reviewed.

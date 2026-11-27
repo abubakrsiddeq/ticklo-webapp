@@ -317,6 +317,16 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: decision history for organizers (D-077)
+- **Society dashboard → History** and **event → History**: society review, event reviews,
+  payments, team registrations and ambassador applications with who / when / reason. TickLO admins
+  are shown as "TickLO team". Owners and members only.
+- Migration `20261128000400_org_decision_history.sql` (function `org_decision_history`).
+  **Not yet applied to TICkLO** (see Needs from Abubakar).
+- Unit tests: 1 new, 101 pass. DB tests: 2 new, 141 pass. Typecheck, lint and build pass.
+- Test: as owner, Society dashboard → History shows "Registered" and TickLO's decision; reject a
+  payment with a reason in an event → event → History shows it with the reason and your name.
+
 ## Change 2026-11-28: decision history for admins (D-076)
 - **Admin → Decisions** lists every approve / reject (societies, events, payments, teams,
   ambassadors, universities, disputes, users) with who, when and the reason; filters by type and
@@ -516,9 +526,14 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Deploy the new web build on Hostinger (D-073, D-074, D-076):** the migrations are applied; until the
+- **Apply migration `20261128000400_org_decision_history.sql` to TICkLO (D-077):** my attempt was
+  blocked by the permission check. `supabase db push`, or the D-034 method (`supabase db query
+  --linked -f <file>` then record version `20261128000400` / `org_decision_history` in
+  `supabase_migrations.schema_migrations`). It only adds one read function. Without it the
+  organizer History tab shows "History could not be loaded".
+- **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077):** the migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails, and
-  the admin Decisions tab is not there yet.
+  the admin Decisions tab and organizer History tab are not there yet.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

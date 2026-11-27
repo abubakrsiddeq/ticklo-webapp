@@ -79,3 +79,13 @@ export function reasonLabel(action: string): string {
 export function cleanSearch(q: string | undefined): string {
   return (q ?? "").replace(/[%*,()\\"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
 }
+
+// D-077: what organizers see about their own society (no universities, disputes or users).
+export const ORG_DECISION_KINDS: DecisionKind[] = ["societies", "events", "payments", "teams", "ambassadors"];
+
+/** Audit actions for the organizer history; an event's history leaves out the society itself. */
+export function orgDecisionActions(kind: DecisionKind | null, result: ResultFilter, forEvent = false): string[] {
+  const kinds = ORG_DECISION_KINDS.filter((k) => !(forEvent && k === "societies"));
+  const chosen = kind && kinds.includes(kind) ? [kind] : kinds;
+  return chosen.flatMap((k) => decisionActions(k, result));
+}

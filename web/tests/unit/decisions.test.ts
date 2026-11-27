@@ -34,3 +34,17 @@ describe("decision history helpers (D-076)", () => {
     expect(cleanSearch("a".repeat(200))).toHaveLength(80);
   });
 });
+
+describe("organizer decision history (D-077)", () => {
+  it("only offers the society's own kinds", async () => {
+    const { orgDecisionActions } = await import("@/lib/decisions");
+    const all = orgDecisionActions(null, "all");
+    expect(all).toContain("org.reject");
+    expect(all).toContain("order.approve");
+    expect(all).not.toContain("user.suspend");
+    expect(all).not.toContain("university.delete");
+    expect(orgDecisionActions(null, "all", true)).not.toContain("org.register");
+    expect(orgDecisionActions("users", "all")).toEqual(all);
+    expect(orgDecisionActions("payments", "rejected")).toEqual(["order.reject"]);
+  });
+});

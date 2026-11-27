@@ -53,6 +53,7 @@ export default async function EventLayout({
           { href: `${base}/ambassadors`, label: "Ambassadors" },
           { href: `${base}/edit`, label: "Edit & tickets" },
           { href: `${base}/report`, label: "Report" },
+          { href: `${base}/history`, label: "History" },
         ]}
       />
       {children}
