@@ -317,6 +317,18 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: decision history for admins (D-076)
+- **Admin → Decisions** lists every approve / reject (societies, events, payments, teams,
+  ambassadors, universities, disputes, users) with who, when and the reason; filters by type and
+  result, search, pages. Approvals shows the earlier history of a resubmitted society or event.
+- Migration `20261128000300_decision_history.sql`: audit log append-only (no edit / delete /
+  truncate), society registered / resubmitted and event sent-for-review recorded, deleted
+  university keeps its name. **Not yet applied to TICkLO** (see Needs from Abubakar).
+- Unit tests: 4 new, 100 pass. DB tests: 5 new, 139 pass. Typecheck, lint and build pass.
+- Test: Admin → Approvals → reject a society with a reason → Decisions shows it as Rejected with
+  the reason → owner resubmits → Approvals shows the "History" box → approve → Decisions → filter
+  Societies shows Registered, Rejected, Resubmitted, Approved.
+
 ## Change 2026-11-28: no full-page error screen after sending a form (D-074)
 - Every form shows a toast instead of the "Something went wrong" page when a server action
   cannot run (no internet, server error or timeout, new version deployed). Registration and
@@ -502,6 +514,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261128000300_decision_history.sql` to TICkLO (D-076):** my attempt was
+  blocked by the permission check. Run `supabase db push` (or the D-034 method:
+  `supabase db query --linked -f supabase/migrations/20261128000300_decision_history.sql`, then
+  record version `20261128000300` / `decision_history` in `supabase_migrations.schema_migrations`),
+  then deploy the web build. The Decisions page works before the migration too; only the
+  register / resubmit / submit steps and the edit lock need it.
 - **Deploy the new web build on Hostinger (D-073, D-074):** both migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger

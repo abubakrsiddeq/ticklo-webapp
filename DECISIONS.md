@@ -975,3 +975,24 @@ registered – the same thing the existing "already registered" error already di
 - Checked on TICkLO: a test call to `/api/cron/reminders` returned 200. If `CRON_SECRET`
   changes on Hostinger, update the Vault secret too. Hostinger cron jobs are no longer needed
   (remove any reminders job there to avoid double calls – reminders are not sent twice anyway).
+
+## D-076 Every accept / reject stays on record for admins (owner request, 2026-11-28)
+- The audit log already stored approve/reject for societies, events, payments, teams,
+  ambassadors, universities, disputes and users, but admins only saw raw JSON in Logs and a
+  decided request vanished from Approvals. Now:
+  - **Admin → Decisions** (`/admin/decisions`): every decision with who decided, when and the
+    reason, filter by type (Societies, Events, Payments, Team registrations, Ambassadors,
+    Universities, Disputes, Users) and result (Approved / Rejected), search by society, event,
+    team, `TL-` reference or person, 50 per page. Names come from the live record, or from the
+    name saved in the log when the society / event / university was deleted.
+  - **Approvals** shows a "History" box on a request that was decided before (e.g. a society
+    rejected for "proof unreadable" and resubmitted), open by default when there was a rejection.
+- Migration `20261128000300_decision_history.sql`:
+  - The audit log is **append-only**: update, delete and truncate are refused for everyone,
+    including the service role. Only exception: `actor_id` becomes null when that account is
+    deleted (the existing ON DELETE SET NULL), so the row itself is never lost.
+  - The steps between decisions are recorded by triggers (no existing function changed):
+    `org.register`, `org.resubmit` (with the reason it was rejected for), `event.submit`
+    (with `resubmitted`). So a history reads registered → rejected → resubmitted → approved.
+  - `admin_delete_university` now keeps the deleted university's name, city and status.
+- Organizer-side history was not added; this request was about the admin record.

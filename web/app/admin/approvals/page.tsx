@@ -9,6 +9,8 @@ import { formatEventRange, formatPKR, formatShortDateTime } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { reviewEvent, reviewOrganization } from "../actions";
 import { ReviewButtons } from "../review-buttons";
+import { DecisionTimeline } from "../decision-timeline";
+import { DECISION_ACTIONS, decisionActions } from "@/lib/decisions";
 
 export const metadata: Metadata = { title: "Approvals" };
 
@@ -44,8 +46,33 @@ export default async function ApprovalsPage() {
   const headMap = new Map((heads ?? []).map((h) => [h.org_id, h]));
   const proofs = await signedUrls("org-proofs", (orgs ?? []).map((o) => o.proof_path), 900);
 
+  // D-076: earlier decisions (e.g. rejected before, now resubmitted) next to each request
+  const eventIds = (events ?? []).map((e) => e.id);
+  const [{ data: orgLog }, { data: eventLog }] = await Promise.all([
+    orgIds.length
+      ? supabase.from("audit_log").select("id, action, actor_id, target_id, details, created_at").eq("target_type", "organization").in("target_id", orgIds).in("action", decisionActions("societies", "all")).order("id")
+      : { data: [] },
+    eventIds.length
+      ? supabase.from("audit_log").select("id, action, actor_id, target_id, details, created_at").eq("target_type", "event").in("target_id", eventIds).in("action", decisionActions("events", "all")).order("id")
+      : { data: [] },
+  ]);
+  const historyOf = (log: typeof orgLog, id: string) => {
+    const entries = (log ?? []).filter((l) => l.target_id === id);
+    return entries.some((l) => DECISION_ACTIONS[l.action]?.outcome !== "step") ? entries : [];
+  };
+  const actorIds = [...new Set([...(orgLog ?? []), ...(eventLog ?? [])].map((l) => l.actor_id).filter((x): x is string => Boolean(x)))];
+  const { data: actors } = actorIds.length ? await supabase.from("profiles").select("id, full_name, email").in("id", actorIds) : { data: [] };
+  const actorNames = new Map((actors ?? []).map((a) => [a.id, a.full_name ?? a.email ?? "Unknown"]));
+
   return (
     <div className="grid gap-8">
+      <p className="-mb-4 text-sm text-muted-foreground">
+        Approved and rejected requests stay on record in{" "}
+        <Link href="/admin/decisions" className="text-brand-strong underline">
+          Decisions
+        </Link>
+        .
+      </p>
       <section>
         <h2 className="mb-3 text-xl font-semibold text-navy">Societies ({orgs?.length ?? 0})</h2>
         {orgs?.length ? (
@@ -108,6 +135,7 @@ export default async function ApprovalsPage() {
                       )}
                     </dd>
                   </dl>
+                  <DecisionTimeline entries={historyOf(orgLog, o.id)} names={actorNames} />
                   <ReviewButtons name={o.name} review={reviewOrganization.bind(null, o.id)} />
                 </li>
               );
@@ -152,6 +180,7 @@ export default async function ApprovalsPage() {
                   ))}
                 </ul>
                 {e.description ? <p className="line-clamp-4 whitespace-pre-line text-sm text-muted-foreground">{e.description}</p> : null}
+                <DecisionTimeline entries={historyOf(eventLog, e.id)} names={actorNames} />
                 <ReviewButtons name={e.name} review={reviewEvent.bind(null, e.id)} />
               </li>
             ))}
