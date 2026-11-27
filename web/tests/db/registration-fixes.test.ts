@@ -381,3 +381,36 @@ describe("waitlist in line order (D-071)", () => {
     expect(await statusOf(w.id)).toBe("booked");
   });
 });
+
+describe("early-bird prices (D-072)", () => {
+  it("the early price is charged until its date, the normal price after", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 100000 }]);
+    const t = typeIds[0];
+    await c.query("update public.ticket_types set early_price_paisa = 70000, early_until = now() + interval '1 day' where id = $1", [t]);
+    const a = await book((await buyer()).id, eventId, items([t, 2]));
+    expect(a.total_paisa).toBe(140000);
+    await c.query("update public.ticket_types set early_until = now() - interval '1 minute' where id = $1", [t]);
+    const b = await book((await buyer()).id, eventId, items([t, 1]));
+    expect(b.total_paisa).toBe(100000);
+    await expect(c.query("update public.ticket_types set early_price_paisa = 120000 where id = $1", [t])).rejects.toThrow();
+  });
+
+  it("a team that applied during early bird keeps the early fee when it pays later", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    const comp = await session(eventId, { name: "Early Hack", kind: "competition", capacity: 5, team_min: 1, team_max: 1, fee_paisa: 300000, needs_approval: true });
+    await c.query("update public.ticket_types set early_price_paisa = 200000, early_until = now() + interval '1 hour' where registration_session_id = $1", [comp]);
+    const u = await buyer();
+    const r = await register(u.id, comp, "", [{ name: "Early Bird" }]);
+    // early bird ends right after this team applied
+    await c.query(
+      "update public.ticket_types set early_until = (select created_at from public.team_registrations where id = $2) + interval '1 millisecond' where registration_session_id = $1",
+      [comp, r.registration_id],
+    );
+    await decide(r.registration_id, true);
+    expect((await payTeam(u.id, r.registration_id)).total_paisa).toBe(200000);
+    const late = await buyer();
+    const r2 = await register(late.id, comp, "", [{ name: "Late Comer" }]);
+    await decide(r2.registration_id, true);
+    expect((await payTeam(late.id, r2.registration_id)).total_paisa).toBe(300000);
+  });
+});

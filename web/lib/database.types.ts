@@ -1914,6 +1914,8 @@ export type Database = {
       };
       ticket_types: {
         Row: {
+          early_price_paisa: number | null;
+          early_until: string | null;
           all_sessions: boolean;
           created_at: string;
           description: string | null;
@@ -1930,6 +1932,8 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          early_price_paisa?: number | null;
+          early_until?: string | null;
           all_sessions?: boolean;
           created_at?: string;
           description?: string | null;
@@ -1946,6 +1950,8 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          early_price_paisa?: number | null;
+          early_until?: string | null;
           all_sessions?: boolean;
           created_at?: string;
           description?: string | null;
@@ -2819,6 +2825,8 @@ export type Database = {
           form: Json;
           slug: string;
           listed: boolean;
+          early_fee_paisa: number | null;
+          early_until: string | null;
         }[];
       };
       event_stats: {
