@@ -159,7 +159,7 @@ describe("bookings", () => {
     await c.query("update public.events set attendee_names = 'required', attendee_university = 'optional' where id = $1", [eventId]);
     const u = await buyer("The Buyer");
     const t = typeIds[0];
-    await expectTL(book(u.id, eventId, items([t, 2]), [{ ticket_type_id: t, name: "Sara Ahmed" }]), "ATTENDEE_REQUIRED");
+    await expectTL(book(u.id, eventId, items([t, 2]), [{ ticket_type_id: t, name: "Sara Ahmed" }]), "ANSWERS_REQUIRED");
     const o = await book(u.id, eventId, items([t, 2]), [
       { ticket_type_id: t, name: "Sara Ahmed", university: "LUMS" },
       { ticket_type_id: t, name: "Omar Ali" },
@@ -216,7 +216,7 @@ describe("festivals ask ticket-holder details per session (D-065)", () => {
     await org(() => rpc(c, "set_ticket_type_access", [typeIds[1], true, []], ["uuid", "bool", "uuid[]"]));
 
     const u = await buyer("Pass Buyer");
-    await expectTL(book(u.id, eventId, items([typeIds[0], 1])), "ATTENDEE_REQUIRED");
+    await expectTL(book(u.id, eventId, items([typeIds[0], 1])), "ANSWERS_REQUIRED");
     const o = await book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Hina Raza", university: "FAST" }]);
     expect((await tickets(o.order_id))[0]).toMatchObject({ holder_name: "Hina Raza", holder_university: "FAST" });
     // the pass opens only the concert (details off): the festival's event-level setting is ignored
@@ -280,5 +280,42 @@ describe("registration form builder (D-068)", () => {
     await expectTL(setForm(SEED.organizer, comp, form([name, uni, { ...shirt, required: true }], [])), "FORM_LOCKED");
     await expectTL(setForm(SEED.organizer, comp, form([name, uni, shirt, { id: "cnic", type: "short_text", label: "CNIC", required: true, hidden: false }], [])), "FORM_LOCKED");
     await setForm(SEED.organizer, comp, form([name, uni, { ...shirt, hidden: true, label: "Shirt size" }, { id: "diet", type: "short_text", label: "Diet", required: false, hidden: false }], []));
+  });
+});
+
+describe("ticket forms for every session and event (D-069)", () => {
+  const nameReq = { id: "name", type: "short_text", label: "Name", required: true, hidden: false, builtin: true };
+  const seat = { id: "seat_pref", type: "select", label: "Seating", required: true, hidden: false, options: ["Front", "Back"] };
+  const setTF = (userId: string, eventId: string, sessionId: string | null, fields: unknown[]) =>
+    asUser(c, userId, () => rpc(c, "set_ticket_form", [eventId, sessionId, JSON.stringify(fields)], ["uuid", "uuid", "jsonb"]));
+
+  it("a qawwali night asks its form per ticket; a pass asks only the built-in details", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 0, name: "Qawwali seat" }, { price: 0, name: "Pass" }]);
+    await c.query("update public.events set format = 'festival' where id = $1", [eventId]);
+    const q = await session(eventId, { name: "Qawwali Night", kind: "concert", pass_access: true });
+    await expectTL(setTF((await buyer()).id, eventId, q, [nameReq]), "FORBIDDEN");
+    await setTF(SEED.organizer, eventId, q, [nameReq, seat]);
+    await org(() => rpc(c, "set_ticket_type_access", [typeIds[0], false, [q]], ["uuid", "bool", "uuid[]"]));
+    await org(() => rpc(c, "set_ticket_type_access", [typeIds[1], true, []], ["uuid", "bool", "uuid[]"]));
+    const u = await buyer();
+    await expectTL(book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Bilal Ahmed" }]), "ANSWERS_REQUIRED");
+    const o = await book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Bilal Ahmed", answers: { [q]: { seat_pref: "Front" } } }]);
+    expect((await tickets(o.order_id))[0]).toMatchObject({ holder_name: "Bilal Ahmed", answers: { [q]: { seat_pref: "Front" } } });
+    // the pass: name required (built-in of the night), the seating question is not asked
+    await expectTL(book((await buyer()).id, eventId, items([typeIds[1], 1])), "ANSWERS_REQUIRED");
+    const p = await book((await buyer()).id, eventId, items([typeIds[1], 1]), [{ ticket_type_id: typeIds[1], name: "Pass Holder" }]);
+    expect((await tickets(p.order_id))[0].holder_name).toBe("Pass Holder");
+  });
+
+  it("a single event has its own ticket form, locked once tickets are sold", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 0 }]);
+    const phone = { id: "phone", type: "phone", label: "Mobile", required: true, hidden: false, builtin: true };
+    await setTF(SEED.organizer, eventId, null, [nameReq, phone]);
+    const u = await buyer();
+    await expectTL(book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Asad Ali", phone: "0300" }]), "INVALID_ITEMS");
+    const o = await book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Asad Ali", phone: "+923331234567" }]);
+    expect((await c.query("select holder_phone from public.tickets where order_id = $1", [o.order_id])).rows[0].holder_phone).toBe("+923331234567");
+    await expectTL(setTF(SEED.organizer, eventId, null, [nameReq]), "FORM_LOCKED");
+    await setTF(SEED.organizer, eventId, null, [nameReq, { ...phone, hidden: true }, { id: "diet", type: "short_text", label: "Diet", required: false, hidden: false }]);
   });
 });

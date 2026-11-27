@@ -508,6 +508,7 @@ export type Database = {
       };
       events: {
         Row: {
+          ticket_form: Json;
           attendee_names: string;
           attendee_university: string;
           cancel_reason: string | null;
@@ -537,6 +538,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["event_visibility"];
         };
         Insert: {
+          ticket_form?: Json;
           attendee_names?: string;
           attendee_university?: string;
           cancel_reason?: string | null;
@@ -566,6 +568,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["event_visibility"];
         };
         Update: {
+          ticket_form?: Json;
           attendee_names?: string;
           attendee_university?: string;
           cancel_reason?: string | null;
@@ -2486,6 +2489,14 @@ export type Database = {
           p_team_name: string;
           p_members: Json;
           p_answers?: Json | null;
+        };
+        Returns: undefined;
+      };
+      set_ticket_form: {
+        Args: {
+          p_event_id: string;
+          p_session_id: string | null;
+          p_fields: Json;
         };
         Returns: undefined;
       };
