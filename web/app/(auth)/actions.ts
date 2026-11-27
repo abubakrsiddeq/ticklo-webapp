@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { absoluteUrl, safeNext } from "@/lib/site";
@@ -23,10 +24,10 @@ export async function loginAction(input: unknown, next: string): Promise<ActionR
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data.user) {
-    const msg = /confirm/i.test(error?.message ?? "")
-      ? "Please confirm your email first – check your inbox for the link."
-      : "Wrong email or password.";
-    return { ok: false, error: msg };
+    if (/confirm/i.test(error?.message ?? "")) {
+      return { ok: false, code: "unconfirmed", error: "Please confirm your email first – check your inbox for the link." };
+    }
+    return { ok: false, error: "Wrong email or password." };
   }
   const { data: profile } = await supabase.from("profiles").select("is_suspended").eq("id", data.user.id).maybeSingle();
   if (profile?.is_suspended) {
@@ -68,6 +69,45 @@ export async function signupAction(input: unknown, next: string): Promise<Action
   }
   if (data.session) redirect(dest); // email confirmation turned off
   return { ok: true, data: { needsConfirmation: true } };
+}
+
+/** Sends the signup confirmation email again (old link expired or got lost). */
+export async function resendConfirmationAction(input: unknown, next: string): Promise<ActionResult> {
+  const parsed = resetRequestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Please enter your email." };
+  const ip = await clientIp();
+  if (!(await rateLimit(`resend:ip:${ip}`, 5, 3600)) || !(await rateLimit(`resend:email:${parsed.data.email}`, 3, 3600))) {
+    return tooMany;
+  }
+  const supabase = await createClient();
+  const dest = safeNext(next, "/");
+  await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data.email,
+    options: { emailRedirectTo: absoluteUrl(`/auth/confirm?next=${encodeURIComponent(dest)}`) },
+  });
+  // Same answer whether or not the email exists (no account enumeration)
+  return { ok: true, message: "If this email is waiting for confirmation, a new link is on its way." };
+}
+
+const LINK_TYPES: EmailOtpType[] = ["signup", "email", "recovery", "invite", "magiclink", "email_change"];
+
+/**
+ * D-052: the one-time email token is used here (button press = POST), never on
+ * the GET that opens the link, so mail scanners cannot burn it first.
+ */
+export async function confirmEmailLinkAction(formData: FormData): Promise<void> {
+  const tokenHash = String(formData.get("token_hash") ?? "");
+  const type = String(formData.get("type") ?? "") as EmailOtpType;
+  const isReset = type === "recovery";
+  const next = safeNext(String(formData.get("next") ?? ""), "/");
+  if (!tokenHash || !LINK_TYPES.includes(type)) redirect("/login?error=link");
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+  if (error) redirect(isReset ? "/reset-password?error=expired" : `/login?error=link&next=${encodeURIComponent(next)}`);
+  if (isReset) redirect("/reset-password/update");
+  redirect(`${next}${next.includes("?") ? "&" : "?"}welcome=1`);
 }
 
 /** AUTH-03: "Password bhool gaye" → reset link by email */

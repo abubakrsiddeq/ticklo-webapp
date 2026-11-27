@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -9,10 +9,13 @@ import { Input } from "@/components/ui/input";
 import { FormField, fieldAria } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
-import { loginAction } from "../actions";
+import { Button } from "@/components/ui/button";
+import { loginAction, resendConfirmationAction } from "../actions";
 
 export function LoginForm({ next }: { next: string }) {
   const [pending, start] = useTransition();
+  const [resending, startResend] = useTransition();
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const form = useForm<LoginInput>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
   const { errors } = form.formState;
 
@@ -20,11 +23,19 @@ export function LoginForm({ next }: { next: string }) {
     start(async () => {
       const res = await loginAction(values, next);
       if (res && !res.ok) {
+        setUnconfirmed(res.code === "unconfirmed");
         toast.error(res.error);
         for (const [k, v] of Object.entries(res.fieldErrors ?? {})) form.setError(k as keyof LoginInput, { message: v });
       }
     }),
   );
+
+  const resend = () =>
+    startResend(async () => {
+      const res = await resendConfirmationAction({ email: form.getValues("email") }, next);
+      if (res.ok) toast.success(res.message);
+      else toast.error(res.error);
+    });
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
@@ -42,6 +53,14 @@ export function LoginForm({ next }: { next: string }) {
       <SubmitButton pending={pending} pendingText="Logging in…" className="w-full">
         Log in
       </SubmitButton>
+      {unconfirmed ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p>Your email isn&apos;t confirmed yet. Didn&apos;t get the email, or the link expired?</p>
+          <Button type="button" variant="outline" size="sm" className="mt-2" disabled={resending} onClick={resend}>
+            {resending ? "Sending…" : "Send a new link"}
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 }

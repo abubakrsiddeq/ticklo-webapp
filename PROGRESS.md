@@ -359,6 +359,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Auth email templates + confirm-link fix (D-052):** deploy the new web build, then in
+  Supabase → Auth → Emails → Templates paste `supabase/templates/confirmation.html`
+  ("Confirm sign up", subject `Confirm your TickLO account`) and `recovery.html`
+  ("Reset password", subject `Reset your TickLO password`). In Auth → URL Configuration make
+  sure Redirect URLs include `https://ticklo.bkrtechsolutions.com/**`. Test: sign up → open the
+  email (even on another phone) → "Confirm my email" button → logged in with welcome.
 - **Hostinger SMTP for emails (D-051):** in the Hostinger Node.js app settings add
   `SMTP_HOST=smtp.hostinger.com`, `SMTP_PORT=465`, `SMTP_USER=noreply@ticklo.bkrtechsolutions.com`,
   `SMTP_PASS=<mailbox password>` and set `EMAIL_FROM=TickLO <noreply@ticklo.bkrtechsolutions.com>`

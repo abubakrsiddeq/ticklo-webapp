@@ -543,3 +543,19 @@ App emails are sent with nodemailer over the Hostinger mailbox
 set → console. Resend code is kept as a fallback. The same mailbox is the suggested
 Supabase Auth SMTP so signup/reset emails stop hitting the built-in rate limit.
 Hostinger's per-mailbox sending limit replaces the Resend 100/day note in D-023.
+
+## D-052 Email links that never show "expired" by mistake (owner report, 2026-11-27)
+Seen on TICkLO: signups were confirmed seconds after the email went out, but the PKCE
+`flow_state` was never used, so people saw "link invalid or expired" even though the
+account was confirmed. Two causes: (1) mail scanners open links first and burn the
+one-time token; (2) the default template's `?code=` only works in the browser that signed up.
+- `/auth/confirm?token_hash=` no longer uses the token on GET. It redirects to
+  `/confirm-email`, and the token is used only when the person presses the button (server
+  action, POST). Scanners don't submit forms.
+- `/auth/confirm?code=` that fails → the email IS confirmed (Supabase verified it before
+  giving the code), so show "Your email is confirmed. Please log in" (`/login?confirmed=1`).
+  For password reset, `/reset-password?error=device` asks for the same browser or a new link.
+- Login with an unconfirmed email shows "Send a new link" (`auth.resend`, rate-limited,
+  same answer for every email).
+- Needs the TickLO templates (token_hash) pasted in Supabase → Auth → Emails; until then
+  the default template still works through the `?code=` path, but without the scanner fix.

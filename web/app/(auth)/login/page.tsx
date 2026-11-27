@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Log in" };
 
 const ERRORS: Record<string, string> = {
   suspended: "Your account is suspended. Contact TickLO support if you think this is a mistake.",
-  link: "That link is invalid or has expired. Please try again.",
+  link: "That link has expired or was already used. If you already confirmed your email, just log in below. Otherwise log in and tap “Send a new link”.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -28,6 +28,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <CardDescription>Log in to book tickets and see your QR codes.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
+        {sp.confirmed ? (
+          <Alert>
+            <AlertDescription>Your email is confirmed. Please log in to continue.</AlertDescription>
+          </Alert>
+        ) : null}
         {sp.error && ERRORS[sp.error] ? (
           <Alert variant="destructive">
             <AlertDescription>{ERRORS[sp.error]}</AlertDescription>

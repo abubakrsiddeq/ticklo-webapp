@@ -34,6 +34,7 @@ describe("safeNext (AUTH-07 without open redirects)", () => {
     expect(safeNext("//evil.com")).toBe("/");
     expect(safeNext("/\\evil.com")).toBe("/");
     expect(safeNext("/login?next=/x")).toBe("/");
+    expect(safeNext("/confirm-email?token_hash=x")).toBe("/");
     expect(safeNext(undefined, "/me/tickets")).toBe("/me/tickets");
   });
 });
