@@ -1,6 +1,7 @@
 import { publicEnv } from "@/lib/env";
 
 export const SITE_NAME = "TickLO";
+export const SUPPORT_EMAIL = "ticklopakistan@gmail.com";
 export const TAGLINE = "TickLO se ticket lo, befikar raho!";
 
 export function absoluteUrl(path = "/"): string {

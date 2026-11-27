@@ -5,13 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { getCurrentUser } from "@/lib/auth";
-import { safeNext } from "@/lib/site";
+import { safeNext, SUPPORT_EMAIL } from "@/lib/site";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Log in" };
 
 const ERRORS: Record<string, string> = {
-  suspended: "Your account is suspended. Contact TickLO support if you think this is a mistake.",
+  suspended: `Your account is suspended. Contact TickLO support (${SUPPORT_EMAIL}) if you think this is a mistake.`,
   link: "That link has expired or was already used. If you already confirmed your email, just log in below. Otherwise log in and tap “Send a new link”.",
 };
 

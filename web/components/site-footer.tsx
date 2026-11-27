@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, QrCode, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { TAGLINE } from "@/lib/site";
+import { SUPPORT_EMAIL, TAGLINE } from "@/lib/site";
 
 const COLUMNS = [
   {
@@ -27,7 +27,7 @@ const COLUMNS = [
     links: [
       { href: "/privacy", label: "Privacy policy" },
       { href: "/terms", label: "Terms of use" },
-      { href: "mailto:support@bkrtechsolutions.com", label: "Contact support" },
+      { href: `mailto:${SUPPORT_EMAIL}`, label: "Contact support" },
     ],
   },
 ];
