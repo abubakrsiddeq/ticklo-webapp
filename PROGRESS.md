@@ -331,7 +331,8 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   session questions per ticket. Schedule: "Get ticket", consistent Register/Apply/Full/Closed;
   competition events show a Register card in the sidebar. Checkout: cancel an unpaid booking.
 - A festival needs a session and a competition event a competition before review.
-- Migration `20261127002100_registration_fixes.sql` (**not applied to TICkLO yet**). The live
+- Migration `20261127002100_registration_fixes.sql` applied to TICkLO (2026-11-27, D-034 method,
+  recorded in the migration history; no registrations or sessions existed yet). The live
   build keeps working after it (new parameters are optional; per-team entries simply get one
   ticket per member from then on). DB tests: 10 new (`registration-fixes.test.ts`), 122 pass.
 - Not built: waitlist ("notify me when a place opens") and winner certificates / results emails.
@@ -424,9 +425,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127002100_registration_fixes.sql` to TICkLO** (Mumbai) before deploying
-  the build with the registration fixes (D-064) – the new build sends `p_attendees` and reads
-  the new columns.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
