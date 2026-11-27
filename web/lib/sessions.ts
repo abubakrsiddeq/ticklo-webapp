@@ -108,6 +108,15 @@ export function teamSizeLabel(min: number, max: number): string {
 }
 
 export const TEAM_SIZE_LIMIT = 20;
+
+/** D-064: member details an organizer can require for a competition. */
+export const MEMBER_FIELDS = [
+  { key: "phone", label: "Mobile number" },
+  { key: "email", label: "Email" },
+  { key: "roll_no", label: "Roll / student ID" },
+  { key: "university", label: "University" },
+] as const;
+export type MemberField = (typeof MEMBER_FIELDS)[number]["key"];
 export type Participation = "individual" | "team";
 
 /** Competition: individuals (1 per entry) or teams of min–max members. */

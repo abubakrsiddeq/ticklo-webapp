@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
-import { QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
+import { MEMBER_FIELDS, QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/errors";
 import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
@@ -45,6 +45,7 @@ export interface SessionValue {
   questions: Question[];
   team_min: number;
   team_max: number;
+  member_required?: string[];
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -85,6 +86,8 @@ export function SessionDialog({
   // Competitions: individuals or teams (min–max members). New competitions start with teams.
   const [participation, setParticipation] = useState<Participation>(session ? participationOf(session.team_max) : "team");
   const solo = participation === "individual";
+  // D-064: member details the organizer requires (new competitions: mobile + university)
+  const [memberRequired, setMemberRequired] = useState<string[]>(session?.member_required ?? ["phone", "university"]);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     (session?.questions ?? []).map((q) => ({ label: q.label, type: q.type, options: q.options.join(", "), required: q.required })),
   );
@@ -122,6 +125,7 @@ export function SessionDialog({
                 pass_access: passAccess,
                 questions: questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
                 participation,
+                member_required: memberRequired,
                 team_min: String(fd.get("team_min") ?? "1"),
                 team_max: String(fd.get("team_max") ?? "1"),
                 fee_mode: String(fd.get("fee_mode") ?? "per_team"),
@@ -263,6 +267,21 @@ export function SessionDialog({
                       </NativeSelect>
                     </FormField>
                   )}
+                </div>
+                <div className="grid gap-2">
+                  <p className="text-sm font-medium text-navy">Required from every {solo ? "participant" : "member"}</p>
+                  <p className="-mt-1 text-xs text-muted-foreground">Name is always asked. Ticked details must be filled in; the rest are optional.</p>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    {MEMBER_FIELDS.map((f) => (
+                      <label key={f.key} className="flex min-h-11 items-center gap-2 text-sm text-navy">
+                        <Checkbox
+                          checked={memberRequired.includes(f.key)}
+                          onCheckedChange={(v) => setMemberRequired((all) => (v === true ? [...all.filter((x) => x !== f.key), f.key] : all.filter((x) => x !== f.key)))}
+                        />
+                        {f.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <FormField id={`${p}-regend`} label="Registration closes (PKT)" hint="Empty = when the competition starts" error={errors.registration_ends_at}>
                   <Input id={`${p}-regend`} name="registration_ends_at" type="datetime-local" defaultValue={toPKTInputValue(session?.registration_ends_at)} className="sm:max-w-xs" />

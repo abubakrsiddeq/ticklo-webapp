@@ -34,6 +34,8 @@ export interface SessionFormValues {
   questions: { label: string; type: string; options: string[]; required: boolean }[];
   /** Competitions: "individual" (one person per entry) or "team". */
   participation?: string;
+  /** D-064: member details the organizer requires (competitions). */
+  member_required?: string[];
   team_min: string;
   team_max: string;
   fee_mode: string;
@@ -93,6 +95,13 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
     p_data: data as unknown as Json,
   });
   if (error) return fail(error);
+  if (competition) {
+    const { error: fieldsError } = await supabase.rpc("set_session_member_fields", {
+      p_session_id: String(id),
+      p_required: (v.member_required ?? []).filter((f) => ["phone", "email", "roll_no", "university"].includes(f)),
+    });
+    if (fieldsError) return fail(fieldsError);
+  }
   refresh(orgSlug);
   return ok({ id: String(id) }, sessionId ? "Session saved." : "Session added.");
 }

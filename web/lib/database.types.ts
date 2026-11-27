@@ -2676,6 +2676,7 @@ export type Database = {
           registration_type_id: string;
           registration_ends_at: string;
           results: Json;
+          member_required: string[];
         }[];
       };
       event_stats: {

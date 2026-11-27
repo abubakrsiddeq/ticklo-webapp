@@ -54,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
     const ans = (a.answers ?? {}) as Record<string, string>;
     return [
       a.holder_name,
+      a.holder_university ?? "",
       a.ticket_type,
       a.serial ?? a.code,
       a.buyer_name ?? "",
@@ -64,6 +65,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
       a.session_checked_in_at ? formatDateTime(a.session_checked_in_at) : "",
     ];
   });
-  const csv = toCsv(["Name", "Ticket", "Code / serial", "Buyer", "Phone", "Email", "Order", ...questions.map((q) => q.label), "Checked in (PKT)"], rows);
+  const csv = toCsv(["Name", "University", "Ticket", "Code / serial", "Buyer", "Phone", "Email", "Order", ...questions.map((q) => q.label), "Checked in (PKT)"], rows);
   return csvResponse(`${slug}-attendees.csv`, csv);
 }

@@ -27,6 +27,8 @@ export default async function NewEventPage({ params }: { params: Promise<{ socie
             ends_at: "",
             capacity: "100",
             visibility: "public",
+            attendee_names: "off",
+            attendee_university: "off",
             max_tickets_per_order: "5",
             format: "single",
           }}

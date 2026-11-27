@@ -23,6 +23,9 @@ export const eventSchema = z
     max_tickets_per_order: z.string().trim().optional(),
     // FES-15: single event, festival with sessions, or competition / registration
     format: z.enum(["single", "festival", "competition"], { message: "Choose what kind of event this is" }),
+    // D-064: the organizer decides whether every ticket carries its holder's name / university
+    attendee_names: z.enum(["off", "optional", "required"]),
+    attendee_university: z.enum(["off", "optional", "required"]),
   })
   .refine((v) => (fromPKTInputValue(v.ends_at) ?? "") > (fromPKTInputValue(v.starts_at) ?? ""), {
     message: "End time must be after the start time",

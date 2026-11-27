@@ -48,6 +48,8 @@ function eventFields(data: z.infer<typeof eventSchema>) {
     visibility: data.visibility,
     max_tickets_per_order: data.format === "festival" ? FESTIVAL_MAX_PER_ORDER : Number(data.max_tickets_per_order),
     format: data.format,
+    attendee_names: data.attendee_names,
+    attendee_university: data.attendee_university,
   };
 }
 
@@ -295,6 +297,8 @@ export async function duplicateEvent(orgSlug: string, eventId: string): Promise<
       visibility: src.visibility,
       max_tickets_per_order: src.max_tickets_per_order,
       format: src.format,
+      attendee_names: src.attendee_names,
+      attendee_university: src.attendee_university,
       created_by: access.user!.id,
     })
     .select("id, slug")

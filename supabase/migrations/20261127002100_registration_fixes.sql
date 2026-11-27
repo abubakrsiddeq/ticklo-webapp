@@ -1108,6 +1108,38 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
+-- Public schedule: which member details the organizer requires
+-- ---------------------------------------------------------------------------
+drop function public.event_schedule(uuid);
+
+create function public.event_schedule(p_event_id uuid)
+returns table (
+  id uuid, name text, kind text, description text, venue text, starts_at timestamptz, ends_at timestamptz,
+  capacity integer, remaining integer, pass_access boolean, questions jsonb, team_min integer, team_max integer,
+  fee_mode text, fee_paisa integer, needs_approval boolean, registration_type_id uuid, registration_ends_at timestamptz,
+  results jsonb, member_required text[]
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.id, s.name, s.kind, s.description, s.venue, s.starts_at, s.ends_at, s.capacity,
+         public.session_remaining(s.id), s.pass_access, s.questions, s.team_min, s.team_max, s.fee_mode,
+         rt.price_paisa, s.needs_approval, rt.id, coalesce(rt.sale_ends_at, case when s.kind = 'competition' then s.starts_at end),
+         case when s.results_published then s.results else '[]'::jsonb end, s.member_required
+  from public.event_sessions s
+  join public.events e on e.id = s.event_id
+  left join public.ticket_types rt on rt.registration_session_id = s.id
+  where s.event_id = p_event_id
+    and (e.status in ('published', 'cancelled') or public.is_org_member_any(e.org_id) or public.is_admin())
+  order by s.starts_at, s.sort_order;
+$$;
+
+revoke all on function public.event_schedule(uuid) from public;
+grant execute on function public.event_schedule(uuid) to anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- Permissions
 -- ---------------------------------------------------------------------------
 revoke all on function public.ticket_type_default_sale_end(uuid) from public, anon, authenticated;

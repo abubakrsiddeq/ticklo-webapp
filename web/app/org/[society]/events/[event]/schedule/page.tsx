@@ -105,6 +105,7 @@ export default async function SchedulePage({
                   questions: asQuestions(s.questions),
                   team_min: s.team_min,
                   team_max: s.team_max,
+                  member_required: s.member_required,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,

@@ -47,6 +47,7 @@ function TypeForm({
   sessions,
   askAccess,
   scheduleHref,
+  festival = false,
 }: {
   orgSlug: string;
   eventId: string;
@@ -55,6 +56,7 @@ function TypeForm({
   sessions: AccessSession[];
   askAccess: boolean;
   scheduleHref?: string;
+  festival?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -122,7 +124,7 @@ function TypeForm({
         <FormField id={`${p}-ss`} label="Sale starts (optional)" hint="Empty = on sale once published" error={errors.sale_starts_at?.message}>
           <Input type="datetime-local" {...fieldAria(`${p}-ss`, errors.sale_starts_at?.message, true)} {...form.register("sale_starts_at")} />
         </FormField>
-        <FormField id={`${p}-se`} label="Sale ends (optional)" hint="Empty = when the event starts" error={errors.sale_ends_at?.message}>
+        <FormField id={`${p}-se`} label="Sale ends (optional)" hint={festival ? "Empty = until its session starts (passes: until the last pass session starts)" : "Empty = when the event starts"} error={errors.sale_ends_at?.message}>
           <Input type="datetime-local" {...fieldAria(`${p}-se`, errors.sale_ends_at?.message, true)} {...form.register("sale_ends_at")} />
         </FormField>
       </div>
@@ -228,7 +230,7 @@ export function TicketTypesEditor({
         {types.map((t) =>
           editing === t.id ? (
             <li key={t.id}>
-              <TypeForm orgSlug={orgSlug} eventId={eventId} type={t} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} />
+              <TypeForm orgSlug={orgSlug} eventId={eventId} type={t} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} festival={format === "festival"} />
             </li>
           ) : (
             <li key={t.id} className="flex flex-col gap-2 rounded-lg border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -280,7 +282,7 @@ export function TicketTypesEditor({
       </ul>
       {editable ? (
         editing === "new" ? (
-          <TypeForm orgSlug={orgSlug} eventId={eventId} type={null} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} />
+          <TypeForm orgSlug={orgSlug} eventId={eventId} type={null} onDone={() => setEditing(null)} sessions={sessions} askAccess={askAccess} scheduleHref={scheduleHref} festival={format === "festival"} />
         ) : (
           <Button variant="outline" onClick={() => setEditing("new")} className="justify-self-start">
             <Plus /> Add ticket type

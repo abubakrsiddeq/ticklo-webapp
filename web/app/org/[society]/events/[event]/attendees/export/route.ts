@@ -15,9 +15,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ soc
   if (!event) return new Response("Not found", { status: 404 });
   const rows = await listAttendees(event.id);
   const csv = toCsv(
-    ["Name", "Ticket type", "Ticket code", "Source", "Serial", "Order", "Order time (PKT)", "Phone", "Email", "Status", "Checked in at (PKT)", "Checked in by", "Method"],
+    ["Name", "University", "Ticket type", "Ticket code", "Source", "Serial", "Order", "Order time (PKT)", "Phone", "Email", "Status", "Checked in at (PKT)", "Checked in by", "Method"],
     rows.map((r) => [
       r.holder_name,
+      r.holder_university ?? "",
       r.ticket_types.name,
       r.code,
       r.source,

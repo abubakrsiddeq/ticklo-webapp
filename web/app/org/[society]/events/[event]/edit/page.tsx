@@ -167,6 +167,8 @@ export default async function EditEventPage({
                 ends_at: toPKTInputValue(event.ends_at),
                 capacity: event.format === "festival" ? "" : String(event.capacity),
                 visibility: event.visibility,
+                attendee_names: (event.attendee_names ?? "off") as "off" | "optional" | "required",
+                attendee_university: (event.attendee_university ?? "off") as "off" | "optional" | "required",
                 max_tickets_per_order: String(event.max_tickets_per_order),
                 format: asEventFormat(event.format),
               }}

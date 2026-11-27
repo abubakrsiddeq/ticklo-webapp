@@ -212,7 +212,10 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                     const ans = (a.answers ?? {}) as Record<string, string>;
                     return (
                       <tr key={a.ticket_id}>
-                        <td className="px-3 py-2 font-medium text-navy">{a.holder_name}</td>
+                        <td className="px-3 py-2 font-medium text-navy">
+                          {a.holder_name}
+                          {a.holder_university ? <div className="text-xs font-normal text-muted-foreground">{a.holder_university}</div> : null}
+                        </td>
                         <td className="px-3 py-2">
                           {a.ticket_type}
                           <div className="font-mono text-xs text-muted-foreground">{a.serial ? `Printed ${a.serial}` : a.code}</div>

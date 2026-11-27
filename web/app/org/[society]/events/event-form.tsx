@@ -158,6 +158,29 @@ export function EventForm({
           </FormField>
         </div>
       )}
+      <fieldset className="grid gap-3 rounded-2xl border border-navy/10 p-4">
+        <legend className="px-1 text-sm font-semibold text-navy">Details on each ticket</legend>
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Off: every ticket carries the buyer&apos;s name. Turn these on when friends buy for each other and the gate should
+          check who holds each ticket (for example with student cards).
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormField id="attendee_names" label="Name of the person on each ticket">
+            <NativeSelect {...fieldAria("attendee_names", errors.attendee_names?.message)} {...form.register("attendee_names")}>
+              <option value="off">Off – buyer&apos;s name on all tickets</option>
+              <option value="optional">Optional – buyer may add a name per ticket</option>
+              <option value="required">Required – a name for every ticket</option>
+            </NativeSelect>
+          </FormField>
+          <FormField id="attendee_university" label="University of the person on each ticket">
+            <NativeSelect {...fieldAria("attendee_university", errors.attendee_university?.message)} {...form.register("attendee_university")}>
+              <option value="off">Off – not asked</option>
+              <option value="optional">Optional</option>
+              <option value="required">Required for every ticket</option>
+            </NativeSelect>
+          </FormField>
+        </div>
+      </fieldset>
       <FormField id="poster" label="Poster" hint="JPG, PNG or WebP, up to 5 MB. Portrait (4:5) looks best." error={posterError}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {preview ? (
