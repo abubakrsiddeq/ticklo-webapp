@@ -961,3 +961,17 @@ registered – the same thing the existing "already registered" error already di
 - The error page itself says "refresh the page or start again from the home page" (it said
   "check your internet connection", which was usually wrong) and has a Go to home button.
 
+
+## D-073 App cron jobs run by Supabase, not Hostinger (owner request, 2026-11-28)
+- Setting up Hostinger cron jobs was confusing, so Supabase calls the app instead: `pg_net` is
+  enabled and `pg_cron` runs `public.call_app_cron(path)`, which requests
+  `https://ticklo.bkrtechsolutions.com/api/cron/<job>` with the cron secret.
+  - `ticklo-waitlist` every 5 minutes → `/api/cron/waitlist` (D-071)
+  - `ticklo-reminders` every 15 minutes → `/api/cron/reminders` (EML-04)
+  - `ticklo-expire-holds` (every minute, in the database) stays as it was.
+- The secret and site URL live in Supabase **Vault** (`ticklo_cron_secret`, `ticklo_site_url`),
+  not in code. The setup is in `supabase/ops/app-cron.sql` (not a migration: the local test
+  database has no pg_net / Vault / pg_cron); run it once per project after storing the secrets.
+- Checked on TICkLO: a test call to `/api/cron/reminders` returned 200. If `CRON_SECRET`
+  changes on Hostinger, update the Vault secret too. Hostinger cron jobs are no longer needed
+  (remove any reminders job there to avoid double calls – reminders are not sent twice anyway).

@@ -342,6 +342,11 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - How to test: register for a competition with `+44…`, `ali@gmail`, `abc` in a link field or the
   same number twice: each is refused with a message under the field.
 
+## Change 2026-11-28: app cron jobs run by Supabase (D-073)
+- Supabase pg_cron + pg_net call `/api/cron/waitlist` (every 5 min) and `/api/cron/reminders`
+  (every 15 min) with the secret from Vault; set up on TICkLO and tested (200). No Hostinger cron
+  jobs needed. Setup script: `supabase/ops/app-cron.sql`.
+
 ## Change 2026-11-28: early-bird prices (D-072)
 - Early-bird price until a date for any ticket and competition fee; charged by the database;
   shown with the normal price struck through.
@@ -499,7 +504,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 (things only you can provide – the app runs with placeholders until then)
 - **Deploy the new web build on Hostinger (D-073, D-074):** both migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails.
-- **Hostinger cron:** add job 4 from `hostinger-cron.txt` (`/api/cron/waitlist`, every 5 minutes).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
