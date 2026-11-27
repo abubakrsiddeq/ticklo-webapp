@@ -17,7 +17,8 @@ import { EventGrid } from "@/components/event-card";
 import { EventFilters } from "@/components/event-filters";
 import { EmptyState } from "@/components/empty-state";
 import { LogoMark } from "@/components/logo";
-import { listPublicEvents, listUniversities } from "@/lib/queries/public";
+import { listPublicEvents, listPublicSessions, listUniversities } from "@/lib/queries/public";
+import { SessionGrid } from "@/components/session-card";
 import { TAGLINE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,12 @@ const STEPS = [
 
 // EVT-01: upcoming published events, soonest first
 export default async function HomePage() {
-  const [{ events, total }, universities] = await Promise.all([listPublicEvents({ limit: 6 }), listUniversities()]);
+  const [{ events, total }, universities, sessions] = await Promise.all([
+    listPublicEvents({ limit: 6 }),
+    listUniversities(),
+    // D-070: competitions, workshops and nights inside festivals (as their organizers list them)
+    listPublicSessions({ limit: 6 }),
+  ]);
 
   return (
     <>
@@ -220,6 +226,26 @@ export default async function HomePage() {
           />
         )}
       </section>
+
+      {sessions.length ? (
+        <section className="mx-auto max-w-6xl px-4 pt-16" aria-labelledby="home-inside-festivals">
+          <div className="mb-6 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Join on their own</p>
+              <h2 id="home-inside-festivals" className="mt-1 text-3xl font-bold text-navy">
+                🎪 Inside festivals
+              </h2>
+              <p className="mt-1 text-slate-600">Competitions, workshops and nights happening inside festivals.</p>
+            </div>
+            <Button asChild variant="outline" className="shrink-0 rounded-full">
+              <Link href="/events#inside-festivals">
+                See all <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+          <SessionGrid sessions={sessions} />
+        </section>
+      ) : null}
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-4 pt-20">

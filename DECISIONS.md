@@ -876,6 +876,8 @@ registered – the same thing the existing "already registered" error already di
   session dialog; on by default for competitions, workshops and concerts) appear as their own
   cards under "🎪 Inside festivals" (upcoming, public, approved societies; first page), and
   alone for Workshops / Concerts. Search matches session names. Event cards show 🎪 / 🏆.
+- **Home page:** a "🎪 Inside festivals" row (up to 6 listed sessions) under Upcoming events, with
+  "See all" to the Events page.
 - **Organizer help (schedule):** "No way in yet" on sessions without their own ticket or a pass,
   "On Events page" and "Open page ↗" per session, and a note when passes include only one event
   (suggests naming it after that event).
