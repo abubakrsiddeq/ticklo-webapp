@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
+import { parseTeamSize } from "@/lib/sessions";
 
 // Festival sessions (D-044). Every write is a Postgres function that checks the
 // organizer again; these actions only parse forms.
@@ -31,6 +32,8 @@ export interface SessionFormValues {
   capacity: string;
   pass_access: boolean;
   questions: { label: string; type: string; options: string[]; required: boolean }[];
+  /** Competitions: "individual" (one person per entry) or "team". */
+  participation?: string;
   team_min: string;
   team_max: string;
   fee_mode: string;
@@ -53,7 +56,10 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
   const capacity = v.capacity.trim();
   if (capacity && !/^\d{1,6}$/.test(capacity)) errs.capacity = "Whole number";
   const competition = v.kind === "competition";
-  if (competition && !capacity) errs.capacity = "How many teams?";
+  const solo = (v.participation ?? (Number(v.team_max) > 1 ? "team" : "individual")) !== "team";
+  if (competition && !capacity) errs.capacity = solo ? "How many participants?" : "How many teams?";
+  const size = competition ? parseTeamSize(solo ? "individual" : "team", v.team_min, v.team_max) : { ok: true as const, team_min: 1, team_max: 1 };
+  if (!size.ok) Object.assign(errs, size.errors);
   const fee = competition ? rupeesToPaisa(v.fee.trim() || "0") : 0;
   if (competition && !Number.isFinite(fee)) errs.fee = "Rupees";
   const regEnds = v.registration_ends_at ? fromPKTInputValue(v.registration_ends_at) : null;
@@ -72,9 +78,10 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
     questions: v.questions
       .filter((q) => q.label.trim())
       .map((q) => ({ label: q.label.trim(), type: q.type, options: q.type === "select" ? q.options.map((o) => o.trim()).filter(Boolean) : [], required: q.required })),
-    team_min: competition ? v.team_min || "1" : "1",
-    team_max: competition ? v.team_max || v.team_min || "1" : "1",
-    fee_mode: v.fee_mode === "per_member" ? "per_member" : "per_team",
+    team_min: size.ok ? size.team_min : 1,
+    team_max: size.ok ? size.team_max : 1,
+    // One person per entry: "per team" and "per member" are the same, keep it simple
+    fee_mode: !solo && v.fee_mode === "per_member" ? "per_member" : "per_team",
     fee_paisa: fee,
     needs_approval: competition && v.needs_approval,
     registration_ends_at: regEnds,

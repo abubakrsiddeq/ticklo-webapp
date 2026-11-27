@@ -183,6 +183,12 @@ export function EventForm({
           </label>
         ) : null}
       </FormField>
+      {mode === "create" && format === "competition" ? (
+        <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-navy">
+          🏆 Next step: you choose whether <strong>individuals or teams</strong> take part (and the min and max members per
+          team), the entry fee and how many can register.
+        </p>
+      ) : null}
       <SubmitButton pending={pending} pendingText="Saving…" variant={mode === "create" ? "brand" : "default"} className="sm:justify-self-start">
         {mode === "create"
           ? format === "festival"

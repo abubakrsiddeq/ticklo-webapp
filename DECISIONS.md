@@ -716,3 +716,18 @@ registered – the same thing the existing "already registered" error already di
   live numbers, the ticket types editor and Admin → Approvals (shows "festival (seats per
   session)").
 - Migration `20261127002000_festival_capacity.sql` raises existing festivals to 100000.
+
+## D-063 Competitions ask "individuals or teams" with min/max members (owner request, 2026-11-27)
+- The competition dialog (used for a competition event and for competitions inside a festival)
+  asks **Who can take part?**: 🙋 Individuals (one person per entry) or 👥 Teams / groups.
+  Teams show **Min members** and **Max members**. New competitions start on Teams (2–4).
+- Rules (`parseTeamSize` in `lib/sessions.ts`, checked in `saveSession`): individuals are saved
+  as 1/1; teams need whole numbers with 1 ≤ min ≤ max ≤ 20 and max at least 2 (min 1 allows solo
+  entries in a team competition). The database check (`team_min between 1 and 20`, `team_max
+  between team_min and 20`) stays as it was, so no migration.
+- For individuals the dialog says "Max participants" and "Entry fee per person", hides the
+  "per team / per member" choice (saved as per_team) and the shortlist text says participants.
+  Public cards say "places left" instead of "team places left".
+- The event form shows a note under a new competition: the next step asks individuals or teams,
+  team size, entry fee and how many can register. The public registration form already asks
+  only for the participant when the competition is individual.

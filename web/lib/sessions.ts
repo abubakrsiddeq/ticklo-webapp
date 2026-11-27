@@ -107,10 +107,39 @@ export function teamSizeLabel(min: number, max: number): string {
   return min === max ? `Teams of ${max}` : `Teams of ${min}–${max}`;
 }
 
+export const TEAM_SIZE_LIMIT = 20;
+export type Participation = "individual" | "team";
+
+/** Competition: individuals (1 per entry) or teams of min–max members. */
+export function participationOf(teamMax: number | null | undefined): Participation {
+  return (teamMax ?? 1) > 1 ? "team" : "individual";
+}
+
+/**
+ * Check what the organizer typed for who can take part. Individuals → 1/1.
+ * Teams → whole numbers, 1 ≤ min ≤ max ≤ 20 and max at least 2.
+ */
+export function parseTeamSize(
+  participation: string,
+  minRaw: string,
+  maxRaw: string,
+): { ok: true; team_min: number; team_max: number } | { ok: false; errors: Record<string, string> } {
+  if (participation !== "team") return { ok: true, team_min: 1, team_max: 1 };
+  const errors: Record<string, string> = {};
+  const min = /^\d{1,2}$/.test(minRaw.trim()) ? Number(minRaw.trim()) : NaN;
+  const max = /^\d{1,2}$/.test(maxRaw.trim()) ? Number(maxRaw.trim()) : NaN;
+  if (!Number.isInteger(min) || min < 1 || min > TEAM_SIZE_LIMIT) errors.team_min = `A number from 1 to ${TEAM_SIZE_LIMIT}`;
+  if (!Number.isInteger(max) || max < 2 || max > TEAM_SIZE_LIMIT) errors.team_max = `A number from 2 to ${TEAM_SIZE_LIMIT}`;
+  if (!errors.team_min && !errors.team_max && min > max) errors.team_max = "Must be at least the minimum";
+  return Object.keys(errors).length ? { ok: false, errors } : { ok: true, team_min: min, team_max: max };
+}
+
 /** Seats text for a session card. */
-export function seatsLabel(s: { kind: string; capacity: number | null; remaining: number | null }): string | null {
+export function seatsLabel(s: { kind: string; capacity: number | null; remaining: number | null; team_max?: number | null }): string | null {
   if (s.capacity === null || s.remaining === null) return null;
-  const unit = s.kind === "competition" ? (s.remaining === 1 ? "team place" : "team places") : s.remaining === 1 ? "seat" : "seats";
+  // Individual competitions say "places"; teams (or unknown size) say "team places"
+  const competitionUnit = s.team_max != null && s.team_max <= 1 ? ["place", "places"] : ["team place", "team places"];
+  const unit = s.kind === "competition" ? competitionUnit[s.remaining === 1 ? 0 : 1] : s.remaining === 1 ? "seat" : "seats";
   if (s.remaining <= 0) return s.kind === "competition" ? "Full" : "Sold out";
   return `${s.remaining} ${unit} left`;
 }

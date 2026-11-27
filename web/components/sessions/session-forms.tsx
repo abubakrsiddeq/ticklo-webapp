@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
-import { QUESTION_TYPES, SESSION_KINDS, type Question } from "@/lib/sessions";
+import { QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
+import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/errors";
 import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
 
@@ -81,6 +82,9 @@ export function SessionDialog({
   const [kind, setKind] = useState(session?.kind ?? defaultKind);
   const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
+  // Competitions: individuals or teams (min–max members). New competitions start with teams.
+  const [participation, setParticipation] = useState<Participation>(session ? participationOf(session.team_max) : "team");
+  const solo = participation === "individual";
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     (session?.questions ?? []).map((q) => ({ label: q.label, type: q.type, options: q.options.join(", "), required: q.required })),
   );
@@ -117,6 +121,7 @@ export function SessionDialog({
                 capacity: String(fd.get("capacity") ?? ""),
                 pass_access: passAccess,
                 questions: questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
+                participation,
                 team_min: String(fd.get("team_min") ?? "1"),
                 team_max: String(fd.get("team_max") ?? "1"),
                 fee_mode: String(fd.get("fee_mode") ?? "per_team"),
@@ -169,8 +174,14 @@ export function SessionDialog({
               <FormField id={`${p}-venue`} label="Venue" hint={`Empty = ${eventVenue}`}>
                 <Input id={`${p}-venue`} name="venue" defaultValue={session?.venue ?? ""} maxLength={200} placeholder="e.g. Lab 3, Main Ground" />
               </FormField>
-              <FormField id={`${p}-cap`} label={competition ? "Max teams" : "Seats"} hint={competition ? undefined : "Empty = no limit"} error={errors.capacity} required={competition}>
-                <Input id={`${p}-cap`} name="capacity" inputMode="numeric" defaultValue={session?.capacity ?? ""} placeholder={competition ? "30" : "40"} />
+              <FormField
+                id={`${p}-cap`}
+                label={competition ? (solo ? "Max participants" : "Max teams") : "Seats"}
+                hint={competition ? undefined : "Empty = no limit"}
+                error={errors.capacity}
+                required={competition}
+              >
+                <Input id={`${p}-cap`} name="capacity" inputMode="numeric" defaultValue={session?.capacity ?? ""} placeholder={competition ? (solo ? "100" : "30") : "40"} />
               </FormField>
             </div>
             <FormField id={`${p}-desc`} label="Description (optional)">
@@ -180,22 +191,78 @@ export function SessionDialog({
             {competition ? (
               <fieldset className="grid gap-3 rounded-xl border border-navy/10 p-3">
                 <legend className="px-1 text-sm font-semibold text-navy">🏆 Competition</legend>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <FormField id={`${p}-tmin`} label="Team size min">
-                    <Input id={`${p}-tmin`} name="team_min" inputMode="numeric" defaultValue={session?.team_min ?? 1} />
-                  </FormField>
-                  <FormField id={`${p}-tmax`} label="Team size max">
-                    <Input id={`${p}-tmax`} name="team_max" inputMode="numeric" defaultValue={session?.team_max ?? 3} />
-                  </FormField>
-                  <FormField id={`${p}-fee`} label="Entry fee (Rs)" hint="0 = free" error={errors.fee}>
+                <div className="grid gap-2">
+                  <p className="text-sm font-medium text-navy">
+                    Who can take part? <span className="text-destructive" aria-hidden>*</span>
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Who can take part?">
+                    {(
+                      [
+                        { key: "individual", title: "🙋 Individuals", text: "One person per entry, e.g. a quiz, speech or solo coding round." },
+                        { key: "team", title: "👥 Teams / groups", text: "A team registers together, e.g. a hackathon, MUN delegation or futsal." },
+                      ] as const
+                    ).map((o) => (
+                      <label
+                        key={o.key}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-2 rounded-xl border-2 p-3 text-sm transition-colors",
+                          participation === o.key ? "border-brand bg-brand-soft" : "border-navy/10 hover:border-brand/40",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name={`${p}-participation`}
+                          value={o.key}
+                          checked={participation === o.key}
+                          onChange={() => setParticipation(o.key)}
+                          className="mt-0.5 size-4 accent-[#0B7D47]"
+                        />
+                        <span>
+                          <span className="block font-semibold text-navy">{o.title}</span>
+                          <span className="block text-xs text-muted-foreground">{o.text}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                {solo ? null : (
+                  <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+                    <FormField id={`${p}-tmin`} label="Min members" hint="Smallest team allowed" error={errors.team_min} required>
+                      <Input
+                        id={`${p}-tmin`}
+                        name="team_min"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={TEAM_SIZE_LIMIT}
+                        defaultValue={session && session.team_max > 1 ? session.team_min : 2}
+                      />
+                    </FormField>
+                    <FormField id={`${p}-tmax`} label="Max members" hint={`Up to ${TEAM_SIZE_LIMIT}`} error={errors.team_max} required>
+                      <Input
+                        id={`${p}-tmax`}
+                        name="team_max"
+                        type="number"
+                        inputMode="numeric"
+                        min={2}
+                        max={TEAM_SIZE_LIMIT}
+                        defaultValue={session && session.team_max > 1 ? session.team_max : 4}
+                      />
+                    </FormField>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+                  <FormField id={`${p}-fee`} label={solo ? "Entry fee per person (Rs)" : "Entry fee (Rs)"} hint="0 = free" error={errors.fee}>
                     <Input id={`${p}-fee`} name="fee" inputMode="decimal" defaultValue={session?.fee_paisa ? paisaToRupeesInput(session.fee_paisa) : "0"} />
                   </FormField>
-                  <FormField id={`${p}-mode`} label="Fee is">
-                    <NativeSelect id={`${p}-mode`} name="fee_mode" defaultValue={session?.fee_mode ?? "per_team"}>
-                      <option value="per_team">per team</option>
-                      <option value="per_member">per member</option>
-                    </NativeSelect>
-                  </FormField>
+                  {solo ? null : (
+                    <FormField id={`${p}-mode`} label="Fee is">
+                      <NativeSelect id={`${p}-mode`} name="fee_mode" defaultValue={session?.fee_mode ?? "per_team"}>
+                        <option value="per_team">per team</option>
+                        <option value="per_member">per member</option>
+                      </NativeSelect>
+                    </FormField>
+                  )}
                 </div>
                 <FormField id={`${p}-regend`} label="Registration closes (PKT)" hint="Empty = when the competition starts" error={errors.registration_ends_at}>
                   <Input id={`${p}-regend`} name="registration_ends_at" type="datetime-local" defaultValue={toPKTInputValue(session?.registration_ends_at)} className="sm:max-w-xs" />
@@ -203,8 +270,10 @@ export function SessionDialog({
                 <label className="flex items-start gap-3 text-sm">
                   <Checkbox checked={needsApproval} onCheckedChange={(v) => setNeedsApproval(v === true)} className="mt-0.5" />
                   <span>
-                    <span className="font-medium text-navy">Shortlist teams before they pay</span>
-                    <span className="block text-xs text-muted-foreground">Teams apply first; you or the session manager accept them, then they pay.</span>
+                    <span className="font-medium text-navy">{solo ? "Shortlist participants before they pay" : "Shortlist teams before they pay"}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {solo ? "People apply first" : "Teams apply first"}; you or the session manager accept them, then they pay.
+                    </span>
                   </span>
                 </label>
               </fieldset>
@@ -223,7 +292,7 @@ export function SessionDialog({
             <div className="grid gap-2">
               <p className="text-sm font-medium text-navy">Questions (optional)</p>
               <p className="-mt-1 text-xs text-muted-foreground">
-                {competition ? "Asked when a team registers." : "Asked when someone books a ticket for this session (not pass holders)."} e.g. T-shirt size,
+                {competition ? (solo ? "Asked when someone registers." : "Asked when a team registers.") : "Asked when someone books a ticket for this session (not pass holders)."} e.g. T-shirt size,
                 laptop?, GitHub link.
               </p>
               {questions.map((q, i) => (
