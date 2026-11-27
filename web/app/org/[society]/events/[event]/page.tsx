@@ -90,7 +90,7 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
                     <td className="py-2 pr-3 text-right tabular-nums">
                       {x.kind === "competition" ? `${x.teams_paid} teams${x.teams_pending ? ` (+${x.teams_pending} waiting)` : ""}` : x.tickets}
                     </td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "—"}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "-"}</td>
                     <td className="py-2 text-right tabular-nums">{x.checked_in}</td>
                   </tr>
                 ))}

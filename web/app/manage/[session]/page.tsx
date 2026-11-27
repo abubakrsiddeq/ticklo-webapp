@@ -155,7 +155,7 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                         {questions.map((q) => (
                           <div key={q.id} className="contents">
                             <dt className="text-muted-foreground">{q.label}</dt>
-                            <dd>{answerText(q, answers[q.id]) || "—"}</dd>
+                            <dd>{answerText(q, answers[q.id]) || "-"}</dd>
                           </div>
                         ))}
                       </dl>
@@ -217,10 +217,10 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                           {a.ticket_type}
                           <div className="font-mono text-xs text-muted-foreground">{a.serial ? `Printed ${a.serial}` : a.code}</div>
                         </td>
-                        <td className="px-3 py-2 text-xs">{a.buyer_phone ? formatPhone(a.buyer_phone) : "—"}</td>
+                        <td className="px-3 py-2 text-xs">{a.buyer_phone ? formatPhone(a.buyer_phone) : "-"}</td>
                         {questions.map((q) => (
                           <td key={q.id} className="px-3 py-2 text-xs">
-                            {answerText(q, ans[q.id]) || "—"}
+                            {answerText(q, ans[q.id]) || "-"}
                           </td>
                         ))}
                         <td className="px-3 py-2">
@@ -229,7 +229,7 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                           ) : live ? (
                             <SessionCheckInButton sessionId={s.id} ticketId={a.ticket_id} name={a.holder_name} />
                           ) : (
-                            "—"
+                            "-"
                           )}
                         </td>
                       </tr>

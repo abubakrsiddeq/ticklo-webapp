@@ -85,7 +85,7 @@ export default async function AdminAmbassadorsPage() {
                       <td className="py-2 pr-3 font-mono">
                         {r.code} {!r.active ? <Pill tone="neutral">Off</Pill> : null}
                       </td>
-                      <td className="py-2 pr-3">{r.university ?? "—"}</td>
+                      <td className="py-2 pr-3">{r.university ?? "-"}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{r.societies}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{r.approved_societies}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{r.published_events}</td>

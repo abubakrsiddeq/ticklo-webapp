@@ -149,7 +149,7 @@ export default async function ReportPage({ params }: { params: Promise<{ society
                       {kindEmoji(x.kind)} {x.name} <span className="text-xs text-muted-foreground">· {formatShortDateTime(x.starts_at)}</span>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{x.kind === "competition" ? `${x.teams_paid} teams` : x.tickets}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "—"}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{x.capacity ? `${x.taken}/${x.capacity}` : "-"}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{x.checked_in}</td>
                   </tr>
                 ))}

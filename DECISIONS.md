@@ -641,3 +641,11 @@ registered – the same thing the existing "already registered" error already di
   approvals show "(new university – check in Universities)" next to a pending one.
 - No email to the requester on approval (the name simply appears on their profile/society).
 
+
+## D-058 No em dashes anywhere (owner request, 2026-11-27)
+- The app's text and code use no em dashes. Empty table cells / values show "-", the campus
+  picker's empty option says "None", the sales buyer picker says "Outside person (no account)".
+- `tests/unit/no-em-dash.test.ts` scans app, components, lib, emails, public, scripts, tests and
+  the Supabase migrations/functions and fails if one comes back. En dashes stay as they are.
+- Left alone: `web/AGENTS.md` (rewritten by `next dev`) and `supabase/config.toml` (CLI
+  template comments). Neither is shown to users.

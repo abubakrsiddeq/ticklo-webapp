@@ -98,7 +98,7 @@ export function SellerDialog({
             </DialogHeader>
             <FormField id="seller-user" label="Team member (optional)" hint="Only people in your society team can log in to sell.">
               <NativeSelect id="seller-user" name="userId" value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">— Outside person (no account) —</option>
+                <option value="">Outside person (no account)</option>
                 {ownAccount ? <option value={ownAccount}>{seller?.name} (own account)</option> : null}
                 {team.map((t) => (
                   <option key={t.user_id} value={t.user_id}>

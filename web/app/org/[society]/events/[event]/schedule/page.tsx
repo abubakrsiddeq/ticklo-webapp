@@ -159,7 +159,7 @@ export default async function SchedulePage({
                         {editable ? (
                           <SessionManagers orgSlug={org.slug} sessionId={s.id} managers={mine} team={teamOptions} />
                         ) : (
-                          <p className="text-sm">{mine.map((m) => m.name).join(", ") || "—"}</p>
+                          <p className="text-sm">{mine.map((m) => m.name).join(", ") || "-"}</p>
                         )}
                       </div>
                     </div>

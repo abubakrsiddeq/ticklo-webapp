@@ -47,7 +47,7 @@ export function CampusAmbassadorForm({ universities }: { universities: { id: str
       </FormField>
       <FormField id="ca-uni" label="Campus">
         <NativeSelect id="ca-uni" name="university" defaultValue="">
-          <option value="">—</option>
+          <option value="">None</option>
           {universities.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
