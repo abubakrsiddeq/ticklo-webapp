@@ -363,7 +363,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 | 10 | Dashboard check-ins update live; attendee CSV downloads | Keep the event dashboard open while scanning; Attendees → Download CSV |
 | 11 | Report shows approved orders and collected amount | Event → Report (print to PDF or CSV) |
 | 12 | Other society's dashboard / someone else's ticket → "Not allowed" | As `student@` open `/org/lums-music-society` and another user's `/me/tickets/<id>` |
-| 13 | All pages fine at 360 px | Chrome DevTools device mode 360×740 |
+| 13 | All pages fine at 360 px (D-056: public pages auto-checked at 320–768; logged-in pages audited in code) | Chrome DevTools device mode 360×740 – especially organizer Attendees/Report/Payments, Admin tables, ticket designer, ambassador Promote screen: page must not scroll sideways, tables scroll inside their card |
 | 14 | Ambassador link + reward (D-043) | Organizer: event → Ambassadors → Add ambassador (team member) → Program: Rs 50 per ticket, Rs 100 off for buyers → Save. Copy the card's link → open it logged out as another user → banner "… invited you" → book → price is Rs 100 less per ticket → approve → card shows 1 counted, reward Rs 50; the ambassador opens Sell → My link & rank and sees rank #1 |
 | 15 | Promo code | Ambassadors → New promo code `FAST20`, 20 %, min 2 tickets → book 1 ticket with the code (error) → 2 tickets (20 % off) |
 | 16 | Applications | Program → tick "Take applications" → student opens the event page → Apply → organizer Accepts → student gets "My ambassador page" in the menu |
