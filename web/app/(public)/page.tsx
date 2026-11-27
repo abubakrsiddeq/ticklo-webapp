@@ -106,10 +106,10 @@ export default async function HomePage() {
             <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Happening soon</p>
             <h2 className="mt-1 text-3xl font-bold text-navy">Upcoming events</h2>
           </div>
-          {total > events.length ? (
-            <Button asChild variant="outline" className="rounded-full">
+          {events.length ? (
+            <Button asChild variant="outline" className="shrink-0 rounded-full">
               <Link href="/events">
-                View all {total} <ArrowRight />
+                {total > events.length ? `View all ${total}` : "Browse events"} <ArrowRight />
               </Link>
             </Button>
           ) : null}

@@ -503,3 +503,12 @@ and guide the rest from that.
   about (3 lines) and the number of upcoming public events, and open the existing society page
   `/s/<society>`. 24 per page with "Show more"; a "Register your society" call to action at the end.
 - Pending/rejected societies never show (same rule as the society page). No migration needed.
+
+## D-047 Event cards never crop the poster (owner request, 2026-11-27)
+- Event cards (home "Upcoming events", `/events`, society page) show the **whole** poster whatever
+  its shape: square frame, poster `object-contain` over a blurred, zoomed copy of itself (same
+  treatment as the event page). `Poster` gained `fit="contain"`; thumbnails (My tickets) keep cover.
+- Card footer now shows the price ("From Rs 1,000" / Free) next to the arrow instead of a pill
+  over the poster; ended/cancelled say "Booking closed".
+- A list with a **single** event shows one wide featured card (poster left, date range, venue,
+  price, "Get tickets") instead of one small card and an empty row. Home always links to `/events`.
