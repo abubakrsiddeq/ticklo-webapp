@@ -13,6 +13,8 @@ const validEvent = {
   capacity: "300",
   visibility: "public",
   max_tickets_per_order: "5",
+  attendee_names: "off",
+  attendee_university: "off",
   format: "single",
 };
 
