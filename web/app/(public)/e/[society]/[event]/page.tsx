@@ -290,7 +290,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               registerBase={`${pagePath}/register`}
               now={now}
               eventOpen={eventOpen}
-              title="🏆 Compete"
+              title="Compete"
               notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : "Registration opens after TickLO approves this event."}
             />
           ) : null}

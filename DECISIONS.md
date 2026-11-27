@@ -862,7 +862,7 @@ registered – the same thing the existing "already registered" error already di
 - **Festival sidebar ("Get in"):** "From Rs …" (cheapest ticket on sale), then **🎟 Festival
   passes** (with "Includes: …"), **🎫 Tickets for one event** (sorted by the event's start) and
   **🚪 Entry tickets** (no session). Competitions of a festival are also shown in the sidebar as
-  **🏆 Compete** with Register buttons. Single and competition events keep their layout.
+  **Compete** (with the card's trophy icon) and Register buttons. Single and competition events keep their layout.
 - **Phones:** a sticky bottom bar "From Rs … · Get tickets" (or Register) jumps to the sidebar.
 - **Schedule cards:** the session name opens its own page; "Get ticket · Rs …" when it has its
   own ticket on sale; "✓ Included in pass" only while a pass is on sale.
