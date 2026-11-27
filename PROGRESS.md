@@ -322,8 +322,8 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   (builder in ticket mode; default asks nothing). Session tickets ask their session's form,
   passes only built-in details. Replaces the D-064/D-065 selects and session questions (older
   settings carried over). Locked once tickets are booked. Managers / CSV show answers by label.
-- Migration `20261127002500_ticket_forms.sql` (**not applied to TICkLO yet**). DB tests: 2 new,
-  128 pass; unit tests: 3 new, 85 pass.
+- Migration `20261127002500_ticket_forms.sql` applied to TICkLO (2026-11-27, D-034 method,
+  recorded in the migration history). DB tests: 2 new, 128 pass; unit tests: 3 new, 85 pass.
 
 ## Change 2026-11-27: registration form builder (D-068)
 - Competitions have a Google-Form-like registration form: built-in member details + organizer
@@ -454,8 +454,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127002500_ticket_forms.sql` to TICkLO** (Mumbai) before deploying the
-  build with ticket forms (D-069).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
