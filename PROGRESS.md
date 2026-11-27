@@ -301,7 +301,7 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   entries.
 - FES-15 (D-045) "What kind of event is this?" first on New event (single / festival /
   competition) → next step, setup checklist, format-aware labels; ticket form asks what the
-  ticket opens. Migration `…001600_event_format` (**not applied to TICkLO yet**). 1 DB test.
+  ticket opens. Migration `…001600_event_format` applied to TICkLO. 1 DB test.
 - Not built (owner said skip): certificates.
 - Tests: 11 DB tests (sessions + dates, seats across types/printed, questions, direct entry refused,
   access lock, session scanning + main entry, scanner limits + managers, free team, per-member
@@ -324,7 +324,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - Admin → Universities: "New university requests" with Check & approve / Merge / Reject; tab
   shows the open count. Once approved the name shows everywhere (event cards, filters, society
   pages, profile).
-- Migration `20261127001700_university_requests.sql` (**not applied to TICkLO yet**).
+- Migration `20261127001700_university_requests.sql` applied to TICkLO (2026-11-27) in one
+  transaction (D-034 method, recorded in the migration history) and checked: 15 universities
+  `approved`, 4 new functions, new read policy, anon cannot call `request_university`.
 - Tests: 6 DB tests (`universities.test.ts`: visibility, reuse, validation + cap, approve,
   merge) and unit checks for the schema. `npm run check` passes; 104 DB tests pass.
 
@@ -404,11 +406,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   (all already in `env.txt`), then redeploy. Also enter the same mailbox in Supabase →
   Auth → SMTP (sender name `TickLO`) so signup/reset emails use it. Local `.env.local` is set
   and the SMTP login was verified on 2026-11-27.
-- **Apply migration `20261127001700_university_requests.sql` to TICkLO** (Mumbai) before
-  deploying the build with the "Other" university option – the new build reads
-  `universities.status`. Existing universities become `approved` automatically.
-- **Apply migration `20261127001600_event_format.sql` to TICkLO** (adds `events.format`; the live
-  build ignores it) before deploying the new web build – the new build needs it.
 - **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is
   already applied to TICkLO; no new env vars – session scans use the existing
   `QR_SIGNING_SECRET` – and no Edge Function redeploy). Then try checks #18–20.
