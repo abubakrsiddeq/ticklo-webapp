@@ -774,3 +774,14 @@ registered – the same thing the existing "already registered" error already di
 - **Review:** a festival needs at least one session and a competition event a competition before
   it can be sent for review (`TL:NO_SESSIONS`), instead of "add a ticket type".
 - Not built (larger features, offered separately): waitlist and winner certificates / emails.
+
+## D-065 Festivals ask ticket-holder details per session (owner request, 2026-11-27)
+- A festival does not show "Details on each ticket" on the event form; each workshop / concert /
+  talk session sets **Name of the person** and **University** (off / optional / required) in its
+  dialog (`event_sessions.attendee_names`, `attendee_university`, `set_session_attendee_fields`).
+  Competitions keep their member details (D-064) instead.
+- A ticket asks what the strictest of the sessions it opens asks: a session ticket its own
+  session(s), a pass the sessions included in passes (`session_grants`). A festival ticket that
+  opens no session asks nothing (buyer's name).
+- Single events and competition events keep the event-level setting (D-064). Saving a festival
+  stores the event-level setting as off.

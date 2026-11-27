@@ -317,6 +317,13 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: festival sessions ask ticket-holder details (D-065)
+- Festival event form no longer shows "Details on each ticket"; each non-competition session
+  sets name / university (off / optional / required). A ticket asks what its strictest session
+  asks (passes: the sessions in passes). Single and competition events keep the event setting.
+- Migration `20261127002200_session_ticket_details.sql` (**not applied to TICkLO yet**). DB
+  test: 1 new, 123 pass.
+
 ## Change 2026-11-27: registration fixes across all formats (D-063, D-064)
 - Competitions ask Individuals or Teams (min/max members); organizers choose required member
   details (mobile, email, roll no, university; new competitions: mobile + university).
@@ -425,6 +432,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127002200_session_ticket_details.sql` to TICkLO** (Mumbai) before
+  deploying the build with D-065 – the new build reads `event_schedule.attendee_names`.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

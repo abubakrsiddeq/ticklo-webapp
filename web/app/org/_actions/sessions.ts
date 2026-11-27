@@ -36,6 +36,9 @@ export interface SessionFormValues {
   participation?: string;
   /** D-064: member details the organizer requires (competitions). */
   member_required?: string[];
+  /** D-065: festival sessions – holder details on each ticket (off / optional / required) */
+  attendee_names?: string;
+  attendee_university?: string;
   team_min: string;
   team_max: string;
   fee_mode: string;
@@ -101,6 +104,14 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
       p_required: (v.member_required ?? []).filter((f) => ["phone", "email", "roll_no", "university"].includes(f)),
     });
     if (fieldsError) return fail(fieldsError);
+  } else {
+    const level = (v2: string | undefined) => (v2 === "optional" || v2 === "required" ? v2 : "off");
+    const { error: holderError } = await supabase.rpc("set_session_attendee_fields", {
+      p_session_id: String(id),
+      p_names: level(v.attendee_names),
+      p_university: level(v.attendee_university),
+    });
+    if (holderError) return fail(holderError);
   }
   refresh(orgSlug);
   return ok({ id: String(id) }, sessionId ? "Session saved." : "Session added.");

@@ -46,6 +46,8 @@ export interface SessionValue {
   team_min: number;
   team_max: number;
   member_required?: string[];
+  attendee_names?: string;
+  attendee_university?: string;
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -87,6 +89,9 @@ export function SessionDialog({
   const [participation, setParticipation] = useState<Participation>(session ? participationOf(session.team_max) : "team");
   const solo = participation === "individual";
   // D-064: member details the organizer requires (new competitions: mobile + university)
+  // D-065: festivals ask ticket-holder details per session (not for competitions – they have member details)
+  const [holderNames, setHolderNames] = useState(session?.attendee_names ?? "off");
+  const [holderUniversity, setHolderUniversity] = useState(session?.attendee_university ?? "off");
   const [memberRequired, setMemberRequired] = useState<string[]>(session?.member_required ?? ["phone", "university"]);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     (session?.questions ?? []).map((q) => ({ label: q.label, type: q.type, options: q.options.join(", "), required: q.required })),
@@ -126,6 +131,8 @@ export function SessionDialog({
                 questions: questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
                 participation,
                 member_required: memberRequired,
+                attendee_names: holderNames,
+                attendee_university: holderUniversity,
                 team_min: String(fd.get("team_min") ?? "1"),
                 team_max: String(fd.get("team_max") ?? "1"),
                 fee_mode: String(fd.get("fee_mode") ?? "per_team"),
@@ -297,6 +304,29 @@ export function SessionDialog({
                 </label>
               </fieldset>
             ) : (
+              <>
+              <fieldset className="grid gap-3 rounded-xl border border-navy/10 p-3">
+                <legend className="px-1 text-sm font-semibold text-navy">Details on each ticket for this session</legend>
+                <p className="-mt-1 text-xs text-muted-foreground">
+                  Off: tickets carry the buyer&apos;s name. A pass asks what its strictest session asks.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FormField id={`${p}-hname`} label="Name of the person">
+                    <NativeSelect id={`${p}-hname`} value={holderNames} onChange={(e) => setHolderNames(e.target.value)}>
+                      <option value="off">Off</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </NativeSelect>
+                  </FormField>
+                  <FormField id={`${p}-huni`} label="University">
+                    <NativeSelect id={`${p}-huni`} value={holderUniversity} onChange={(e) => setHolderUniversity(e.target.value)}>
+                      <option value="off">Off</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </NativeSelect>
+                  </FormField>
+                </div>
+              </fieldset>
               <label className="flex items-start gap-3 rounded-xl border border-navy/10 p-3 text-sm">
                 <Checkbox checked={passAccess} onCheckedChange={(v) => setPassAccess(v === true)} className="mt-0.5" />
                 <span>
@@ -306,6 +336,7 @@ export function SessionDialog({
                   </span>
                 </span>
               </label>
+              </>
             )}
 
             <div className="grid gap-2">

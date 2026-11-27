@@ -52,6 +52,8 @@ export interface WidgetSession {
   ends_at: string;
   pass_access: boolean;
   questions: Question[];
+  attendee_names?: string;
+  attendee_university?: string;
 }
 
 export function BookingWidget(props: {
@@ -71,6 +73,8 @@ export function BookingWidget(props: {
   buyerName?: string;
   /** ?ticket=<id> from a session's "Get ticket" button */
   preselect?: string | null;
+  /** D-065: festivals ask holder details per session */
+  format?: string;
 }) {
   const sessions = props.sessions ?? [];
   const attendeeNames = props.attendeeNames ?? "off";
@@ -102,15 +106,24 @@ export function BookingWidget(props: {
   const clashing = clashes(chosenSessions);
 
   // D-064: one entry per ticket – holder name / university (when asked) and session questions per seat
+  // D-065: in a festival a ticket asks what the strictest of its sessions asks
+  const levelsFor = (t: WidgetTicketType): { names: AttendeeSetting; uni: AttendeeSetting } => {
+    if (props.format !== "festival") return { names: attendeeNames, uni: attendeeUniversity };
+    const opened = sessions.filter((x) => x.kind !== "competition" && (t.all_sessions ? x.pass_access : t.session_ids.includes(x.id)));
+    const strictest = (k: "attendee_names" | "attendee_university"): AttendeeSetting =>
+      opened.some((x) => x[k] === "required") ? "required" : opened.some((x) => x[k] === "optional") ? "optional" : "off";
+    return { names: strictest("attendee_names"), uni: strictest("attendee_university") };
+  };
   const slots = props.types.flatMap((t) =>
     Array.from({ length: qty[t.id] ?? 0 }, (_, i) => ({
       key: `${t.id}:${i}`,
       type: t,
       index: i,
+      ...levelsFor(t),
       asking: t.all_sessions ? [] : sessions.filter((x) => x.kind !== "competition" && x.questions.length && t.session_ids.includes(x.id)),
     })),
   );
-  const showSlots = attendeeNames !== "off" || attendeeUniversity !== "off" || slots.some((x) => x.asking.length);
+  const showSlots = slots.some((x) => x.names !== "off" || x.uni !== "off" || x.asking.length);
   const holderOf = (key: string, first: boolean): Holder => holders[key] ?? { name: first ? (props.buyerName ?? "") : "", university: "", answers: {} };
   const setHolder = (key: string, first: boolean, change: (h: Holder) => Holder) => setHolders((all) => ({ ...all, [key]: change(all[key] ?? holderOf(key, first)) }));
   const sessionById = new Map(sessions.map((x) => [x.id, x]));
@@ -171,9 +184,9 @@ export function BookingWidget(props: {
     const errs: Record<string, string> = {};
     slots.forEach((slot, n) => {
       const h = holderOf(slot.key, n === 0);
-      if (attendeeNames === "required" && h.name.trim().length < 2) errs[`${slot.key}:name`] = "Name required";
-      if (attendeeNames !== "off" && h.name.trim() && (h.name.trim().length < 2 || h.name.trim().length > 80)) errs[`${slot.key}:name`] = "2 to 80 characters";
-      if (attendeeUniversity === "required" && h.university.trim().length < 2) errs[`${slot.key}:university`] = "University required";
+      if (slot.names === "required" && h.name.trim().length < 2) errs[`${slot.key}:name`] = "Name required";
+      if (slot.names !== "off" && h.name.trim() && (h.name.trim().length < 2 || h.name.trim().length > 80)) errs[`${slot.key}:name`] = "2 to 80 characters";
+      if (slot.uni === "required" && h.university.trim().length < 2) errs[`${slot.key}:university`] = "University required";
       for (const x of slot.asking) {
         for (const [qid, msg] of Object.entries(checkAnswers(x.questions, h.answers[x.id] ?? {}))) errs[`${slot.key}:${x.id}:${qid}`] = msg;
       }
@@ -188,8 +201,8 @@ export function BookingWidget(props: {
           const h = holderOf(slot.key, n === 0);
           return {
             ticket_type_id: slot.type.id,
-            name: attendeeNames === "off" ? "" : h.name.trim(),
-            university: attendeeUniversity === "off" ? "" : h.university.trim(),
+            name: slot.names === "off" ? "" : h.name.trim(),
+            university: slot.uni === "off" ? "" : h.university.trim(),
             answers: Object.fromEntries(slot.asking.map((x) => [x.id, h.answers[x.id] ?? {}])),
           };
         })
@@ -309,20 +322,20 @@ export function BookingWidget(props: {
                     <legend className="text-sm font-medium text-navy">
                       Ticket {n + 1} · {slot.type.name}
                     </legend>
-                    {attendeeNames !== "off" ? (
-                      <FormField id={`h-${slot.key}-name`} label="Name of the person" required={attendeeNames === "required"} error={err("name")}>
+                    {slot.names !== "off" ? (
+                      <FormField id={`h-${slot.key}-name`} label="Name of the person" required={slot.names === "required"} error={err("name")}>
                         <Input
                           id={`h-${slot.key}-name`}
                           value={h.name}
                           maxLength={80}
                           autoComplete={n === 0 ? "name" : "off"}
-                          placeholder={attendeeNames === "optional" ? "Empty = your name" : undefined}
+                          placeholder={slot.names === "optional" ? "Empty = your name" : undefined}
                           onChange={(e) => setHolder(slot.key, n === 0, (x) => ({ ...x, name: e.target.value }))}
                         />
                       </FormField>
                     ) : null}
-                    {attendeeUniversity !== "off" ? (
-                      <FormField id={`h-${slot.key}-uni`} label="University" required={attendeeUniversity === "required"} error={err("university")}>
+                    {slot.uni !== "off" ? (
+                      <FormField id={`h-${slot.key}-uni`} label="University" required={slot.uni === "required"} error={err("university")}>
                         <Input
                           id={`h-${slot.key}-uni`}
                           value={h.university}

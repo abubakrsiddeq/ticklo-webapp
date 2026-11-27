@@ -354,6 +354,8 @@ export type Database = {
       };
       event_sessions: {
         Row: {
+          attendee_names: string;
+          attendee_university: string;
           member_required: string[];
           capacity: number | null;
           created_at: string;
@@ -378,6 +380,8 @@ export type Database = {
           venue: string | null;
         };
         Insert: {
+          attendee_names?: string;
+          attendee_university?: string;
           member_required?: string[];
           capacity?: number | null;
           created_at?: string;
@@ -402,6 +406,8 @@ export type Database = {
           venue?: string | null;
         };
         Update: {
+          attendee_names?: string;
+          attendee_university?: string;
           member_required?: string[];
           capacity?: number | null;
           created_at?: string;
@@ -2476,6 +2482,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_session_attendee_fields: {
+        Args: {
+          p_session_id: string;
+          p_names: string;
+          p_university: string;
+        };
+        Returns: undefined;
+      };
       set_session_member_fields: {
         Args: {
           p_session_id: string;
@@ -2677,6 +2691,8 @@ export type Database = {
           registration_ends_at: string;
           results: Json;
           member_required: string[];
+          attendee_names: string;
+          attendee_university: string;
         }[];
       };
       event_stats: {

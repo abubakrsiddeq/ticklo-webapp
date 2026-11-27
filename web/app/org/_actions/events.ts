@@ -48,8 +48,8 @@ function eventFields(data: z.infer<typeof eventSchema>) {
     visibility: data.visibility,
     max_tickets_per_order: data.format === "festival" ? FESTIVAL_MAX_PER_ORDER : Number(data.max_tickets_per_order),
     format: data.format,
-    attendee_names: data.attendee_names,
-    attendee_university: data.attendee_university,
+    attendee_names: data.format === "festival" ? "off" : (data.attendee_names ?? "off"),
+    attendee_university: data.format === "festival" ? "off" : (data.attendee_university ?? "off"),
   };
 }
 

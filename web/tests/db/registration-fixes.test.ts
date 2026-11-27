@@ -201,3 +201,26 @@ describe("sending for review", () => {
     await expectTL(org(() => rpc(c, "submit_event", [comp.eventId], ["uuid"])), "NO_SESSIONS");
   });
 });
+
+describe("festivals ask ticket-holder details per session (D-065)", () => {
+  it("a ticket takes the strictest setting of the sessions it opens", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 0, name: "Workshop seat" }, { price: 0, name: "Pass" }]);
+    await c.query("update public.events set format = 'festival', attendee_names = 'required' where id = $1", [eventId]);
+    const ws = await session(eventId, { name: "AI Workshop", kind: "workshop", capacity: 20, pass_access: false });
+    await session(eventId, { name: "Concert", kind: "concert", pass_access: true });
+    const set = (userId: string, names: string, uni: string) =>
+      asUser(c, userId, () => rpc(c, "set_session_attendee_fields", [ws, names, uni], ["uuid", "text", "text"]));
+    await expectTL(set((await buyer()).id, "required", "off"), "FORBIDDEN");
+    await set(SEED.organizer, "required", "required");
+    await org(() => rpc(c, "set_ticket_type_access", [typeIds[0], false, [ws]], ["uuid", "bool", "uuid[]"]));
+    await org(() => rpc(c, "set_ticket_type_access", [typeIds[1], true, []], ["uuid", "bool", "uuid[]"]));
+
+    const u = await buyer("Pass Buyer");
+    await expectTL(book(u.id, eventId, items([typeIds[0], 1])), "ATTENDEE_REQUIRED");
+    const o = await book(u.id, eventId, items([typeIds[0], 1]), [{ ticket_type_id: typeIds[0], name: "Hina Raza", university: "FAST" }]);
+    expect((await tickets(o.order_id))[0]).toMatchObject({ holder_name: "Hina Raza", holder_university: "FAST" });
+    // the pass opens only the concert (details off): the festival's event-level setting is ignored
+    const p = await book((await buyer("Fan")).id, eventId, items([typeIds[1], 1]));
+    expect((await tickets(p.order_id))[0].holder_name).toBe("Fan");
+  });
+});

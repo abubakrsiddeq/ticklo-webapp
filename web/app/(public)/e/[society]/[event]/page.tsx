@@ -271,7 +271,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             attendeeUniversity={event.attendee_university as AttendeeSetting}
             buyerName={user?.profile.full_name ?? ""}
             preselect={preselect}
-            sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions }))}
+            format={event.format}
+            sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions, attendee_names: x.attendee_names, attendee_university: x.attendee_university }))}
           />
           ) : null}
           <p className="mt-3 text-center text-xs text-muted-foreground">
