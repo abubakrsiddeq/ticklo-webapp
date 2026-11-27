@@ -141,8 +141,8 @@ project below, which is **paused** (free plan allows 2 active projects; restorab
   (existing QRs and `hostinger-cron.txt` keep working).
 - Auth settings copied from Seoul (site URL, redirect URLs, Hostinger SMTP, email templates and
   subjects, rate limits, 8-char passwords). JWTs signed with ES256 (local `getClaims` works).
-- Apple provider **on** (new client secret, expires 2027-05-26). Apple Developer → Services ID
-  needs domain `qfawucwisnygbwcqwglq.supabase.co` + return URL `.../auth/v1/callback`.
+- Apple provider **on** (new client secret, expires 2027-05-26); new domain + return URL added
+  to the Services ID and accepted by Apple (checked 2026-11-27).
 - Google provider **off** until its secret is pasted again (the API does not return it) and the
   redirect URI is updated in Google Cloud.
 - `env.txt` and `web/.env.local` point at the new project; DB password is
@@ -421,6 +421,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   Apple's private email relay. Renew the secret every 6 months (next: ~2027-05).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
 - After the Mumbai move (D-055): new env values in Hostinger + restart; Google secret + redirect
-  URI, Apple return URL; create the admin with `web/scripts/create-admin.mjs`.
+  URI; create the admin with `web/scripts/create-admin.mjs`.
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
   limit, privacy/terms author, pilot society).
