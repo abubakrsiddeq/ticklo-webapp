@@ -336,8 +336,8 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   for form answers, the database.
 - Competition registrations: the same person cannot be listed twice, team names checked,
   checkbox / yes-no / date / file answers checked like the database does.
-- Migration `20261128000100_strict_form_formats.sql` – **not applied to TICkLO yet** (apply with
-  the D-034 method). Unit tests: 9 new, 94 pass. DB tests: 133 pass.
+- Migration `20261128000100_strict_form_formats.sql` applied to TICkLO (2026-11-28, D-034 method;
+  checked live: a `+44…` number is refused, `+92300…` accepted). Unit tests: 9 new, 94 pass. DB tests: 133 pass.
 - How to test: register for a competition with `+44…`, `ali@gmail`, `abc` in a link field or the
   same number twice: each is refused with a message under the field.
 
