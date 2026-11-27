@@ -143,8 +143,7 @@ project below, which is **paused** (free plan allows 2 active projects; restorab
   subjects, rate limits, 8-char passwords). JWTs signed with ES256 (local `getClaims` works).
 - Apple provider **on** (new client secret, expires 2027-05-26); new domain + return URL added
   to the Services ID and accepted by Apple (checked 2026-11-27).
-- Google provider **off** until its secret is pasted again (the API does not return it) and the
-  redirect URI is updated in Google Cloud.
+- Google provider **on**; new redirect URI accepted by Google (checked 2026-11-27).
 - `env.txt` and `web/.env.local` point at the new project; DB password is
   `SUPABASE_DB_PASSWORD_MUMBAI` in `env.txt`.
 
@@ -420,7 +419,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   `web/scripts/apple-client-secret.mjs` pasted in Supabase → Providers → Apple, sender registered for
   Apple's private email relay. Renew the secret every 6 months (next: ~2027-05).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
-- After the Mumbai move (D-055): new env values in Hostinger + restart; Google secret + redirect
-  URI; create the admin with `web/scripts/create-admin.mjs`.
+- After the Mumbai move (D-055): Hostinger env updated and rebuilt (done 2026-11-27); create the admin with `web/scripts/create-admin.mjs`.
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
   limit, privacy/terms author, pilot society).
