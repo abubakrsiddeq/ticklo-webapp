@@ -13,7 +13,7 @@ export interface SessionResult {
 }
 
 const EVENT_CARD_SELECT = `
-  id, slug, name, poster_url, venue, starts_at, ends_at, status, visibility,
+  id, slug, name, poster_url, venue, starts_at, ends_at, status, visibility, format,
   organizations!inner ( id, slug, name, logo_url, university_id, universities ( id, name, short_name, city ) ),
   ticket_types ( price_paisa )
 ` as const;
@@ -29,6 +29,8 @@ export interface EventListFilters {
   past?: boolean;
   limit?: number;
   offset?: number;
+  /** D-070: only festivals / competition events */
+  format?: "festival" | "competition";
 }
 
 /** EVT-01/EVT-02/EVT-09: public, published events; soonest first (or most recent past). */
@@ -51,6 +53,7 @@ export async function listPublicEvents(filters: EventListFilters = {}) {
   const q = cleanSearch(filters.q);
   if (q) query = query.ilike("name", `%${q}%`);
   if (filters.universityId) query = query.eq("organizations.university_id", filters.universityId);
+  if (filters.format) query = query.eq("format", filters.format);
 
   const { data, count, error } = await query.range(offset, offset + limit - 1);
   if (error) console.error("listPublicEvents", error.message);
@@ -58,6 +61,37 @@ export async function listPublicEvents(filters: EventListFilters = {}) {
 }
 
 export type EventCardData = Awaited<ReturnType<typeof listPublicEvents>>["events"][number];
+
+/**
+ * D-070: sessions inside festivals that their organizer lists on the Events page
+ * (upcoming, public, approved societies). Search also matches the festival's name.
+ */
+export async function listPublicSessions(filters: { q?: string; universityId?: string; kinds?: string[]; limit?: number } = {}) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("event_sessions")
+    .select(
+      `id, slug, name, kind, starts_at, ends_at, venue, poster_url,
+       events!inner ( slug, name, poster_url, venue, status, visibility, format,
+         organizations!inner ( slug, name, status, university_id, universities ( short_name, name ) ) )`,
+    )
+    .eq("listed", true)
+    .eq("events.status", "published")
+    .eq("events.visibility", "public")
+    .eq("events.organizations.status", "approved")
+    .gte("ends_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(filters.limit ?? 12);
+  if (filters.kinds?.length) query = query.in("kind", filters.kinds);
+  const q = cleanSearch(filters.q);
+  if (q) query = query.ilike("name", `%${q}%`);
+  if (filters.universityId) query = query.eq("events.organizations.university_id", filters.universityId);
+  const { data, error } = await query;
+  if (error) console.error("listPublicSessions", error.message);
+  return data ?? [];
+}
+
+export type SessionCardData = Awaited<ReturnType<typeof listPublicSessions>>[number];
 
 /** Approved universities only (public lists and filters). */
 export const listUniversities = cache(async () => {

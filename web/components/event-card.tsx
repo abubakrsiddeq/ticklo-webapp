@@ -68,6 +68,12 @@ export function EventCard({ event }: { event: EventCardData }) {
           imageClassName="transition duration-500 group-hover:scale-[1.03]"
         />
         <DateBadge date={event.starts_at} className="absolute top-3 left-3" />
+        {/* D-070 */}
+        {"format" in event && (event.format === "festival" || event.format === "competition") && !status ? (
+          <span className="absolute right-3 bottom-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-navy shadow-card">
+            {event.format === "festival" ? "🎪 Festival" : "🏆 Competition"}
+          </span>
+        ) : null}
         {status ? (
           <span className="absolute top-3 right-3">
             <StatusPill label={status} />
