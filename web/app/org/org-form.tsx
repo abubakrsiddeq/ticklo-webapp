@@ -18,12 +18,16 @@ export function OrgForm({
   universities,
   action,
   mode,
+  hasLogo = false,
 }: {
   defaults: OrgInput;
   universities: UniversityChoice[];
   action: (fd: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
+  /** Edit mode: the society already has a logo, so a new one is optional. */
+  hasLogo?: boolean;
 }) {
+  const logoRequired = mode === "create" || !hasLogo;
   const [pending, start] = useTransition();
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const form = useForm<OrgInput>({ resolver: zodResolver(orgSchema), defaultValues: defaults });
@@ -43,7 +47,7 @@ export function OrgForm({
     const logo = fd.get("logo");
     const proof = fd.get("proof");
     const errs = {
-      logo: checkOrgFile(logo instanceof File ? logo : null, { label: "Logo" }) ?? "",
+      logo: checkOrgFile(logo instanceof File ? logo : null, { label: "Logo", required: logoRequired }) ?? "",
       proof: checkOrgFile(proof instanceof File ? proof : null, { label: "Proof document", allowPdf: true, required: mode === "create" }) ?? "",
     };
     setFileErrors((prev) => ({ ...prev, ...errs }));
@@ -119,7 +123,13 @@ export function OrgForm({
         </FormField>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="logo" label="Logo (optional)" hint="Square image, JPG/PNG/WebP, up to 5 MB." error={fileErrors.logo || undefined}>
+        <FormField
+          id="logo"
+          label={logoRequired ? "Logo" : "New logo (optional)"}
+          hint="Square image, JPG/PNG/WebP, up to 5 MB. Shown on your page and tickets."
+          error={fileErrors.logo || undefined}
+          required={logoRequired}
+        >
           <Input id="logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp" className="pt-2" aria-invalid={fileErrors.logo ? true : undefined} onChange={(e) => onFileChange(e, "Logo")} />
         </FormField>
         <FormField

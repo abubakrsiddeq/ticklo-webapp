@@ -27,7 +27,7 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
   const parsed = orgSchema.safeParse(formToObject(form));
   if (!parsed.success) return { ok: false, error: "Please check the form.", fieldErrors: fieldErrors(parsed.error) };
 
-  const logo = await readUpload(form.get("logo"), { label: "Logo" });
+  const logo = await readUpload(form.get("logo"), { label: "Logo", required: true });
   const proof = await readUpload(form.get("proof"), { label: "Proof document", required: true, allowPdf: true });
   const errs: Record<string, string> = {};
   if (logo.error) errs.logo = logo.error;
@@ -84,7 +84,8 @@ export async function updateOrganization(orgSlug: string, form: FormData): Promi
   const parsed = orgSchema.safeParse(formToObject(form));
   if (!parsed.success) return { ok: false, error: "Please check the form.", fieldErrors: fieldErrors(parsed.error) };
 
-  const logo = await readUpload(form.get("logo"), { label: "Logo" });
+  // Logo is required; a society that already has one may keep it.
+  const logo = await readUpload(form.get("logo"), { label: "Logo", required: !access.org.logo_url });
   const proof = await readUpload(form.get("proof"), { label: "Proof document", allowPdf: true });
   if (logo.error || proof.error) {
     return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { ...(logo.error ? { logo: logo.error } : {}), ...(proof.error ? { proof: proof.error } : {}) } };

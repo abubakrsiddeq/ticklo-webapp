@@ -661,8 +661,10 @@ registered – the same thing the existing "already registered" error already di
   for older data.
 - Society name must contain letters and cannot contain links, `< > { }` or control characters;
   About has no control characters. Inputs carry `maxLength` matching the schema.
-- Logo and proof are checked in the browser (type, 5 MB, proof required on create) for quick
-  feedback; the server still checks the real file bytes (`readUpload`).
+- **Logo is required** when registering, and when editing a society that has no logo yet (a
+  society with a logo may keep it). Checked on the server (`readUpload` with `required`).
+- Logo and proof are checked in the browser (type, 5 MB, required) for quick feedback; the
+  server still checks the real file bytes (`readUpload`).
 - University lists show "Name (City)" only when the name does not already contain the city
   (`universityLabel`), so "Bahria University (Karachi)" is not followed by "(Karachi)" again.
 - Typing in the "Other" university name box suggests matching approved universities (name,

@@ -25,6 +25,7 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ so
       <CardContent>
         <OrgForm
           mode="edit"
+          hasLogo={Boolean(org.logo_url)}
           action={updateOrganization.bind(null, org.slug)}
           universities={universities}
           defaults={{
