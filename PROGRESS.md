@@ -322,8 +322,8 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   fields (11 types incl. file upload and conditions), per participant and per team, templates,
   copy from another competition, preview, locked rules once people registered. Register form,
   "Change members", manager page and CSV follow it.
-- Migration `20261127002400_registration_forms.sql` (**not applied to TICkLO yet**; adds the
-  private `registration-files` bucket). DB tests: 2 new, 126 pass; unit tests: 5 new, 82 pass.
+- Migration `20261127002400_registration_forms.sql` applied to TICkLO (2026-11-27, D-034 method,
+  recorded in the migration history; private `registration-files` bucket created). DB tests: 2 new, 126 pass; unit tests: 5 new, 82 pass.
 
 ## Change 2026-11-27: session posters (D-066)
 - Every session needs a poster / banner (required for new sessions and older ones without one);
@@ -446,8 +446,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127002400_registration_forms.sql` to TICkLO** (Mumbai) before deploying
-  the build with the registration form builder (D-068).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
