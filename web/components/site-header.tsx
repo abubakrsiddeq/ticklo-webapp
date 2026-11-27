@@ -27,12 +27,13 @@ async function loadMenuData(userId: string) {
   return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador, managesSessions: (managed ?? 0) > 0 };
 }
 
-const shellClass =
-  "mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 rounded-full bg-white/85 pr-2 pl-5 shadow-pill ring-1 ring-navy/[0.06] backdrop-blur-xl supports-[backdrop-filter]:bg-white/70";
+const glass = "rounded-full bg-white/75 shadow-pill ring-1 ring-white backdrop-blur-xl";
 
 /**
- * Floating pill header (glass), sticky on scroll. Streams in: the shell shows
- * at once and the signed-in part fills in, so it never holds a page back (D-038).
+ * Floating header, sticky on scroll: logo, a glass pill with the links (active one
+ * underlined in green) and a glass pill for the account. A blurred band behind it
+ * fades out downwards so content scrolling under it stays readable. Streams in: the
+ * shell shows at once and the signed-in part fills in, so it never holds a page back (D-038).
  */
 export function SiteHeader() {
   return (
@@ -42,23 +43,36 @@ export function SiteHeader() {
   );
 }
 
-/** Same pill without the user parts – shown while the header loads and in loading.tsx skeletons. */
-export function SiteHeaderShell() {
+function HeaderFrame({ nav, right }: { nav: React.ReactNode; right: React.ReactNode }) {
   return (
     <header className="no-print sticky top-0 z-50 px-3 pt-3 sm:px-4">
-      <div className={shellClass}>
-        <Logo height={30} />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-background/50 backdrop-blur-md [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+        aria-hidden
+      />
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3">
+        <Logo height={34} />
+        {nav}
+        <div className={`flex h-14 items-center gap-1 p-1.5 ${glass}`}>{right}</div>
+      </div>
+    </header>
+  );
+}
+
+/** Same header without the user parts – shown while the header loads and in loading.tsx skeletons. */
+export function SiteHeaderShell() {
+  return (
+    <HeaderFrame
+      nav={
         <HeaderNav
           items={[
             { href: "/events", label: "Events" },
             { href: "/societies", label: "Societies" },
           ]}
         />
-        <div className="flex items-center gap-1.5 pr-1" aria-hidden>
-          <span className="size-9 animate-pulse rounded-full bg-secondary" />
-        </div>
-      </div>
-    </header>
+      }
+      right={<span className="size-10 animate-pulse rounded-full bg-secondary" aria-hidden />}
+    />
   );
 }
 
@@ -79,11 +93,10 @@ async function SiteHeaderContent() {
   ];
 
   return (
-    <header className="no-print sticky top-0 z-50 px-3 pt-3 sm:px-4">
-      <div className={shellClass}>
-        <Logo height={30} />
-        <HeaderNav items={items} />
-        <div className="flex items-center gap-1.5">
+    <HeaderFrame
+      nav={<HeaderNav items={items} />}
+      right={
+        <>
           {user && menu ? (
             <UserMenu
               name={user.profile.full_name ?? user.email}
@@ -98,17 +111,17 @@ async function SiteHeaderContent() {
             />
           ) : (
             <>
-              <Button asChild variant="ghost" className="hidden rounded-full sm:inline-flex">
+              <Button asChild variant="ghost" className="hidden h-11 rounded-full px-4 sm:inline-flex">
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button asChild variant="brand" className="hidden rounded-full px-5 sm:inline-flex">
+              <Button asChild variant="brand" className="hidden h-11 rounded-full px-5 sm:inline-flex">
                 <Link href="/signup">Get started</Link>
               </Button>
             </>
           )}
           <MobileMenu items={items} loggedIn={Boolean(user)} />
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }

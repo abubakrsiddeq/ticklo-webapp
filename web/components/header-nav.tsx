@@ -23,7 +23,10 @@ function isActive(pathname: string, href: string) {
 export function HeaderNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="hidden items-center gap-1 rounded-full bg-secondary/70 p-1 md:flex">
+    <nav
+      aria-label="Main"
+      className="hidden h-14 items-center gap-0.5 rounded-full bg-white/75 px-2 shadow-pill ring-1 ring-white backdrop-blur-xl md:flex"
+    >
       {items.map((i) => {
         const active = isActive(pathname, i.href);
         return (
@@ -32,11 +35,12 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
             href={i.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors",
-              active ? "bg-white text-navy shadow-sm ring-1 ring-navy/[0.06]" : "text-slate-600 hover:text-navy",
+              "relative inline-flex h-10 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap transition-colors lg:px-4 lg:text-[15px]",
+              active ? "text-brand-strong" : "text-navy/75 hover:bg-secondary/70 hover:text-navy",
             )}
           >
             {i.label}
+            {active ? <span className="absolute inset-x-2 -bottom-2 h-[3px] rounded-full bg-brand-strong" aria-hidden /> : null}
           </Link>
         );
       })}
@@ -51,7 +55,7 @@ export function MobileMenu({ items, loggedIn }: { items: NavItem[]; loggedIn: bo
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full md:hidden" aria-label="Open menu">
+        <Button variant="ghost" size="icon" className="size-11 rounded-full md:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>

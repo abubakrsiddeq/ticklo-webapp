@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
+import { CalendarDays, ChevronDown, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -42,12 +42,13 @@ export function UserMenu(props: {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-12 gap-2 rounded-full bg-secondary/70 py-1 pr-3 pl-1 hover:bg-secondary" aria-label="Account menu">
-          <Avatar className="size-10 ring-2 ring-white">
+        <Button variant="ghost" className="h-11 gap-2 rounded-full py-1 pr-2 pl-1 hover:bg-secondary/80 md:pr-3" aria-label="Account menu">
+          <Avatar className="size-9 ring-2 ring-white">
             {props.avatarUrl ? <AvatarImage src={props.avatarUrl} alt="" /> : null}
             <AvatarFallback className="bg-navy text-xs text-white">{initials(props.name) || "U"}</AvatarFallback>
           </Avatar>
-          <span className="hidden max-w-32 truncate text-sm font-medium md:inline">{props.name}</span>
+          <span className="hidden max-w-36 truncate text-sm font-semibold text-navy md:inline">{props.name}</span>
+          <ChevronDown className="hidden size-4 text-slate-500 md:block" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={10} className="w-72 rounded-2xl p-2 shadow-lift">

@@ -1,4 +1,4 @@
-import { MapPin, Search } from "lucide-react";
+import { ArrowRight, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -64,8 +64,8 @@ export function EventFilters({
           ))}
         </select>
       </label>
-      <Button type="submit" variant="brand" size="lg" className="rounded-full px-7">
-        Search
+      <Button type="submit" variant="brand" size="lg" className="group h-12 rounded-full px-7 text-base">
+        Search <ArrowRight className="transition group-hover:translate-x-0.5" aria-hidden />
       </Button>
     </form>
   );
