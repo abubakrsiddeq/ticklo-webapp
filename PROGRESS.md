@@ -320,8 +320,8 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 ## Change 2026-11-27: session posters (D-066)
 - Every session needs a poster / banner (required for new sessions and older ones without one);
   shown on the public schedule, the register page and the organizer schedule ("Poster missing").
-- Migration `20261127002300_session_posters.sql` (**not applied to TICkLO yet**). DB test: 1 new,
-  124 pass.
+- Migration `20261127002300_session_posters.sql` applied to TICkLO (2026-11-27, D-034 method,
+  recorded in the migration history). DB test: 1 new, 124 pass.
 
 ## Change 2026-11-27: festival sessions ask ticket-holder details (D-065)
 - Festival event form no longer shows "Details on each ticket"; each non-competition session
@@ -438,8 +438,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127002300_session_posters.sql` to TICkLO** (Mumbai) before deploying the
-  build with session posters (D-066) – the new build reads `event_schedule.poster_url`.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
