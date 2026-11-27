@@ -42,6 +42,46 @@ export const urlOrEmpty = z
   .max(300)
   .refine((v) => v === "" || /^https?:\/\/[^\s]+\.[^\s]+/.test(v), "Enter a full link starting with https://");
 
+// Control characters (except tab/newline) have no place in names or descriptions.
+const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+
+/** Text that must not carry control characters. */
+export const cleanText = <T extends z.ZodString>(schema: T, label: string) =>
+  schema.refine((v) => !CONTROL_CHARS.test(v), `${label} has characters that are not allowed`);
+
+/**
+ * A link to a profile or site. Adds https:// when it was left out, accepts only
+ * http(s) links without a login part (user:pass@), and, when `hosts` is given,
+ * only links on those sites (subdomains included, e.g. pk.linkedin.com).
+ */
+export function linkField(label: string, opts: { hosts?: string[]; required?: boolean; example?: string } = {}) {
+  return z
+    .string()
+    .trim()
+    .max(300, `${label} must be at most 300 characters`)
+    .transform((v) => (v && !/^[a-z][a-z0-9+.-]*:/i.test(v) ? `https://${v}` : v))
+    .superRefine((v, ctx) => {
+      if (!v) {
+        if (opts.required) ctx.addIssue({ code: "custom", message: `${label} is required` });
+        return;
+      }
+      const bad = (message: string) => ctx.addIssue({ code: "custom", message });
+      let url: URL;
+      try {
+        url = new URL(v);
+      } catch {
+        return bad(`Enter a full link, e.g. ${opts.example ?? "https://example.com"}`);
+      }
+      if (url.protocol !== "https:" && url.protocol !== "http:") return bad("Only http:// or https:// links are allowed");
+      if (url.username || url.password) return bad("Remove the login details from the link");
+      const host = url.hostname.toLowerCase();
+      if (!host.includes(".") || /\s/.test(v)) return bad(`Enter a full link, e.g. ${opts.example ?? "https://example.com"}`);
+      if (opts.hosts && !opts.hosts.some((h) => host === h || host.endsWith(`.${h}`))) {
+        return bad(`Enter your ${label.replace(/ link$/i, "")} page link, e.g. ${opts.example}`);
+      }
+    });
+}
+
 /** Turn FormData into a plain object; `booleans` are checkbox names ("on" → true). */
 export function formToObject(fd: FormData, booleans: string[] = []): Record<string, unknown> {
   const out: Record<string, unknown> = {};

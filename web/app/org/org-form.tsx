@@ -10,7 +10,7 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { UniversityPicker, type UniversityChoice } from "@/components/university-picker";
-import { orgSchema, type OrgInput } from "@/lib/validation/org";
+import { checkOrgFile, orgSchema, type OrgInput } from "@/lib/validation/org";
 import type { ActionResult } from "@/lib/errors";
 
 export function OrgForm({
@@ -29,10 +29,40 @@ export function OrgForm({
   const form = useForm<OrgInput>({ resolver: zodResolver(orgSchema), defaultValues: defaults });
   const { errors } = form.formState;
   const universityId = useWatch({ control: form.control, name: "university_id" });
+  const typedUniversity = useWatch({ control: form.control, name: "new_university_name" });
+
+  function pickUniversity(id: string) {
+    form.setValue("university_id", id, { shouldValidate: true, shouldDirty: true });
+    form.setValue("new_university_name", "");
+    form.setValue("new_university_city", "");
+    form.clearErrors(["new_university_name", "new_university_city"]);
+  }
+
+  /** Browser-side file checks for quick feedback (the server checks the real bytes again). */
+  function checkFiles(fd: FormData) {
+    const logo = fd.get("logo");
+    const proof = fd.get("proof");
+    const errs = {
+      logo: checkOrgFile(logo instanceof File ? logo : null, { label: "Logo" }) ?? "",
+      proof: checkOrgFile(proof instanceof File ? proof : null, { label: "Proof document", allowPdf: true, required: mode === "create" }) ?? "",
+    };
+    setFileErrors((prev) => ({ ...prev, ...errs }));
+    return !errs.logo && !errs.proof;
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>, label: string, allowPdf = false) {
+    const err = checkOrgFile(e.target.files?.[0], { label, allowPdf }) ?? "";
+    setFileErrors((prev) => ({ ...prev, [e.target.name]: err }));
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     const fd = new FormData(e.currentTarget);
-    void form.handleSubmit(() =>
+    const filesOk = checkFiles(fd);
+    void form.handleSubmit(() => {
+      if (!filesOk) {
+        toast.error("Please fix the highlighted fields.");
+        return;
+      }
       start(async () => {
         const res = await action(fd);
         if (!res) return;
@@ -43,14 +73,14 @@ export function OrgForm({
           setFileErrors({ logo: fe.logo ?? "", proof: fe.proof ?? "", referral_code: fe.referral_code ?? "" });
           for (const [k, v] of Object.entries(fe)) if (k in defaults) form.setError(k as keyof OrgInput, { message: v });
         }
-      }),
-    )(e);
+      });
+    })(e);
   }
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate encType="multipart/form-data">
       <FormField id="name" label="Society name" error={errors.name?.message} required>
-        <Input {...fieldAria("name", errors.name?.message)} {...form.register("name")} />
+        <Input maxLength={120} autoComplete="organization" {...fieldAria("name", errors.name?.message)} {...form.register("name")} />
       </FormField>
       <FormField id="type" label="Type" error={errors.type?.message} required>
         <NativeSelect {...fieldAria("type", errors.type?.message)} {...form.register("type")}>
@@ -63,6 +93,8 @@ export function OrgForm({
         emptyLabel="No university (city / independent society)"
         universities={universities}
         value={universityId}
+        typedName={typedUniversity}
+        onPick={pickUniversity}
         selectProps={form.register("university_id")}
         nameProps={form.register("new_university_name")}
         cityProps={form.register("new_university_city")}
@@ -73,22 +105,22 @@ export function OrgForm({
         }}
       />
       <FormField id="about" label="About" hint="What your society does (shown on your public page)." error={errors.about?.message}>
-        <Textarea rows={4} {...fieldAria("about", errors.about?.message, true)} {...form.register("about")} />
+        <Textarea rows={4} maxLength={2000} {...fieldAria("about", errors.about?.message, true)} {...form.register("about")} />
       </FormField>
       <div className="grid gap-4 sm:grid-cols-3">
-        <FormField id="instagram" label="Instagram link" error={errors.instagram?.message}>
-          <Input type="url" placeholder="https://instagram.com/…" {...fieldAria("instagram", errors.instagram?.message)} {...form.register("instagram")} />
+        <FormField id="linkedin" label="LinkedIn link" error={errors.linkedin?.message} required>
+          <Input type="url" inputMode="url" maxLength={300} placeholder="https://linkedin.com/company/…" {...fieldAria("linkedin", errors.linkedin?.message)} {...form.register("linkedin")} />
         </FormField>
-        <FormField id="facebook" label="Facebook link" error={errors.facebook?.message}>
-          <Input type="url" placeholder="https://facebook.com/…" {...fieldAria("facebook", errors.facebook?.message)} {...form.register("facebook")} />
+        <FormField id="instagram" label="Instagram link" error={errors.instagram?.message}>
+          <Input type="url" inputMode="url" maxLength={300} placeholder="https://instagram.com/…" {...fieldAria("instagram", errors.instagram?.message)} {...form.register("instagram")} />
         </FormField>
         <FormField id="website" label="Website" error={errors.website?.message}>
-          <Input type="url" placeholder="https://…" {...fieldAria("website", errors.website?.message)} {...form.register("website")} />
+          <Input type="url" inputMode="url" maxLength={300} placeholder="https://…" {...fieldAria("website", errors.website?.message)} {...form.register("website")} />
         </FormField>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField id="logo" label="Logo (optional)" hint="Square image, JPG/PNG/WebP, up to 5 MB." error={fileErrors.logo || undefined}>
-          <Input id="logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp" className="pt-2" />
+          <Input id="logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp" className="pt-2" aria-invalid={fileErrors.logo ? true : undefined} onChange={(e) => onFileChange(e, "Logo")} />
         </FormField>
         <FormField
           id="proof"
@@ -97,12 +129,12 @@ export function OrgForm({
           error={fileErrors.proof || undefined}
           required={mode === "create"}
         >
-          <Input id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="pt-2" />
+          <Input id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="pt-2" aria-invalid={fileErrors.proof ? true : undefined} onChange={(e) => onFileChange(e, "Proof document", true)} />
         </FormField>
       </div>
       {mode === "create" ? (
         <FormField id="referral_code" label="TickLO ambassador code (optional)" hint="Did a TickLO campus ambassador tell you about us? Enter their code." error={fileErrors.referral_code || undefined}>
-          <Input id="referral_code" name="referral_code" maxLength={16} autoComplete="off" autoCapitalize="characters" className="font-mono uppercase sm:max-w-xs" />
+          <Input id="referral_code" name="referral_code" maxLength={16} pattern="[A-Za-z0-9]*" autoComplete="off" autoCapitalize="characters" className="font-mono uppercase sm:max-w-xs" />
         </FormField>
       ) : null}
       <SubmitButton pending={pending} pendingText="Saving…" variant={mode === "create" ? "brand" : "default"} className="sm:justify-self-start">

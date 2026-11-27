@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Camera, Globe, Users } from "lucide-react";
+import { Briefcase, Camera, Globe } from "lucide-react";
 import { EventGrid } from "@/components/event-card";
 import { EmptyState } from "@/components/empty-state";
 import { getSocietyPage } from "@/lib/queries/public";
@@ -20,15 +20,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-const ICONS = { instagram: Camera, facebook: Users, website: Globe } as const;
-const LABELS = { instagram: "Instagram", facebook: "Facebook", website: "Website" } as const;
+const ICONS = { linkedin: Briefcase, instagram: Camera, website: Globe } as const;
+const LABELS = { linkedin: "LinkedIn", instagram: "Instagram", website: "Website" } as const;
 
 // EVT-07: logo, about, upcoming and past events
 export default async function SocietyPage({ params }: { params: Promise<Params> }) {
   const data = await getSocietyPage((await params).society);
   if (!data) notFound();
   const { org, upcoming, past } = data;
-  const links = Object.entries((org.social_links ?? {}) as Record<string, string>).filter(([k, v]) => k in ICONS && v);
+  const links = Object.entries((org.social_links ?? {}) as Record<string, string>).filter(([k, v]) => k in ICONS && /^https?:\/\//i.test(v ?? ""));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">

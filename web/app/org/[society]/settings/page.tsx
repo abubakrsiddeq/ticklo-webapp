@@ -35,7 +35,7 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ so
             type: org.type,
             about: org.about ?? "",
             instagram: links.instagram ?? "",
-            facebook: links.facebook ?? "",
+            linkedin: links.linkedin ?? "",
             website: links.website ?? "",
           }}
         />

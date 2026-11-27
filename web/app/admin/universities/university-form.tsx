@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
 import { NativeSelect } from "@/components/native-select";
+import { universityLabel } from "@/lib/university-label";
 import { approveUniversity, mergeUniversity, saveUniversity } from "../actions";
 
 export interface UniRow {
@@ -158,7 +159,7 @@ export function UniversityRequestRow({
             <option value="">Choose university…</option>
             {approved.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name} ({a.city})
+                {universityLabel(a)}
               </option>
             ))}
           </NativeSelect>

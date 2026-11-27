@@ -26,7 +26,7 @@ export default async function NewOrgPage() {
             mode="create"
             action={createOrganization}
             universities={universities}
-            defaults={{ name: "", university_id: "", new_university_name: "", new_university_city: "", type: "society", about: "", instagram: "", facebook: "", website: "" }}
+            defaults={{ name: "", university_id: "", new_university_name: "", new_university_city: "", type: "society", about: "", instagram: "", linkedin: "", website: "" }}
           />
         </CardContent>
       </Card>

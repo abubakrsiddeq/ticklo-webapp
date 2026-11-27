@@ -649,3 +649,24 @@ registered – the same thing the existing "already registered" error already di
   the Supabase migrations/functions and fails if one comes back. En dashes stay as they are.
 - Left alone: `web/AGENTS.md` (rewritten by `next dev`) and `supabase/config.toml` (CLI
   template comments). Neither is shown to users.
+
+## D-059 Register society form: LinkedIn instead of Facebook, stricter checks (owner request, 2026-11-27)
+- Facebook link removed from the society form and the public society page; **LinkedIn link is
+  required** (create and edit, so existing societies add it the next time they save). Stored in
+  `social_links.linkedin` (jsonb, no migration). Old `facebook` values stay in the database but
+  are not shown and are dropped when the society saves its profile.
+- Links (`linkField`): `https://` is added when left out; only http(s), no `user:pass@`, host
+  must have a dot; Instagram must be on instagram.com and LinkedIn on linkedin.com
+  (subdomains like pk.linkedin.com allowed). The public page renders only http(s) links, also
+  for older data.
+- Society name must contain letters and cannot contain links, `< > { }` or control characters;
+  About has no control characters. Inputs carry `maxLength` matching the schema.
+- Logo and proof are checked in the browser (type, 5 MB, proof required on create) for quick
+  feedback; the server still checks the real file bytes (`readUpload`).
+- University lists show "Name (City)" only when the name does not already contain the city
+  (`universityLabel`), so "Bahria University (Karachi)" is not followed by "(Karachi)" again.
+- Typing in the "Other" university name box suggests matching approved universities (name,
+  short name, city); a click selects it, so people do not file duplicates. Same in the profile
+  form.
+- `FormField` packs its rows at the top (`content-start`), which fixes side-by-side fields
+  sliding down when the neighbour has a hint (City next to University name, Proof next to Logo).

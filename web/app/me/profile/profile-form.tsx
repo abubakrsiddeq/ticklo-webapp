@@ -26,6 +26,14 @@ export function ProfileForm({
   const form = useForm<ProfileInput>({ resolver: zodResolver(profileSchema), defaultValues: defaults });
   const { errors } = form.formState;
   const universityId = useWatch({ control: form.control, name: "university_id" });
+  const typedUniversity = useWatch({ control: form.control, name: "new_university_name" });
+
+  function pickUniversity(id: string) {
+    form.setValue("university_id", id, { shouldValidate: true, shouldDirty: true });
+    form.setValue("new_university_name", "");
+    form.setValue("new_university_city", "");
+    form.clearErrors(["new_university_name", "new_university_city"]);
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     const fd = new FormData(e.currentTarget);
@@ -73,6 +81,8 @@ export function ProfileForm({
         emptyLabel="Not a student / prefer not to say"
         universities={universities}
         value={universityId}
+        typedName={typedUniversity}
+        onPick={pickUniversity}
         selectProps={form.register("university_id")}
         nameProps={form.register("new_university_name")}
         cityProps={form.register("new_university_city")}
