@@ -2172,6 +2172,45 @@ export type Database = {
           },
         ];
       };
+      waitlist_entries: {
+        Row: {
+          id: string;
+          event_id: string;
+          ticket_type_id: string | null;
+          session_id: string | null;
+          user_id: string;
+          status: string;
+          offered_at: string | null;
+          offer_expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          ticket_type_id?: string | null;
+          session_id?: string | null;
+          user_id: string;
+          status?: string;
+          offered_at?: string | null;
+          offer_expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          ticket_type_id?: string | null;
+          session_id?: string | null;
+          user_id?: string;
+          status?: string;
+          offered_at?: string | null;
+          offer_expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2497,6 +2536,39 @@ export type Database = {
           p_answers?: Json | null;
         };
         Returns: undefined;
+      };
+      join_waitlist: {
+        Args: { p_ticket_type_id: string | null; p_session_id: string | null };
+        Returns: Json;
+      };
+      leave_waitlist: {
+        Args: { p_entry_id: string };
+        Returns: undefined;
+      };
+      my_waitlist: {
+        Args: never;
+        Returns: {
+          id: string;
+          status: string;
+          line_position: number;
+          offer_expires_at: string | null;
+          created_at: string;
+          ticket_type_id: string | null;
+          session_id: string | null;
+          target_name: string;
+          event_name: string;
+          event_slug: string;
+          org_slug: string;
+          session_slug: string | null;
+        }[];
+      };
+      event_waitlist_counts: {
+        Args: { p_event_id: string };
+        Returns: { ticket_type_id: string | null; session_id: string | null; waiting: number; offered: number }[];
+      };
+      waitlist_process: {
+        Args: never;
+        Returns: string[];
       };
       set_session_listing: {
         Args: {

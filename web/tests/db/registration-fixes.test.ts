@@ -335,3 +335,49 @@ describe("session pages and listing (D-070)", () => {
     expect(row).toEqual({ slug: "web-dev-competition", listed: true });
   });
 });
+
+describe("waitlist in line order (D-071)", () => {
+  const join = (userId: string, typeId: string | null, sessionId: string | null) =>
+    asUser(c, userId, () => rpc<{ id: string; position: number; status: string }>(c, "join_waitlist", [typeId, sessionId], ["uuid", "uuid"]));
+  const processW = () => asService(c, async () => (await c.query("select public.waitlist_process() as id")).rows.map((r) => r.id as string));
+  const statusOf = async (id: string) => (await c.query("select status from public.waitlist_entries where id = $1", [id])).rows[0].status;
+
+  it("only full tickets have a waitlist; the next in line gets a 2-hour hold, then the next", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 100000, quantity: 1 }]);
+    const t = typeIds[0];
+    const a = await buyer();
+    await expectTL(join(a.id, t, null), "NOT_FULL");
+    const holder = await buyer();
+    const o = await book(holder.id, eventId, items([t, 1]));
+    const w1 = await join(a.id, t, null);
+    const b = await buyer();
+    const w2 = await join(b.id, t, null);
+    expect([w1.position, w2.position]).toEqual([1, 2]);
+    expect(await processW()).toEqual([]);
+
+    // the holder cancels: A is offered the place, B (and anyone else) still sees it full
+    await asUser(c, holder.id, () => rpc(c, "cancel_my_order", [o.order_id], ["uuid"]));
+    expect(await processW()).toEqual([w1.id]);
+    await expectTL(book(b.id, eventId, items([t, 1])), "SOLD_OUT");
+    // A does not book in time: the offer moves to B
+    await c.query("update public.waitlist_entries set offer_expires_at = now() - interval '1 minute' where id = $1", [w1.id]);
+    expect(await processW()).toEqual([w2.id]);
+    expect(await statusOf(w1.id)).toBe("expired");
+    await book(b.id, eventId, items([t, 1]));
+    expect(await statusOf(w2.id)).toBe("booked");
+  });
+
+  it("competitions without shortlisting have a waitlist too", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    const comp = await session(eventId, { name: "Solo Quiz", kind: "competition", capacity: 1, team_min: 1, team_max: 1, fee_paisa: 50000 });
+    const first = await buyer();
+    const r = await register(first.id, comp, "", [{ name: "First One" }]);
+    const next = await buyer();
+    const w = await join(next.id, null, comp);
+    await asUser(c, first.id, () => rpc(c, "withdraw_team_registration", [r.registration_id], ["uuid"]));
+    expect(await processW()).toEqual([w.id]);
+    await expectTL(register((await buyer()).id, comp, "", [{ name: "Other Person" }]), "SOLD_OUT");
+    await register(next.id, comp, "", [{ name: "Next Person" }]);
+    expect(await statusOf(w.id)).toBe("booked");
+  });
+});
