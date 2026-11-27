@@ -320,12 +320,12 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 ## Change 2026-11-28: early-bird prices (D-072)
 - Early-bird price until a date for any ticket and competition fee; charged by the database;
   shown with the normal price struck through.
-- Migration `20261127002800_early_bird.sql` (**not applied to TICkLO yet**). DB tests: 2 new, 133 pass.
+- Migration `20261127002800_early_bird.sql` applied to TICkLO (2026-11-28, D-034 method). DB tests: 2 new, 133 pass.
 
 ## Change 2026-11-27: waitlist in line order (D-071)
 - Join the waitlist of sold-out tickets / full competitions; the next person in line gets a
   2-hour held offer by email, then the next. My tickets lists waitlists; organizers see counts.
-- Migration `20261127002700_waitlist.sql` (**not applied to TICkLO yet**). DB tests: 2 new, 131 pass.
+- Migration `20261127002700_waitlist.sql` applied to TICkLO (2026-11-28, D-034 method). DB tests: 2 new, 131 pass.
 
 ## Change 2026-11-27: festival sidebar, session pages, sessions on Events (D-070)
 - Festival sidebar in parts (passes / one-event tickets / entry, From price, Compete), phone
@@ -472,10 +472,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261127002800_early_bird.sql` to TICkLO** (Mumbai) before deploying the build
-  with early-bird prices (D-072).
-- **Apply migration `20261127002700_waitlist.sql` to TICkLO** (Mumbai) before deploying the build
-  with the waitlist (D-071).
 - **Hostinger cron:** add job 4 from `hostinger-cron.txt` (`/api/cron/waitlist`, every 5 minutes).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
