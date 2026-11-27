@@ -8,6 +8,7 @@ import { normalizePhone } from "@/lib/phone";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { profileSchema } from "@/lib/validation/profile";
+import { resolveUniversityId } from "@/lib/universities";
 
 /** AUTH-04 */
 export async function updateProfile(form: FormData): Promise<ActionResult> {
@@ -29,17 +30,22 @@ export async function updateProfile(form: FormData): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
+  const uni = await resolveUniversityId(supabase, parsed.data);
+  if (uni.error) return fail(uni.error, { new_university_name: "Check the name and city" });
   const { error } = await supabase
     .from("profiles")
     .update({
       full_name: parsed.data.full_name,
       phone: normalizePhone(parsed.data.phone),
-      university_id: parsed.data.university_id || null,
+      university_id: uni.id,
       ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
     })
     .eq("id", user.id);
   if (error) return fail(error);
   revalidatePath("/", "layout");
+  if (parsed.data.university_id === "other") {
+    return { ok: true, message: "Profile saved. TickLO will check your university and add it soon." };
+  }
   return { ok: true, message: "Profile saved." };
 }
 

@@ -57,5 +57,11 @@ describe("shared zod schemas (NFR-05)", () => {
     expect(signupSchema.safeParse({ full_name: "Ali Raza", email: "ali@gmail.com", password: "short" }).success).toBe(false);
     expect(profileSchema.safeParse({ full_name: "Ali Raza", phone: "0300 1234567", university_id: "" }).success).toBe(true);
     expect(profileSchema.safeParse({ full_name: "Ali Raza", phone: "123", university_id: "" }).success).toBe(false);
+    // D-056: "Other" needs a typed name and city
+    const base = { full_name: "Ali Raza", phone: "0300 1234567" };
+    expect(profileSchema.safeParse({ ...base, university_id: "other", new_university_name: "University of Sargodha", new_university_city: "Sargodha" }).success).toBe(true);
+    expect(profileSchema.safeParse({ ...base, university_id: "other", new_university_name: "", new_university_city: "Sargodha" }).success).toBe(false);
+    expect(profileSchema.safeParse({ ...base, university_id: "other", new_university_name: "University of Sargodha" }).success).toBe(false);
+    expect(profileSchema.safeParse({ ...base, university_id: "something" }).success).toBe(false);
   });
 });

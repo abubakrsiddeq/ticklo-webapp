@@ -59,9 +59,20 @@ export async function listPublicEvents(filters: EventListFilters = {}) {
 
 export type EventCardData = Awaited<ReturnType<typeof listPublicEvents>>["events"][number];
 
+/** Approved universities only (public lists and filters). */
 export const listUniversities = cache(async () => {
   const supabase = await createClient();
-  const { data } = await supabase.from("universities").select("id, name, short_name, city").order("name");
+  const { data } = await supabase.from("universities").select("id, name, short_name, city").eq("status", "approved").order("name");
+  return data ?? [];
+});
+
+/**
+ * Choices for profile/society forms (D-056): approved universities plus any pending
+ * request this user can see (their own, or the one their society is linked to).
+ */
+export const listUniversityChoices = cache(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("universities").select("id, name, short_name, city, status").order("name");
   return data ?? [];
 });
 

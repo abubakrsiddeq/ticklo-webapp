@@ -49,6 +49,7 @@ const FRIENDLY: Record<string, string> = {
   ANSWERS_REQUIRED: "Please answer the organizer's questions.",
   ACCESS_LOCKED: "Tickets are already sold – you can give more access, not less.",
   ALREADY_REGISTERED: "You have already registered a team for this competition.",
+  INVALID_UNIVERSITY: "Enter your university's full name and city.",
 };
 
 interface ErrorLike {

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireOrgStaff } from "@/lib/auth";
 import { serverNow } from "@/lib/time";
 import { ReferralCodeForm } from "./referral-form";
-import { listUniversities } from "@/lib/queries/public";
+import { listUniversityChoices } from "@/lib/queries/public";
 import { updateOrganization } from "../../_actions/org";
 import { OrgForm } from "../../org-form";
 
@@ -14,7 +14,7 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ so
   const { org, role } = await requireOrgStaff(society, `/org/${society}/settings`);
   // AMB-14: owners can still say which TickLO ambassador brought them (first 30 days)
   const canAddReferral = role === "owner" && !org.referred_by && serverNow() - new Date(org.created_at).getTime() < 30 * 86400 * 1000;
-  const universities = await listUniversities();
+  const universities = await listUniversityChoices();
   const links = (org.social_links ?? {}) as Record<string, string>;
   return (
     <div className="grid gap-6">
@@ -30,6 +30,8 @@ export default async function OrgSettingsPage({ params }: { params: Promise<{ so
           defaults={{
             name: org.name,
             university_id: org.university_id ?? "",
+            new_university_name: "",
+            new_university_city: "",
             type: org.type,
             about: org.about ?? "",
             instagram: links.instagram ?? "",

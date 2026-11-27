@@ -2052,7 +2052,9 @@ export type Database = {
           email_domain: string | null;
           id: string;
           name: string;
+          requested_by: string | null;
           short_name: string | null;
+          status: string;
           updated_at: string;
         };
         Insert: {
@@ -2061,7 +2063,9 @@ export type Database = {
           email_domain?: string | null;
           id?: string;
           name: string;
+          requested_by?: string | null;
           short_name?: string | null;
+          status?: string;
           updated_at?: string;
         };
         Update: {
@@ -2070,10 +2074,19 @@ export type Database = {
           email_domain?: string | null;
           id?: string;
           name?: string;
+          requested_by?: string | null;
           short_name?: string | null;
+          status?: string;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "universities_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
         ];
       };
     };
@@ -2113,6 +2126,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      admin_approve_university: {
+        Args: {
+          p_id: string | null;
+          p_name: string | null;
+          p_short_name: string | null;
+          p_city: string | null;
+          p_email_domain: string | null;
+        };
+        Returns: undefined;
+      };
       admin_delete_university: {
         Args: {
           p_id: string | null;
@@ -2125,6 +2148,13 @@ export type Database = {
           p_target_type: string | null;
           p_target_id: string | null;
           p_details?: Json | null;
+        };
+        Returns: undefined;
+      };
+      admin_merge_university: {
+        Args: {
+          p_from: string | null;
+          p_into: string | null;
         };
         Returns: undefined;
       };
@@ -2971,6 +3001,13 @@ export type Database = {
       request_account_deletion: {
         Args: never;
         Returns: undefined;
+      };
+      request_university: {
+        Args: {
+          p_name: string | null;
+          p_city: string | null;
+        };
+        Returns: string;
       };
       resubmit_organization: {
         Args: {

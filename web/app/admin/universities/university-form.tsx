@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
-import { saveUniversity } from "../actions";
+import { NativeSelect } from "@/components/native-select";
+import { approveUniversity, mergeUniversity, saveUniversity } from "../actions";
 
 export interface UniRow {
   id: string;
@@ -16,7 +17,7 @@ export interface UniRow {
   email_domain: string | null;
 }
 
-export function UniversityForm({ uni, onDone }: { uni?: UniRow; onDone?: () => void }) {
+export function UniversityForm({ uni, onDone, approve }: { uni?: UniRow; onDone?: () => void; approve?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [v, setV] = useState({ name: uni?.name ?? "", short_name: uni?.short_name ?? "", city: uni?.city ?? "", email_domain: uni?.email_domain ?? "" });
@@ -27,7 +28,7 @@ export function UniversityForm({ uni, onDone }: { uni?: UniRow; onDone?: () => v
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => {
-          const res = await saveUniversity(uni?.id ?? null, v);
+          const res = approve && uni ? await approveUniversity(uni.id, v) : await saveUniversity(uni?.id ?? null, v);
           if (res.ok) {
             toast.success(res.message ?? "Saved");
             setErrors({});
@@ -54,7 +55,7 @@ export function UniversityForm({ uni, onDone }: { uni?: UniRow; onDone?: () => v
         </div>
       ))}
       <div className="flex gap-1">
-        <SubmitButton pending={pending}>{uni ? "Save" : "Add"}</SubmitButton>
+        <SubmitButton pending={pending}>{approve ? "Approve" : uni ? "Save" : "Add"}</SubmitButton>
         {onDone ? (
           <Button type="button" variant="ghost" onClick={onDone}>
             Cancel
@@ -85,6 +86,87 @@ export function UniversityRow({ uni, deleteButton }: { uni: UniRow; deleteButton
         </Button>
         {deleteButton}
       </div>
+    </div>
+  );
+}
+
+export interface RequestInfo {
+  requester: string | null;
+  students: number;
+  societies: number;
+  createdAt: string;
+}
+
+/** D-056: a university typed under "Other", waiting for an admin. */
+export function UniversityRequestRow({
+  uni,
+  info,
+  approved,
+  rejectButton,
+}: {
+  uni: UniRow;
+  info: RequestInfo;
+  approved: { id: string; name: string; city: string }[];
+  rejectButton: React.ReactNode;
+}) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"view" | "approve">("view");
+  const [into, setInto] = useState("");
+  const [merging, startMerge] = useTransition();
+  const used = [
+    info.students ? `${info.students} student${info.students === 1 ? "" : "s"}` : null,
+    info.societies ? `${info.societies} societ${info.societies === 1 ? "y" : "ies"}` : null,
+  ].filter(Boolean);
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="font-medium text-navy">{uni.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {uni.city}
+            {info.requester ? ` · asked by ${info.requester}` : ""}
+            {` · ${new Date(info.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}`}
+          </p>
+          <p className="text-xs text-muted-foreground">{used.length ? `Linked: ${used.join(", ")}` : "Not linked to anyone yet"}</p>
+        </div>
+        {mode === "view" ? (
+          <div className="flex gap-1">
+            <Button size="sm" onClick={() => setMode("approve")}>
+              Check &amp; approve
+            </Button>
+            {rejectButton}
+          </div>
+        ) : null}
+      </div>
+      {mode === "approve" ? <UniversityForm uni={uni} approve onDone={() => setMode("view")} /> : null}
+      {approved.length ? (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            startMerge(async () => {
+              const res = await mergeUniversity(uni.id, into);
+              if (res.ok) {
+                toast.success(res.message ?? "Merged");
+                router.refresh();
+              } else toast.error(res.error);
+            });
+          }}
+        >
+          <span className="text-sm text-muted-foreground">Already in the list?</span>
+          <NativeSelect value={into} onChange={(e) => setInto(e.target.value)} aria-label={`Merge ${uni.name} into`} className="h-9 w-auto max-w-full min-w-0 flex-1 sm:max-w-xs">
+            <option value="">Choose university…</option>
+            {approved.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.city})
+              </option>
+            ))}
+          </NativeSelect>
+          <SubmitButton pending={merging} size="sm" variant="outline" disabled={!into || merging}>
+            Merge
+          </SubmitButton>
+        </form>
+      ) : null}
     </div>
   );
 }

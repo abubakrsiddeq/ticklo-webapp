@@ -18,7 +18,7 @@ export default async function ApprovalsPage() {
   const [{ data: orgs }, { data: events }] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, slug, name, type, about, logo_url, social_links, proof_path, created_at, created_by, universities ( name )")
+      .select("id, slug, name, type, about, logo_url, social_links, proof_path, created_at, created_by, universities ( name, status )")
       .eq("status", "pending")
       .order("created_at"),
     supabase
@@ -52,7 +52,7 @@ export default async function ApprovalsPage() {
                   <div>
                     <p className="text-lg font-semibold text-navy">{o.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {o.type} · {o.universities?.name ?? "University not listed"} · registered {formatShortDateTime(o.created_at)}
+                      {o.type} · {o.universities ? `${o.universities.name}${o.universities.status === "pending" ? " (new university – check in Universities)" : ""}` : "University not listed"} · registered {formatShortDateTime(o.created_at)}
                     </p>
                   </div>
                   {o.about ? <p className="whitespace-pre-line text-sm">{o.about}</p> : null}

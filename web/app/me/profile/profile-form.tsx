@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormField, fieldAria } from "@/components/form-field";
-import { NativeSelect } from "@/components/native-select";
+import { UniversityPicker, type UniversityChoice } from "@/components/university-picker";
 import { SubmitButton } from "@/components/submit-button";
 import { profileSchema, type ProfileInput } from "@/lib/validation/profile";
 import { updateProfile } from "./actions";
@@ -19,12 +19,13 @@ export function ProfileForm({
 }: {
   defaults: ProfileInput;
   avatarUrl: string | null;
-  universities: { id: string; name: string; short_name: string | null; city: string }[];
+  universities: UniversityChoice[];
 }) {
   const [pending, start] = useTransition();
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const form = useForm<ProfileInput>({ resolver: zodResolver(profileSchema), defaultValues: defaults });
   const { errors } = form.formState;
+  const universityId = useWatch({ control: form.control, name: "university_id" });
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     const fd = new FormData(e.currentTarget);
@@ -67,16 +68,20 @@ export function ProfileForm({
       <FormField id="phone" label="Mobile number" hint="Shown only to organizers of events you book." error={errors.phone?.message} required>
         <Input type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" {...fieldAria("phone", errors.phone?.message, true)} {...form.register("phone")} />
       </FormField>
-      <FormField id="university_id" label="University (optional)" error={errors.university_id?.message}>
-        <NativeSelect {...fieldAria("university_id", errors.university_id?.message)} {...form.register("university_id")}>
-          <option value="">Not a student / prefer not to say</option>
-          {universities.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name} ({u.city})
-            </option>
-          ))}
-        </NativeSelect>
-      </FormField>
+      <UniversityPicker
+        label="University (optional)"
+        emptyLabel="Not a student / prefer not to say"
+        universities={universities}
+        value={universityId}
+        selectProps={form.register("university_id")}
+        nameProps={form.register("new_university_name")}
+        cityProps={form.register("new_university_city")}
+        errors={{
+          university_id: errors.university_id?.message,
+          new_university_name: errors.new_university_name?.message,
+          new_university_city: errors.new_university_city?.message,
+        }}
+      />
       <SubmitButton pending={pending} pendingText="Saving…" className="sm:justify-self-start">
         Save profile
       </SubmitButton>

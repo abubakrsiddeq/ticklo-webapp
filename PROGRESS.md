@@ -317,6 +317,17 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: "Other" university with admin review (D-056)
+- Profile and society forms: "Other – my university is not listed" → name + city. Saved as a
+  pending university (hidden publicly), reused when the name already exists or someone else
+  asked for the same one.
+- Admin → Universities: "New university requests" with Check & approve / Merge / Reject; tab
+  shows the open count. Once approved the name shows everywhere (event cards, filters, society
+  pages, profile).
+- Migration `20261127001700_university_requests.sql` (**not applied to TICkLO yet**).
+- Tests: 6 DB tests (`universities.test.ts`: visibility, reuse, validation + cap, approve,
+  merge) and unit checks for the schema. `npm run check` passes; 104 DB tests pass.
+
 ## Left to do / known gaps
 1. Click-through in a real browser (forms, uploads, camera) – the server side and pages are
    verified, the interactive UI has not been driven by a browser yet.
@@ -393,6 +404,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   (all already in `env.txt`), then redeploy. Also enter the same mailbox in Supabase →
   Auth → SMTP (sender name `TickLO`) so signup/reset emails use it. Local `.env.local` is set
   and the SMTP login was verified on 2026-11-27.
+- **Apply migration `20261127001700_university_requests.sql` to TICkLO** (Mumbai) before
+  deploying the build with the "Other" university option – the new build reads
+  `universities.status`. Existing universities become `approved` automatically.
 - **Apply migration `20261127001600_event_format.sql` to TICkLO** (adds `events.format`; the live
   build ignores it) before deploying the new web build – the new build needs it.
 - **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is

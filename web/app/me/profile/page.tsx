@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { IdCard } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
-import { listUniversities } from "@/lib/queries/public";
+import { listUniversityChoices } from "@/lib/queries/public";
 import { formatPhone } from "@/lib/phone";
 import { ProfileForm } from "./profile-form";
 import { DeleteAccount } from "./delete-account";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Profile", robots: { index: false } }
 
 export default async function ProfilePage() {
   const user = await requireUser("/me/profile");
-  const universities = await listUniversities();
+  const universities = await listUniversityChoices();
   const p = user.profile;
   return (
     <div className="grid gap-6">
@@ -26,7 +26,7 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent>
           <ProfileForm
-            defaults={{ full_name: p.full_name ?? "", phone: formatPhone(p.phone), university_id: p.university_id ?? "" }}
+            defaults={{ full_name: p.full_name ?? "", phone: formatPhone(p.phone), university_id: p.university_id ?? "", new_university_name: "", new_university_city: "" }}
             avatarUrl={p.avatar_url}
             universities={universities}
           />

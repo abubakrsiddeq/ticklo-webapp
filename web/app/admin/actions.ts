@@ -127,6 +127,38 @@ export async function deleteUniversity(id: string): Promise<ActionResult> {
   return { ok: true, message: "University deleted." };
 }
 
+/** D-056: approve a university someone typed under "Other" (with the admin's corrections). */
+export async function approveUniversity(id: string, input: unknown): Promise<ActionResult> {
+  if (!(await admin()) || !uuid.safeParse(id).success) return { ok: false, error: "Admins only." };
+  const parsed = universitySchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Please check the form.", fieldErrors: fieldErrors(parsed.error) };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_approve_university", {
+    p_id: id,
+    p_name: parsed.data.name,
+    p_short_name: parsed.data.short_name,
+    p_city: parsed.data.city,
+    p_email_domain: parsed.data.email_domain,
+  });
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "A university with this name already exists – use Merge instead.", fieldErrors: { name: "Already in the list" } };
+    return fail(error);
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, message: "University approved – it now shows everywhere." };
+}
+
+/** D-056: the typed university is already in the list – move everyone onto that one. */
+export async function mergeUniversity(fromId: string, intoId: string): Promise<ActionResult> {
+  if (!(await admin()) || !uuid.safeParse(fromId).success) return { ok: false, error: "Admins only." };
+  if (!uuid.safeParse(intoId).success) return { ok: false, error: "Choose the university to merge into." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_merge_university", { p_from: fromId, p_into: intoId });
+  if (error) return fail(error);
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Merged. Students and societies now show the existing university." };
+}
+
 /** ADM-04 */
 export async function resolveDispute(id: string, note: string): Promise<ActionResult> {
   if (!(await admin()) || !uuid.safeParse(id).success) return { ok: false, error: "Admins only." };

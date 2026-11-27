@@ -12,6 +12,7 @@ import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { orgSchema, socialLinksFrom } from "@/lib/validation/org";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeCode } from "@/lib/referrals";
+import { resolveUniversityId } from "@/lib/universities";
 
 /** AMB-14: is this an active TickLO campus ambassador code? (checked before the society is created) */
 async function campusCodeExists(code: string): Promise<boolean> {
@@ -45,12 +46,14 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
   }
 
   const supabase = await createClient();
+  const uni = await resolveUniversityId(supabase, parsed.data);
+  if (uni.error) return fail(uni.error, { new_university_name: "Check the name and city" });
   let slug = avoidReserved(slugify(parsed.data.name));
   for (let attempt = 0; attempt < 4; attempt++) {
     const { error } = await supabase.rpc("create_organization", {
       p_name: parsed.data.name,
       p_slug: slug,
-      p_university_id: parsed.data.university_id || null,
+      p_university_id: uni.id,
       p_type: parsed.data.type,
       p_about: parsed.data.about,
       p_logo_url: logoUrl,
@@ -86,9 +89,12 @@ export async function updateOrganization(orgSlug: string, form: FormData): Promi
   if (logo.error || proof.error) {
     return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { ...(logo.error ? { logo: logo.error } : {}), ...(proof.error ? { proof: proof.error } : {}) } };
   }
+  const supabase = await createClient();
+  const uni = await resolveUniversityId(supabase, parsed.data);
+  if (uni.error) return fail(uni.error, { new_university_name: "Check the name and city" });
   const update: TablesUpdate<"organizations"> = {
     name: parsed.data.name,
-    university_id: parsed.data.university_id || null,
+    university_id: uni.id,
     type: parsed.data.type,
     about: parsed.data.about || null,
     social_links: socialLinksFrom(parsed.data),
@@ -99,7 +105,6 @@ export async function updateOrganization(orgSlug: string, form: FormData): Promi
   } catch (e) {
     return fail(e);
   }
-  const supabase = await createClient();
   const { error } = await supabase.from("organizations").update(update).eq("id", access.org.id);
   if (error) return fail(error);
   revalidatePath(`/org/${orgSlug}`, "layout");

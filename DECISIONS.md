@@ -620,3 +620,24 @@ registered – the same thing the existing "already registered" error already di
 - Smaller fixes: `min-w-0` on flex rows with emails (team invites, admin, fraud, manage teams),
   `break-all` on big ambassador codes, promote screen buttons stack icon over label to fit 320 px,
   admin ambassador stat cards tighter on phones.
+
+## D-056 "Other" university, reviewed by admins (owner request, 2026-11-27)
+- The university picker (profile and society register/edit) ends with "Other – my university is
+  not listed". Choosing it asks for the university's name and city.
+- The typed university is saved in `universities` with `status = 'pending'` and `requested_by`
+  (no separate requests table, so profiles and societies link to it straight away and nothing
+  has to be moved on approval). `request_university` reuses an existing university when the
+  name or short name matches (typing "LUMS" links to LUMS) and an existing pending request with
+  the same name, so the same "Other" typed by many students becomes one request. Max 3 open
+  requests per person.
+- Until approved it is hidden from public pages, filters and society pages (RLS). Visible only to
+  the requester, admins, people whose profile picked it and members of a society linked to it
+  (`can_see_pending_university`, security definer so anonymous visitors never read profiles).
+  The forms show it as "– under review".
+- Admin → Universities shows "New university requests" (count also on the tab): **Check &
+  approve** (fix name / short name / city / email domain first), **Merge** into an existing
+  university (moves profiles, societies and campus ambassadors, then removes the request) or
+  **Reject** (removed; linked profiles/societies keep working without a university). Society
+  approvals show "(new university – check in Universities)" next to a pending one.
+- No email to the requester on approval (the name simply appears on their profile/society).
+

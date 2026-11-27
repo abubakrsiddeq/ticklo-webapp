@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
-import { listUniversities } from "@/lib/queries/public";
+import { listUniversityChoices } from "@/lib/queries/public";
 import { createOrganization } from "../_actions/org";
 import { OrgForm } from "../org-form";
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Register a society" };
 // ORG-01
 export default async function NewOrgPage() {
   await requireUser("/org/new");
-  const universities = await listUniversities();
+  const universities = await listUniversityChoices();
   return (
     <div className="mx-auto max-w-3xl">
       <Card>
@@ -26,7 +26,7 @@ export default async function NewOrgPage() {
             mode="create"
             action={createOrganization}
             universities={universities}
-            defaults={{ name: "", university_id: "", type: "society", about: "", instagram: "", facebook: "", website: "" }}
+            defaults={{ name: "", university_id: "", new_university_name: "", new_university_city: "", type: "society", about: "", instagram: "", facebook: "", website: "" }}
           />
         </CardContent>
       </Card>
