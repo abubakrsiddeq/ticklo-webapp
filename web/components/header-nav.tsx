@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 export interface NavItem {
   href: string;
   label: string;
+  /** Shown instead of `label` on md screens, where the pill header is tight. */
+  shortLabel?: string;
 }
 
 function isActive(pathname: string, href: string) {
@@ -57,7 +59,14 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
                 : "text-navy/70 hover:bg-secondary/80 hover:text-navy",
             )}
           >
-            {i.label}
+            {i.shortLabel ? (
+              <>
+                <span className="lg:hidden">{i.shortLabel}</span>
+                <span className="hidden lg:inline">{i.label}</span>
+              </>
+            ) : (
+              i.label
+            )}
           </Link>
         );
       })}

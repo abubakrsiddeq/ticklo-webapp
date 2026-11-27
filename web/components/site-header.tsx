@@ -87,7 +87,7 @@ async function SiteHeaderContent() {
     ...(user ? [{ href: "/me/tickets", label: "My tickets" }] : []),
     menu?.orgs.length
       ? { href: menu.orgs.length === 1 ? `/org/${menu.orgs[0].slug}` : "/org", label: "Dashboard" }
-      : { href: "/org/new", label: "For societies" },
+      : { href: "/org/new", label: "Register your society", shortLabel: "Register society" },
     ...(menu?.canScan ? [{ href: "/scan", label: "Scan" }] : []),
     ...(menu?.canSell ? [{ href: "/sell", label: "Sell" }] : []),
   ];
