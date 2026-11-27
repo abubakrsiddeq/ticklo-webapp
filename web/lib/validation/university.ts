@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// D-056: the university picker can say "other" and carry a typed name + city.
+// D-057: the university picker can say "other" and carry a typed name + city.
 export const OTHER_UNIVERSITY = "other";
 
 export const universityFields = {

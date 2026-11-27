@@ -317,7 +317,7 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
-## Change 2026-11-27: "Other" university with admin review (D-056)
+## Change 2026-11-27: "Other" university with admin review (D-057)
 - Profile and society forms: "Other – my university is not listed" → name + city. Saved as a
   pending university (hidden publicly), reused when the name already exists or someone else
   asked for the same one.

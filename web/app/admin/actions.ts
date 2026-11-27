@@ -127,7 +127,7 @@ export async function deleteUniversity(id: string): Promise<ActionResult> {
   return { ok: true, message: "University deleted." };
 }
 
-/** D-056: approve a university someone typed under "Other" (with the admin's corrections). */
+/** D-057: approve a university someone typed under "Other" (with the admin's corrections). */
 export async function approveUniversity(id: string, input: unknown): Promise<ActionResult> {
   if (!(await admin()) || !uuid.safeParse(id).success) return { ok: false, error: "Admins only." };
   const parsed = universitySchema.safeParse(input);
@@ -148,7 +148,7 @@ export async function approveUniversity(id: string, input: unknown): Promise<Act
   return { ok: true, message: "University approved – it now shows everywhere." };
 }
 
-/** D-056: the typed university is already in the list – move everyone onto that one. */
+/** D-057: the typed university is already in the list – move everyone onto that one. */
 export async function mergeUniversity(fromId: string, intoId: string): Promise<ActionResult> {
   if (!(await admin()) || !uuid.safeParse(fromId).success) return { ok: false, error: "Admins only." };
   if (!uuid.safeParse(intoId).success) return { ok: false, error: "Choose the university to merge into." };

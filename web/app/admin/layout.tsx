@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: { default: "Admin", template: "%s · 
 // Admin panel: TickLO team accounts only (profiles.is_admin)
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin("/admin");
-  // D-056: show how many "Other" universities wait for review
+  // D-057: show how many "Other" universities wait for review
   const supabase = await createClient();
   const { count: uniRequests } = await supabase.from("universities").select("id", { count: "exact", head: true }).eq("status", "pending");
   return (

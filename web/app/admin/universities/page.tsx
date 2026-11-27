@@ -14,7 +14,7 @@ function countBy(rows: { university_id: string | null }[] | null) {
   return m;
 }
 
-// ADM-07: name, city, email domain – add / edit. D-056: review universities typed under "Other".
+// ADM-07: name, city, email domain – add / edit. D-057: review universities typed under "Other".
 export default async function UniversitiesPage() {
   await requireAdmin("/admin/universities");
   const supabase = await createClient();

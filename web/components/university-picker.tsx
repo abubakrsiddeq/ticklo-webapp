@@ -14,7 +14,7 @@ export interface UniversityChoice {
 }
 
 /**
- * D-056: university list + "Other – not listed". Choosing Other shows name and
+ * D-057: university list + "Other – not listed". Choosing Other shows name and
  * city boxes; TickLO admins review the typed university before it shows publicly.
  */
 export function UniversityPicker({

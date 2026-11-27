@@ -67,7 +67,7 @@ export const listUniversities = cache(async () => {
 });
 
 /**
- * Choices for profile/society forms (D-056): approved universities plus any pending
+ * Choices for profile/society forms (D-057): approved universities plus any pending
  * request this user can see (their own, or the one their society is linked to).
  */
 export const listUniversityChoices = cache(async () => {

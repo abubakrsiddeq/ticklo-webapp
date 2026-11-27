@@ -5,7 +5,7 @@ import { OTHER_UNIVERSITY } from "@/lib/validation/university";
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 /**
- * D-056: turn the picker value into a university id. "other" files (or reuses)
+ * D-057: turn the picker value into a university id. "other" files (or reuses)
  * a pending university that TickLO admins review; it only shows publicly once approved.
  */
 export async function resolveUniversityId(

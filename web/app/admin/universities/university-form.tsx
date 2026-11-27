@@ -97,7 +97,7 @@ export interface RequestInfo {
   createdAt: string;
 }
 
-/** D-056: a university typed under "Other", waiting for an admin. */
+/** D-057: a university typed under "Other", waiting for an admin. */
 export function UniversityRequestRow({
   uni,
   info,

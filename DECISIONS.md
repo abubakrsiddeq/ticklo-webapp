@@ -621,7 +621,7 @@ registered – the same thing the existing "already registered" error already di
   `break-all` on big ambassador codes, promote screen buttons stack icon over label to fit 320 px,
   admin ambassador stat cards tighter on phones.
 
-## D-056 "Other" university, reviewed by admins (owner request, 2026-11-27)
+## D-057 "Other" university, reviewed by admins (owner request, 2026-11-27)
 - The university picker (profile and society register/edit) ends with "Other – my university is
   not listed". Choosing it asks for the university's name and city.
 - The typed university is saved in `universities` with `status = 'pending'` and `requested_by`

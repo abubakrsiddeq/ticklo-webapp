@@ -1,4 +1,4 @@
--- D-056: "Other" university. A student or society can type a university that
+-- D-057: "Other" university. A student or society can type a university that
 -- is not in the list. It is saved as a *pending* university that only the
 -- requester (and people linked to it) can see. A TickLO admin approves it
 -- (optionally fixing the name), merges it into an existing university, or

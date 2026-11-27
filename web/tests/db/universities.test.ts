@@ -20,7 +20,7 @@ const visibleTo = async (userId: string | null, id: string) => {
   return ((userId ? await asUser(c, userId, q) : await asAnon(c, q)).rowCount ?? 0) > 0;
 };
 
-describe("'Other' university requests (D-056)", () => {
+describe("'Other' university requests (D-057)", () => {
   it("files a pending university that only the requester and admins see", async () => {
     const u = await createUser(c);
     const id = await request(u.id, "  University   of Sargodha ");
