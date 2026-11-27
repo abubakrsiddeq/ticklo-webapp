@@ -21,6 +21,9 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime, formatPKR } from "@/lib/format";
 import { discountFor, discountLabel, eligibleQuantity, type DiscountType, type PricedItem } from "@/lib/referrals";
+import { buyerDetailsSchema } from "@/lib/validation/profile";
+import { phoneInput } from "@/lib/phone";
+import { fieldErrors } from "@/lib/validation/common";
 import { bookTickets, checkCode, type CodePreview } from "./actions";
 
 export interface WidgetReferral {
@@ -198,6 +201,14 @@ export function BookingWidget(props: {
       toast.error("Choose at least one ticket.");
       return;
     }
+    if (props.needs) {
+      const parsed = buyerDetailsSchema.safeParse(buyer);
+      setErrors((e) => ({ ...e, full_name: "", phone: "", ...(parsed.success ? {} : fieldErrors(parsed.error)) }));
+      if (!parsed.success) {
+        toast.error("Please add your full name and mobile number.");
+        return;
+      }
+    }
     const errs: Record<string, string> = {};
     slots.forEach((slot, n) => {
       const h = holderOf(slot.key, n === 0);
@@ -366,10 +377,10 @@ export function BookingWidget(props: {
             <div className="grid gap-3 rounded-lg bg-secondary/60 p-3">
               <p className="text-sm font-medium text-navy">Your details (needed for the ticket)</p>
               <FormField id="buyer_name" label="Full name" error={errors.full_name}>
-                <Input value={buyer.full_name} onChange={(e) => setBuyer({ ...buyer, full_name: e.target.value })} autoComplete="name" {...fieldAria("buyer_name", errors.full_name)} />
+                <Input value={buyer.full_name} onChange={(e) => setBuyer({ ...buyer, full_name: e.target.value })} maxLength={100} autoComplete="name" {...fieldAria("buyer_name", errors.full_name)} />
               </FormField>
               <FormField id="buyer_phone" label="Mobile number" error={errors.phone}>
-                <Input value={buyer.phone} onChange={(e) => setBuyer({ ...buyer, phone: e.target.value })} type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" {...fieldAria("buyer_phone", errors.phone)} />
+                <Input value={buyer.phone} onChange={(e) => setBuyer({ ...buyer, phone: phoneInput(e.target.value) })} maxLength={16} type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" {...fieldAria("buyer_phone", errors.phone)} />
               </FormField>
             </div>
           ) : null}

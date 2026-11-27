@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { fail, type ActionResult } from "@/lib/errors";
 import { normalizePhone } from "@/lib/phone";
 import { buyerDetailsSchema } from "@/lib/validation/profile";
-import { fieldErrors } from "@/lib/validation/common";
+import { fieldErrors, isEmail, personNameProblem } from "@/lib/validation/common";
 import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/notify";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { normalizeCode, refCookieName, type DiscountType } from "@/lib/referrals";
@@ -32,7 +32,15 @@ const attendeesSchema = z
       answers: z.record(z.string(), z.record(z.string(), z.union([z.string().max(2000), z.array(z.string().max(100)).max(20)]))).optional(),
     }),
   )
-  .max(20);
+  .max(20)
+  .superRefine((list, ctx) => {
+    list.forEach((a, i) => {
+      const nameProblem = a.name ? personNameProblem(a.name, 2, 80) : null;
+      if (nameProblem) ctx.addIssue({ code: "custom", path: [i, "name"], message: `Ticket ${i + 1}: ${nameProblem.toLowerCase()}` });
+      if (a.phone && !normalizePhone(a.phone)) ctx.addIssue({ code: "custom", path: [i, "phone"], message: `Ticket ${i + 1}: check the mobile number` });
+      if (a.email && !isEmail(a.email, 120)) ctx.addIssue({ code: "custom", path: [i, "email"], message: `Ticket ${i + 1}: check the email` });
+    });
+  });
 
 /** PAY-01/PAY-02/PAY-12: create the order (holds tickets for 60 minutes). */
 export async function bookTickets(
@@ -50,7 +58,10 @@ export async function bookTickets(
   const parsedItems = itemsSchema.safeParse(items);
   if (!parsedItems.success) return { ok: false, error: "Choose at least one ticket." };
   const parsedAttendees = attendees === null ? null : attendeesSchema.safeParse(attendees);
-  if (parsedAttendees && !parsedAttendees.success) return { ok: false, error: "Please check the details for every ticket." };
+  if (parsedAttendees && !parsedAttendees.success) {
+    const custom = parsedAttendees.error.issues.find((i) => i.code === "custom");
+    return { ok: false, error: custom?.message ?? "Please check the details for every ticket." };
+  }
   // files in answers must be ones this person uploaded (their own folder)
   const fileValues = (parsedAttendees?.data ?? []).flatMap((a) => Object.values(a.answers ?? {}).flatMap((x) => Object.values(x)));
   if (!fileValues.every((v) => typeof v !== "string" || !/^[0-9a-f-]{36}\//.test(v) || v.startsWith(`${user.id}/`))) {

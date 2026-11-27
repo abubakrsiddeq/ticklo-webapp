@@ -6,6 +6,7 @@ import { fail, ok, type ActionResult } from "@/lib/errors";
 import { serverEnv } from "@/lib/env.server";
 import { verifyStaticTicketToken } from "@/lib/qr-token";
 import { parseSerial, SALE_METHODS } from "@/lib/print/sales";
+import { optionalPhone, PHONE_HINT } from "@/lib/phone";
 
 // Sell screen for sellers and organizers (SAL-03, D-041).
 
@@ -21,7 +22,16 @@ export interface SellResult {
   sale_status?: string;
 }
 
-const buyer = z.object({ name: z.string().trim().max(80).optional(), phone: z.string().trim().max(20).optional() });
+const buyer = z.object({
+  name: z.string().trim().max(80).optional(),
+  phone: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .refine((v) => optionalPhone(v) !== false, PHONE_HINT)
+    .transform((v) => optionalPhone(v) || undefined),
+});
 
 /** The seller scanned a ticket's QR: check our signature, then mark it sold. */
 export async function sellByToken(
@@ -35,7 +45,7 @@ export async function sellByToken(
   if (!ticketId) return ok({ result: "invalid" });
   if (!input.comp && !METHODS.includes(input.method)) return { ok: false, error: "Choose how it was paid." };
   const b = buyer.safeParse({ name: input.buyerName, phone: input.buyerPhone });
-  if (!b.success) return { ok: false, error: "Name up to 80 and phone up to 20 characters." };
+  if (!b.success) return { ok: false, error: b.error.issues[0]?.message ?? "Check the buyer's name and phone." };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("sell_printed_ticket", {
     p_ticket_id: ticketId,

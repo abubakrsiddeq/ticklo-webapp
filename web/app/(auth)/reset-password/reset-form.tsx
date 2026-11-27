@@ -49,7 +49,7 @@ export function NewPasswordForm() {
   );
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-      <FormField id="password" label="New password" hint="At least 8 characters." error={errors.password?.message}>
+      <FormField id="password" label="New password" hint="At least 8 characters, with a letter and a number." error={errors.password?.message}>
         <Input type="password" autoComplete="new-password" {...fieldAria("password", errors.password?.message, true)} {...form.register("password")} />
       </FormField>
       <FormField id="confirm" label="Repeat new password" error={errors.confirm?.message}>

@@ -913,3 +913,27 @@ registered – the same thing the existing "already registered" error already di
 - **Shown:** booking widget (early price, normal price struck through, "🐦 Early bird until …"),
   "From Rs …", "Get ticket · Rs …", and competition fees everywhere ("Rs 2,000 🐦 early bird ·
   Rs 3,000 after 1 Dec"); the team form total uses the early fee.
+
+## D-073 Strict validation on every form (owner request, 2026-11-28)
+- **Mobile numbers: Pakistani mobiles only**, stored as `+92` followed by 10 digits (`+923XXXXXXXXX`).
+  Typed as `0300 1234567`, `+92 300 1234567`, `92300…` or `0092300…`. International numbers are no
+  longer accepted anywhere (profile, checkout, society head, competition and ticket forms, printed
+  ticket buyers and sellers). Phone inputs drop letters while typing. Numbers saved earlier stay.
+- **Emails:** `name@domain.tld` (one pattern in the app and the database). **Links:** http(s) with
+  a real domain, no spaces or login part; `github.com/me` becomes `https://github.com/me`.
+  **Dates:** a real date between 1900 and 2100.
+- **Names** (signup, profile, buyer, society head, team members, ticket holders): letters in any
+  script plus spaces and `. ' -`; no numbers, symbols or links. **Team names:** letters or digits,
+  no links or `< > { }`. **Roll numbers:** letters, digits and `- / . _`.
+- **New passwords:** 8–72 characters with at least one letter and one number, not the email.
+  Login is unchanged, so older passwords still work.
+- **Competition registrations:** the browser now checks everything the database checks (same
+  person twice, checkbox and yes/no choices, files), and the server actions share one member
+  schema (`lib/validation/team.ts`).
+- **Database:** `validate_form_answers` takes only Pakistani mobiles, the strict email and link
+  patterns and real dates. New society heads must use a Pakistani mobile (`not valid` constraint,
+  so older rows are kept).
+- Also: payment proof transaction ID (letters, digits, `- / . #`) and sender name are checked in
+  the browser too; the buyer's name and phone are checked before booking; ambassador application
+  messages and session forms get server-side length and character checks.
+

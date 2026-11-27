@@ -10,8 +10,9 @@ import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { FormRenderer } from "@/components/sessions/form-renderer";
 import { formatPKR } from "@/lib/format";
-import { normalizePhone } from "@/lib/phone";
-import { checkAnswers, memberPayload, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
+import { normalizePhone, phoneInput } from "@/lib/phone";
+import { checkRegistration, memberPayload, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
+import { personNameProblem } from "@/lib/validation/common";
 import { registerTeam } from "../actions";
 
 /** FES-10 / D-064 / D-068: team name, members (min–max) and the organizer's form, optional code. */
@@ -47,16 +48,15 @@ export function TeamForm(props: {
   }
 
   function submit() {
-    const errs: Record<string, string> = {};
+    const errs = checkRegistration(props.form, members, teamAnswers, solo ? null : team);
     if (props.profileIncomplete) {
-      if (profile.full_name.trim().length < 2) errs["p-name"] = "Your name";
+      const nameProblem = personNameProblem(profile.full_name);
+      if (nameProblem) errs["p-name"] = nameProblem;
       if (!normalizePhone(profile.phone)) errs["p-phone"] = "e.g. 0300 1234567";
     }
-    if (!solo && team.trim().length < 2) errs.team = "Give your team a name";
-    members.forEach((m, i) => {
-      for (const [k, v] of Object.entries(checkAnswers(props.form.member, m))) errs[`m${i}-${k}`] = v;
-    });
-    for (const [k, v] of Object.entries(checkAnswers(props.form.team, teamAnswers))) errs[`t-${k}`] = v;
+    if (members.length < props.teamMin || members.length > props.teamMax) {
+      errs.team = errs.team ?? `A team needs ${props.teamMin === props.teamMax ? props.teamMax : `${props.teamMin} to ${props.teamMax}`} members`;
+    }
     setErrors(errs);
     if (Object.keys(errs).length) {
       toast.error("Please fill in the highlighted fields.");
@@ -96,7 +96,7 @@ export function TeamForm(props: {
               <Input id="p-name" value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} maxLength={100} autoComplete="name" />
             </FormField>
             <FormField id="p-phone" label="Your mobile number" error={errors["p-phone"]} required>
-              <Input id="p-phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" />
+              <Input id="p-phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: phoneInput(e.target.value) })} maxLength={16} type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" />
             </FormField>
           </div>
         </fieldset>

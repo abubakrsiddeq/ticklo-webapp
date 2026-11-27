@@ -12,18 +12,7 @@ import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/no
 import { buyerDetailsSchema } from "@/lib/validation/profile";
 import { readUpload, uploadPrivate } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
-
-// D-068: built-in details on the member, the organizer's other fields in answers (Postgres checks them)
-const answerValue = z.union([z.string().max(2000), z.array(z.string().max(100)).max(20)]);
-const answersSchema = z.record(z.string().regex(/^[a-z0-9_]{1,40}$/), answerValue);
-const memberSchema = z.object({
-  name: z.string().trim().min(2, "Name").max(80),
-  phone: z.string().trim().max(20).optional(),
-  email: z.union([z.literal(""), z.string().trim().toLowerCase().email("Check the email").max(120)]).optional(),
-  roll_no: z.string().trim().max(40).optional(),
-  university: z.string().trim().max(120).optional(),
-  answers: answersSchema.optional(),
-});
+import { parseRegMembers, regAnswersSchema, teamNameError } from "@/lib/validation/team";
 
 /** Every file answer must be one this person uploaded (their own folder). */
 function ownFiles(userId: string, values: unknown[]): boolean {
@@ -44,12 +33,13 @@ export async function registerTeam(input: {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in to register." };
   if (!z.string().uuid().safeParse(input.eventId).success || !z.string().uuid().safeParse(input.sessionId).success) return { ok: false, error: "Competition not found." };
-  const parsed = z.array(memberSchema).min(1).max(20).safeParse(input.members);
-  if (!parsed.success) return { ok: false, error: "Every member needs a name, and emails must be valid." };
-  const badPhone = parsed.data.find((m) => m.phone && !normalizePhone(m.phone));
-  if (badPhone) return { ok: false, error: `Check the mobile number of ${badPhone.name}.` };
-  const members = parsed.data.map((m) => ({ ...m, phone: m.phone ? normalizePhone(m.phone)! : undefined, email: m.email || undefined }));
-  const teamAnswers = answersSchema.safeParse(input.answers ?? {});
+  const teamName = String(input.teamName ?? "").trim().replace(/\s+/g, " ");
+  const teamProblem = teamNameError(teamName);
+  if (teamProblem) return { ok: false, error: teamProblem };
+  const parsed = parseRegMembers(input.members);
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  const members = parsed.members;
+  const teamAnswers = regAnswersSchema.safeParse(input.answers ?? {});
   if (!teamAnswers.success) return { ok: false, error: "Please check your answers." };
   if (!ownFiles(user.id, [...members.flatMap((m) => Object.values(m.answers ?? {})), ...Object.values(teamAnswers.data)])) {
     return { ok: false, error: "Please upload the files again." };
@@ -68,7 +58,7 @@ export async function registerTeam(input: {
   }
   const { data, error } = await supabase.rpc("register_team", {
     p_session_id: input.sessionId,
-    p_team_name: input.teamName,
+    p_team_name: teamName,
     p_members: members,
     p_answers: teamAnswers.data,
     p_code: typed && typed.length <= 16 ? typed : null,

@@ -10,6 +10,7 @@ import type { Json } from "@/lib/database.types";
 import { parseTeamSize } from "@/lib/sessions";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { runWaitlist } from "@/lib/waitlist";
+import { hasControlChars } from "@/lib/validation/common";
 
 // Festival sessions (D-044). Every write is a Postgres function that checks the
 // organizer again; these actions only parse forms.
@@ -71,20 +72,27 @@ export async function saveSession(
   const errs: Record<string, string> = {};
   const starts = fromPKTInputValue(v.starts_at);
   const ends = fromPKTInputValue(v.ends_at);
-  if (!v.name.trim()) errs.name = "Required";
+  const name = String(v.name ?? "").trim();
+  if (!name) errs.name = "Required";
+  else if (name.length > 120) errs.name = "At most 120 characters";
+  else if (hasControlChars(name) || /[<>{}]/.test(name)) errs.name = "No < > { } or special characters";
+  if (!["workshop", "competition", "concert", "talk", "other"].includes(v.kind)) errs.kind = "Choose what kind of session this is";
+  if (String(v.description ?? "").trim().length > 2000) errs.description = "At most 2000 characters";
+  if (String(v.venue ?? "").trim().length > 200) errs.venue = "At most 200 characters";
   if (!starts) errs.starts_at = "Choose the start";
   if (!ends) errs.ends_at = "Choose the end";
   if (starts && ends && ends <= starts) errs.ends_at = "Must be after the start";
-  const capacity = v.capacity.trim();
-  if (capacity && !/^\d{1,6}$/.test(capacity)) errs.capacity = "Whole number";
+  const capacity = String(v.capacity ?? "").trim();
+  if (capacity && (!/^\d{1,6}$/.test(capacity) || Number(capacity) < 1 || Number(capacity) > 100000)) errs.capacity = "Whole number, 1 to 100000";
   const competition = v.kind === "competition";
   const solo = (v.participation ?? (Number(v.team_max) > 1 ? "team" : "individual")) !== "team";
   if (competition && !capacity) errs.capacity = solo ? "How many participants?" : "How many teams?";
   const size = competition ? parseTeamSize(solo ? "individual" : "team", v.team_min, v.team_max) : { ok: true as const, team_min: 1, team_max: 1 };
   if (!size.ok) Object.assign(errs, size.errors);
   const fee = competition ? rupeesToPaisa(v.fee.trim() || "0") : 0;
-  if (competition && !Number.isFinite(fee)) errs.fee = "Rupees";
+  if (competition && (!Number.isFinite(fee) || fee < 0 || fee > 100_000_000)) errs.fee = "Rupees, 0 to 10,00,000";
   const regEnds = v.registration_ends_at ? fromPKTInputValue(v.registration_ends_at) : null;
+  if (competition && regEnds && starts && regEnds > starts) errs.registration_ends_at = "Must close before the competition starts";
   const earlyFeeRaw = (v.early_fee ?? "").trim();
   const earlyFee = competition && earlyFeeRaw ? rupeesToPaisa(earlyFeeRaw) : null;
   const earlyUntil = competition && v.early_until ? fromPKTInputValue(v.early_until) : null;

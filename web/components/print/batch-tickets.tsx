@@ -139,7 +139,7 @@ export function BatchTickets({ orgSlug, rows, canEdit }: { orgSlug: string; rows
               <Input id="buyer-name" name="name" defaultValue={editing?.buyer ?? ""} maxLength={80} autoComplete="off" />
             </FormField>
             <FormField id="buyer-phone" label="Phone">
-              <Input id="buyer-phone" name="phone" defaultValue={editing?.phone ?? ""} maxLength={20} inputMode="tel" autoComplete="off" />
+              <Input id="buyer-phone" name="phone" defaultValue={editing?.phone ?? ""} maxLength={16} type="tel" placeholder="0300 1234567" inputMode="tel" autoComplete="off" />
             </FormField>
             <DialogFooter>
               <Button type="submit" variant="brand" disabled={pending}>

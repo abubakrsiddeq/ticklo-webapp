@@ -5,8 +5,9 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FormField } from "@/components/form-field";
+import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
+import { phoneInput } from "@/lib/phone";
 import { isShown, type AnswerValue, type Answers, type FormField as Field } from "@/lib/registration-form";
 import { uploadRegistrationFile } from "@/app/(public)/e/[society]/[event]/register/actions";
 
@@ -58,7 +59,7 @@ function FieldInput({
   const [uploading, start] = useTransition();
   const str = typeof value === "string" ? value : "";
   const arr = Array.isArray(value) ? value : [];
-  const common = { id, "aria-invalid": error ? true : undefined } as const;
+  const common = fieldAria(id, error, Boolean(f.help));
   let control: React.ReactNode;
   switch (f.type) {
     case "long_text":
@@ -114,8 +115,14 @@ function FieldInput({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
+              if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type)) {
+                toast.error("Upload a PDF or a JPG, PNG or WebP image.");
+                e.target.value = "";
+                return;
+              }
               if (file.size > 5 * 1024 * 1024) {
                 toast.error("The file must be 5 MB or smaller.");
+                e.target.value = "";
                 return;
               }
               const fd = new FormData();
@@ -144,13 +151,17 @@ function FieldInput({
         <Input
           {...common}
           value={str}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            // only what the field can hold: digits for a mobile, no spaces in an email or link
+            onChange(f.type === "phone" ? phoneInput(v) : f.type === "email" || f.type === "url" ? v.replace(/\s/g, "") : v);
+          }}
           type={f.type === "email" ? "email" : f.type === "phone" ? "tel" : f.type === "number" ? "number" : f.type === "url" ? "url" : f.type === "date" ? "date" : "text"}
           inputMode={f.type === "phone" ? "tel" : f.type === "number" ? "decimal" : f.type === "email" ? "email" : f.type === "url" ? "url" : undefined}
           min={f.type === "number" && f.min != null ? f.min : undefined}
           max={f.type === "number" && f.max != null ? f.max : undefined}
-          maxLength={f.type === "short_text" ? Math.min(f.max ?? 200, f.id === "name" ? 80 : f.id === "roll_no" ? 40 : f.id === "university" ? 120 : 300) : 300}
-          placeholder={f.type === "phone" ? "0300 1234567" : f.type === "url" ? "https://…" : f.id === "university" ? "e.g. NUST" : undefined}
+          maxLength={f.type === "short_text" ? Math.min(f.max ?? 200, f.id === "name" ? 80 : f.id === "roll_no" ? 40 : f.id === "university" ? 120 : 300) : f.type === "phone" ? 16 : f.type === "email" ? 120 : 300}
+          placeholder={f.type === "phone" ? "0300 1234567 or +92 300 1234567" : f.type === "email" ? "name@gmail.com" : f.type === "url" ? "https://…" : f.id === "university" ? "e.g. NUST" : undefined}
           autoComplete="off"
         />
       );

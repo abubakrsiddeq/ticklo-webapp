@@ -9,7 +9,7 @@ import { fail, ok, type ActionResult } from "@/lib/errors";
 import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/notify";
 import { cookies } from "next/headers";
 import { normalizeCode, refCookieName } from "@/lib/referrals";
-import { normalizePhone } from "@/lib/phone";
+import { parseRegMembers, regAnswersSchema, teamNameError } from "@/lib/validation/team";
 import { runWaitlist } from "@/lib/waitlist";
 
 /** FES-11: an accepted team (or one whose unpaid order expired) pays now. D-064: with a promo / ambassador code. */
@@ -34,35 +34,26 @@ export async function payTeam(registrationId: string, eventId: string, code: str
   redirect(order.status === "approved" ? `/checkout/${order.order_id}/status?new=1` : order.status === "awaiting_payment" ? `/checkout/${order.order_id}` : `/checkout/${order.order_id}/status`);
 }
 
-const answersSchema = z.record(z.string().regex(/^[a-z0-9_]{1,40}$/), z.union([z.string().max(2000), z.array(z.string().max(100)).max(20)]));
-const memberSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  phone: z.string().trim().max(20).optional(),
-  email: z.union([z.literal(""), z.string().trim().toLowerCase().email().max(120)]).optional(),
-  roll_no: z.string().trim().max(40).optional(),
-  university: z.string().trim().max(120).optional(),
-  answers: answersSchema.optional(),
-});
-
 /** D-064 / D-068: the lead changes the team (members and the team's answers) until the competition starts. */
 export async function updateTeam(registrationId: string, teamName: string, members: unknown, answers: unknown = null): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user || !z.string().uuid().safeParse(registrationId).success) return { ok: false, error: "Not allowed." };
-  const parsed = z.array(memberSchema).min(1).max(20).safeParse(members);
-  if (!parsed.success) return { ok: false, error: "Every member needs a name, and emails must be valid." };
-  const badPhone = parsed.data.find((m) => m.phone && !normalizePhone(m.phone));
-  if (badPhone) return { ok: false, error: `Check the mobile number of ${badPhone.name}.` };
-  const teamAnswers = answers === null ? null : answersSchema.safeParse(answers);
+  const name = String(teamName ?? "").trim().replace(/\s+/g, " ");
+  const teamProblem = teamNameError(name);
+  if (teamProblem) return { ok: false, error: teamProblem };
+  const parsed = parseRegMembers(members);
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  const teamAnswers = answers === null ? null : regAnswersSchema.safeParse(answers);
   if (teamAnswers && !teamAnswers.success) return { ok: false, error: "Please check your answers." };
-  const values = [...parsed.data.flatMap((m) => Object.values(m.answers ?? {})), ...Object.values(teamAnswers?.data ?? {})];
+  const values = [...parsed.members.flatMap((m) => Object.values(m.answers ?? {})), ...Object.values(teamAnswers?.data ?? {})];
   if (!values.every((v) => typeof v !== "string" || !/^[0-9a-f-]{36}\//.test(v) || v.startsWith(`${user.id}/`))) {
     return { ok: false, error: "Please upload the files again." };
   }
-  const clean = parsed.data.map((m) => ({ ...m, phone: m.phone ? normalizePhone(m.phone)! : undefined, email: m.email || undefined }));
+  const clean = parsed.members;
   const supabase = await createClient();
   const { error } = await supabase.rpc("update_team_members", {
     p_registration_id: registrationId,
-    p_team_name: teamName.slice(0, 80),
+    p_team_name: name,
     p_members: clean,
     p_answers: teamAnswers?.data ?? null,
   });

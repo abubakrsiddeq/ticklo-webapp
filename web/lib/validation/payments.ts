@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requiredText } from "./common";
+import { hasControlChars, requiredText } from "./common";
 
 // ORG-02
 export const paymentAccountSchema = z
@@ -24,10 +24,19 @@ export const paymentAccountSchema = z
 export type PaymentAccountInput = z.infer<typeof paymentAccountSchema>;
 
 // PAY-04: text fields of the payment proof (files are checked separately)
+// (required-ness depends on the order total and is checked in the payment provider)
 export const paymentProofSchema = z.object({
-  transaction_id: z.string().trim().max(60, "Too long"),
-  sender_name: z.string().trim().max(100, "Too long"),
-  payment_account_id: z.string().trim(),
+  transaction_id: z
+    .string()
+    .trim()
+    .max(60, "Too long")
+    .refine((v) => v === "" || /^[A-Za-z0-9][A-Za-z0-9 #/._-]*$/.test(v), "Use the letters and digits from your bank app"),
+  sender_name: z
+    .string()
+    .trim()
+    .max(100, "Too long")
+    .refine((v) => v === "" || (/\p{L}/u.test(v) && !/[<>{}]/.test(v) && !hasControlChars(v)), "Enter the account holder's name"),
+  payment_account_id: z.union([z.literal(""), z.string().uuid("Choose one of the accounts shown")]),
 });
 
 export const rejectSchema = z.object({

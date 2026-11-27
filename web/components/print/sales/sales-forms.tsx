@@ -111,7 +111,7 @@ export function SellerDialog({
               <Input id="seller-name" name="name" defaultValue={seller?.name ?? ""} maxLength={80} required={!userId} autoComplete="off" />
             </FormField>
             <FormField id="seller-phone" label="Phone (optional)">
-              <Input id="seller-phone" name="phone" defaultValue={seller?.phone ?? ""} maxLength={20} inputMode="tel" autoComplete="off" />
+              <Input id="seller-phone" name="phone" defaultValue={seller?.phone ?? ""} maxLength={16} type="tel" placeholder="0300 1234567" inputMode="tel" autoComplete="off" />
             </FormField>
             <DialogFooter>
               <Button type="submit" variant="brand" disabled={pending}>
@@ -210,7 +210,7 @@ export function RangeActionForm({ orgSlug, eventId, sellers, examplePrefix }: { 
               <Input id="r-buyer" name="buyerName" maxLength={80} autoComplete="off" />
             </FormField>
             <FormField id="r-buyer-phone" label="Buyer phone (optional)">
-              <Input id="r-buyer-phone" name="buyerPhone" maxLength={20} inputMode="tel" autoComplete="off" />
+              <Input id="r-buyer-phone" name="buyerPhone" maxLength={16} type="tel" placeholder="0300 1234567" inputMode="tel" autoComplete="off" />
             </FormField>
           </>
         ) : null}

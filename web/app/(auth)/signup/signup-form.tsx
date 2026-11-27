@@ -57,7 +57,7 @@ export function SignupForm({ next }: { next: string }) {
       <FormField id="email" label="Email" hint="Any email works – no university email needed." error={errors.email?.message}>
         <Input type="email" autoComplete="email" inputMode="email" {...fieldAria("email", errors.email?.message, true)} {...form.register("email")} />
       </FormField>
-      <FormField id="password" label="Password" hint="At least 8 characters." error={errors.password?.message}>
+      <FormField id="password" label="Password" hint="At least 8 characters, with a letter and a number." error={errors.password?.message}>
         <Input type="password" autoComplete="new-password" {...fieldAria("password", errors.password?.message, true)} {...form.register("password")} />
       </FormField>
       {exists ? (

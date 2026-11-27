@@ -1,4 +1,6 @@
 import { normalizePhone } from "@/lib/phone";
+import { PHONE_HINT } from "@/lib/phone";
+import { hasControlChars, isEmail, isWebLink, normalizeLink, personNameProblem, teamNameProblem } from "@/lib/validation/common";
 
 // D-068: registration form builder for competitions. Mirrors validate_form_answers /
 // clean_members_form / set_session_form in Postgres (the database checks everything again).
@@ -123,17 +125,28 @@ export function isShown(f: FormField, answers: Answers): boolean {
   return Array.isArray(v) ? v.includes(f.show_if.equals) : v === f.show_if.equals;
 }
 
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const FILE_PATH = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,120}$/;
 
-/** Field errors for one set of answers (a member or the team). */
+/** A real calendar date (YYYY-MM-DD, no 31 February) between 1900 and 2100. */
+function isRealDate(v: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  return y >= 1900 && y <= 2100 && dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+}
+
+/** Field errors for one set of answers (a member or the team). Mirrors validate_form_answers in Postgres. */
 export function checkAnswers(fields: FormField[], answers: Answers): Record<string, string> {
   const e: Record<string, string> = {};
   for (const f of fields) {
     if (!isShown(f, answers)) continue;
     const raw = answers[f.id];
     if (f.type === "multi") {
-      const arr = Array.isArray(raw) ? raw.filter(Boolean) : [];
-      if (!arr.length && f.required) e[f.id] = "Choose at least one";
+      const arr = Array.isArray(raw) ? raw.filter((x) => x.trim()) : [];
+      if (!arr.length) {
+        if (f.required) e[f.id] = "Choose at least one";
+      } else if (arr.some((x) => !(f.options ?? []).includes(x.trim()))) e[f.id] = "Choose from the list";
       continue;
     }
     const v = (typeof raw === "string" ? raw : "").trim();
@@ -141,22 +154,78 @@ export function checkAnswers(fields: FormField[], answers: Answers): Record<stri
       if (f.required) e[f.id] = "Required";
       continue;
     }
+    if (hasControlChars(v)) {
+      e[f.id] = "Remove the special characters";
+      continue;
+    }
     const max = f.id === "name" ? 80 : f.id === "roll_no" ? 40 : f.id === "university" ? 120 : f.type === "long_text" ? Math.min(f.max ?? 2000, 2000) : f.type === "short_text" ? Math.min(f.max ?? 200, 300) : 300;
     if ((f.type === "short_text" || f.type === "long_text") && v.length > max) e[f.id] = `At most ${max} characters`;
-    if (f.id === "name" && v.length < 2) e[f.id] = "Full name";
-    if ((f.type === "short_text" || f.type === "long_text") && f.min && v.length < f.min) e[f.id] = `At least ${f.min} characters`;
+    else if ((f.type === "short_text" || f.type === "long_text") && f.min && v.length < f.min) e[f.id] = `At least ${f.min} characters`;
+    if (f.id === "name") {
+      const problem = personNameProblem(v, 2, 80);
+      if (problem) e[f.id] = problem;
+    }
+    if (f.id === "roll_no" && !/^[\p{L}\p{N}][\p{L}\p{N} ./_-]*$/u.test(v)) e[f.id] = "Letters, numbers, - / . only";
+    if (f.id === "university" && !/\p{L}/u.test(v)) e[f.id] = "Enter the university name";
     if (f.type === "number") {
       const n = Number(v);
-      if (!/^-?\d{1,12}(\.\d{1,4})?$/.test(v)) e[f.id] = "A number";
+      if (!/^-?\d{1,12}(\.\d{1,4})?$/.test(v)) e[f.id] = "Enter a number";
       else if ((f.min != null && n < f.min) || (f.max != null && n > f.max)) e[f.id] = `Between ${f.min ?? "…"} and ${f.max ?? "…"}`;
     }
-    if (f.type === "email" && !EMAIL.test(v)) e[f.id] = "Check the email";
-    if (f.type === "phone" && !normalizePhone(v)) e[f.id] = "e.g. 0300 1234567";
-    if (f.type === "url" && !/^https?:\/\/\S+\.\S+/.test(v)) e[f.id] = "A full link starting with https://";
-    if (f.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(v)) e[f.id] = "Pick a date";
+    if (f.type === "email" && !isEmail(v, 120)) e[f.id] = "Enter a valid email, e.g. name@gmail.com";
+    if (f.type === "phone" && !normalizePhone(v)) e[f.id] = PHONE_HINT;
+    if (f.type === "url" && !isWebLink(normalizeLink(v))) e[f.id] = "Enter a full link, e.g. https://github.com/yourname";
+    if (f.type === "date" && !isRealDate(v)) e[f.id] = "Pick a valid date";
     if (f.type === "select" && !(f.options ?? []).includes(v)) e[f.id] = "Choose from the list";
+    if (f.type === "yes_no" && v !== "yes" && v !== "no") e[f.id] = "Choose Yes or No";
+    if (f.type === "file" && !FILE_PATH.test(v)) e[f.id] = "Upload the file again";
   }
   return e;
+}
+
+/**
+ * A whole registration: team name, every member's answers, the same person not listed twice
+ * (same mobile number or email, as Postgres refuses), and the team's answers.
+ * Keys: "team", "m{i}-{field}", "t-{field}".
+ */
+export function checkRegistration(
+  form: RegistrationForm,
+  members: Answers[],
+  teamAnswers: Answers,
+  teamName: string | null,
+): Record<string, string> {
+  const errs: Record<string, string> = {};
+  if (teamName !== null) {
+    const problem = teamNameProblem(teamName);
+    if (problem) errs.team = problem;
+  }
+  const phones = new Map<string, number>();
+  const emails = new Map<string, number>();
+  members.forEach((m, i) => {
+    for (const [k, v] of Object.entries(checkAnswers(form.member, m))) errs[`m${i}-${k}`] = v;
+    const shown = (id: string) => form.member.find((f) => f.id === id && isShown(f, m));
+    const phone = shown("phone") && typeof m.phone === "string" ? normalizePhone(m.phone) : null;
+    const email = shown("email") && typeof m.email === "string" ? m.email.trim().toLowerCase() : "";
+    if (phone) {
+      if (phones.has(phone) && !errs[`m${i}-phone`]) errs[`m${i}-phone`] = `Same number as member ${phones.get(phone)! + 1}`;
+      else phones.set(phone, i);
+    }
+    if (email) {
+      if (emails.has(email) && !errs[`m${i}-email`]) errs[`m${i}-email`] = `Same email as member ${emails.get(email)! + 1}`;
+      else emails.set(email, i);
+    }
+  });
+  for (const [k, v] of Object.entries(checkAnswers(form.team, teamAnswers))) errs[`t-${k}`] = v;
+  return errs;
+}
+
+/** A typed answer as it is sent: phones as +92…, emails lower-case, links with https://. */
+function cleanValue(f: FormField, v: string): string {
+  const t = v.trim();
+  if (f.type === "phone") return normalizePhone(t) ?? t;
+  if (f.type === "email") return t.toLowerCase();
+  if (f.type === "url") return normalizeLink(t);
+  return t;
 }
 
 /** What is sent for a member: built-in keys on the member, the rest in answers (phones normalised). */
@@ -166,7 +235,7 @@ export function memberPayload(fields: FormField[], answers: Answers) {
     if (!isShown(f, answers)) continue;
     let v = answers[f.id];
     if (v === undefined || (typeof v === "string" && !v.trim())) continue;
-    if (typeof v === "string") v = f.type === "phone" ? (normalizePhone(v) ?? v.trim()) : v.trim();
+    if (typeof v === "string") v = cleanValue(f, v);
     if (isBuiltin(f.id)) out[f.id] = v;
     else (out.answers as Answers)[f.id] = v;
   }
@@ -180,7 +249,7 @@ export function teamPayload(fields: FormField[], answers: Answers): Answers {
     if (!isShown(f, answers)) continue;
     const v = answers[f.id];
     if (v === undefined || (typeof v === "string" && !v.trim())) continue;
-    out[f.id] = typeof v === "string" ? (f.type === "phone" ? (normalizePhone(v) ?? v.trim()) : v.trim()) : v;
+    out[f.id] = typeof v === "string" ? cleanValue(f, v) : v;
   }
   return out;
 }

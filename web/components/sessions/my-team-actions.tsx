@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { FormRenderer } from "@/components/sessions/form-renderer";
-import { checkAnswers, memberPayload, memberToAnswers, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
+import { checkRegistration, memberPayload, memberToAnswers, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
 import { payTeam, updateTeam } from "@/app/me/tickets/team-actions";
 
 /** D-064: pay for an accepted team, optionally with a promo / ambassador code. */
@@ -64,12 +64,7 @@ export function EditTeamButton(props: {
   const max = props.fixedCount ? props.members.length : props.teamMax;
 
   function save() {
-    const errs: Record<string, string> = {};
-    if (!solo && team.trim().length < 2) errs.team = "Team name";
-    members.forEach((m, i) => {
-      for (const [k, v] of Object.entries(checkAnswers(props.form.member, m))) errs[`m${i}-${k}`] = v;
-    });
-    for (const [k, v] of Object.entries(checkAnswers(props.form.team, teamAnswers))) errs[`t-${k}`] = v;
+    const errs = checkRegistration(props.form, members, teamAnswers, solo ? null : team);
     setErrors(errs);
     if (Object.keys(errs).length) {
       toast.error("Please fill in the highlighted fields.");

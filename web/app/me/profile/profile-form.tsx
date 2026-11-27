@@ -74,7 +74,7 @@ export function ProfileForm({
         <Input autoComplete="name" {...fieldAria("full_name", errors.full_name?.message)} {...form.register("full_name")} />
       </FormField>
       <FormField id="phone" label="Mobile number" hint="Shown only to organizers of events you book." error={errors.phone?.message} required>
-        <Input type="tel" inputMode="tel" placeholder="0300 1234567" autoComplete="tel" {...fieldAria("phone", errors.phone?.message, true)} {...form.register("phone")} />
+        <Input type="tel" inputMode="tel" maxLength={16} placeholder="0300 1234567" autoComplete="tel" {...fieldAria("phone", errors.phone?.message, true)} {...form.register("phone")} />
       </FormField>
       <UniversityPicker
         label="University (optional)"

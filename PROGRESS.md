@@ -317,6 +317,18 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: strict validation on every form (D-073)
+- Mobile numbers are Pakistani mobiles only (+92 and 10 digits); emails must be name@domain.tld;
+  links need http(s) and a real domain (https:// is added when left out); names take letters
+  only; new passwords need a letter and a number. Same rules in the browser, server actions and,
+  for form answers, the database.
+- Competition registrations: the same person cannot be listed twice, team names checked,
+  checkbox / yes-no / date / file answers checked like the database does.
+- Migration `20261128000100_strict_form_formats.sql` – **not applied to TICkLO yet** (apply with
+  the D-034 method). Unit tests: 9 new, 94 pass. DB tests: 133 pass.
+- How to test: register for a competition with `+44…`, `ali@gmail`, `abc` in a link field or the
+  same number twice: each is refused with a message under the field.
+
 ## Change 2026-11-28: early-bird prices (D-072)
 - Early-bird price until a date for any ticket and competition fee; charged by the database;
   shown with the normal price struck through.

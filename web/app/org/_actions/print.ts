@@ -6,6 +6,7 @@ import { getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
+import { optionalPhone, PHONE_HINT } from "@/lib/phone";
 import { designProblems, designSchema, serialLabel } from "@/lib/print/design";
 import { ticketQrToken } from "@/lib/qr";
 import type { Json } from "@/lib/database.types";
@@ -118,15 +119,21 @@ export async function voidPrintedTickets(orgSlug: string, batchId: string, form:
 }
 
 const buyerSchema = z.object({
-  name: z.string().trim().max(80),
-  phone: z.string().trim().max(20).optional(),
+  name: z.string().trim().max(80, "Name must be 80 characters or fewer"),
+  phone: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .refine((v) => optionalPhone(v) !== false, PHONE_HINT)
+    .transform((v) => optionalPhone(v) || undefined),
 });
 
 export async function setPrintedTicketBuyer(orgSlug: string, ticketId: string, form: FormData): Promise<ActionResult> {
   const access = await staffContext(orgSlug);
   if (!access || !uuid.safeParse(ticketId).success) return { ok: false, error: "Not allowed." };
   const parsed = buyerSchema.safeParse({ name: form.get("name") ?? "", phone: form.get("phone") ?? undefined });
-  if (!parsed.success) return { ok: false, error: "Name must be 80 characters or fewer, phone 20." };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the buyer's name and phone." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_printed_ticket_buyer", {
     p_ticket_id: ticketId,

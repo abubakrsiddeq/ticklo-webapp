@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fail, type ActionResult } from "@/lib/errors";
 import { notifyEventCancelled, notifyReviewDecision } from "@/lib/emails/notify";
-import { fieldErrors } from "@/lib/validation/common";
+import { emailField, fieldErrors } from "@/lib/validation/common";
 
 const uuid = z.string().uuid();
 
@@ -226,7 +226,7 @@ export async function saveCampusAmbassador(input: { email?: string; userId?: str
   const supabase = await createClient();
   let userId = input.userId && uuid.safeParse(input.userId).success ? input.userId : null;
   if (!userId) {
-    const email = z.string().trim().toLowerCase().email().safeParse(input.email ?? "");
+    const email = emailField.safeParse(input.email ?? "");
     if (!email.success) return { ok: false, error: "Enter the person's email.", fieldErrors: { email: "Valid email" } };
     const { data: profile } = await createAdminClient().from("profiles").select("id").ilike("email", email.data.replace(/[%_\\]/g, (m) => `\\${m}`)).maybeSingle();
     if (!profile) return { ok: false, error: "No TickLO account with this email. Ask them to sign up first.", fieldErrors: { email: "No account" } };

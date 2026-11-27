@@ -6,6 +6,7 @@ import { getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { rupeesToPaisa } from "@/lib/format";
+import { optionalPhone, PHONE_HINT } from "@/lib/phone";
 import { parseSerial, SALE_METHODS } from "@/lib/print/sales";
 
 // Printed ticket sales and cash (D-041). Every write is a Postgres function that
@@ -36,8 +37,10 @@ export async function savePrintSeller(orgSlug: string, eventId: string, form: Fo
   const sellerId = String(form.get("sellerId") ?? "");
   const userId = String(form.get("userId") ?? "");
   const name = String(form.get("name") ?? "").trim();
-  const phone = String(form.get("phone") ?? "").trim();
+  const phone = optionalPhone(form.get("phone"));
   if (!userId && !name) return { ok: false, error: "Give the seller a name.", fieldErrors: { name: "Required" } };
+  if (name.length > 80 || /[<>{}]/.test(name)) return { ok: false, error: "Check the seller's name.", fieldErrors: { name: "Up to 80 characters, no < > { }" } };
+  if (phone === false) return { ok: false, error: PHONE_HINT, fieldErrors: { phone: PHONE_HINT } };
   const supabase = await createClient();
   const { error } = await supabase.rpc("save_print_seller", {
     p_event_id: eventId,
@@ -74,6 +77,9 @@ export async function printedRangeAction(orgSlug: string, eventId: string, form:
   const supabase = await createClient();
   const sellerId = String(form.get("sellerId") ?? "");
   const method = String(form.get("method") ?? "cash");
+  const buyerPhone = optionalPhone(form.get("buyerPhone"));
+  if (buyerPhone === false) return { ok: false, error: PHONE_HINT, fieldErrors: { buyerPhone: PHONE_HINT } };
+  const buyerName = String(form.get("buyerName") ?? "").trim().slice(0, 80);
   let res: { data: unknown; error: unknown };
   if (action === "assign") {
     res = await supabase.rpc("assign_printed_tickets", { p_event_id: eventId, p_seller_id: uuid.safeParse(sellerId).success ? sellerId : null, p_from: r.from, p_to: r.to });
@@ -85,8 +91,8 @@ export async function printedRangeAction(orgSlug: string, eventId: string, form:
       p_to: r.to,
       p_method: method,
       p_comp: action === "comp",
-      p_buyer_name: r.from === r.to ? String(form.get("buyerName") ?? "") || null : null,
-      p_buyer_phone: r.from === r.to ? String(form.get("buyerPhone") ?? "") || null : null,
+      p_buyer_name: r.from === r.to ? buyerName || null : null,
+      p_buyer_phone: r.from === r.to ? buyerPhone : null,
     });
   } else if (action === "return") {
     res = await supabase.rpc("return_printed_tickets", { p_event_id: eventId, p_from: r.from, p_to: r.to, p_note: String(form.get("note") ?? "") || null });

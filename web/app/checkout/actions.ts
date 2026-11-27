@@ -45,6 +45,7 @@ export async function cancelBooking(orderId: string, backTo: string): Promise<Ac
 export async function openDispute(orderId: string, input: unknown): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in again." };
+  if (!z.string().uuid().safeParse(orderId).success) return { ok: false, error: "Order not found." };
   const parsed = disputeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please write a short message." };
   if (!(await rateLimit(`dispute:user:${user.id}`, 5, 86400))) return { ok: false, error: "Too many reports today." };

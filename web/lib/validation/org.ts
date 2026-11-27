@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { normalizePhone } from "@/lib/phone";
-import { cleanText, linkField, optionalText, requiredText } from "./common";
+import { normalizePhone, PHONE_HINT } from "@/lib/phone";
+import { cleanText, isEmail, linkField, optionalText, personNameProblem, requiredText } from "./common";
 import { checkOtherUniversity, universityFields } from "./university";
 
 // ORG-01
@@ -41,14 +41,12 @@ function checkHead(v: HeadValues, ctx: z.RefinementCtx) {
     ctx.addIssue({ code: "custom", path: ["head_role"], message: "Tell us who leads the society" });
     return;
   }
-  const name = (v.head_name ?? "").replace(/\s+/g, " ");
-  if (name.length < 2 || !/\p{L}/u.test(name) || /[<>{}]/.test(name)) {
-    ctx.addIssue({ code: "custom", path: ["head_name"], message: "Enter the full name" });
-  }
+  const nameProblem = personNameProblem(v.head_name ?? "", 2, 100);
+  if (nameProblem) ctx.addIssue({ code: "custom", path: ["head_name"], message: nameProblem });
   if (!normalizePhone(v.head_phone ?? "")) {
-    ctx.addIssue({ code: "custom", path: ["head_phone"], message: "Enter a valid mobile number, e.g. 0300 1234567" });
+    ctx.addIssue({ code: "custom", path: ["head_phone"], message: PHONE_HINT });
   }
-  if (!z.email().safeParse(v.head_email ?? "").success) {
+  if (!isEmail(v.head_email ?? "")) {
     ctx.addIssue({ code: "custom", path: ["head_email"], message: "Enter a valid email address" });
   }
 }

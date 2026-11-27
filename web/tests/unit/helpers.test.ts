@@ -12,7 +12,12 @@ describe("phone numbers", () => {
     expect(normalizePhone("+92 300-1234567")).toBe("+923001234567");
     expect(normalizePhone("923001234567")).toBe("+923001234567");
     expect(normalizePhone("00923001234567")).toBe("+923001234567");
-    expect(normalizePhone("+447700900123")).toBe("+447700900123");
+    // D-073: Pakistani mobiles only (+92 and 10 digits starting with 3)
+    expect(normalizePhone("+447700900123")).toBeNull();
+    expect(normalizePhone("+92 42 12345678")).toBeNull();
+    expect(normalizePhone("0300 123456")).toBeNull();
+    expect(normalizePhone("0300 12345678")).toBeNull();
+    expect(normalizePhone("0300abc4567")).toBeNull();
     expect(normalizePhone("12345")).toBeNull();
     expect(formatPhone("+923001234567")).toBe("0300 1234567");
   });

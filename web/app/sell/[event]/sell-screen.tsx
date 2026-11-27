@@ -12,6 +12,7 @@ import { formatPKR } from "@/lib/format";
 import { compressSerials, SALE_METHODS } from "@/lib/print/sales";
 import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedback";
 import { cn } from "@/lib/utils";
+import { phoneInput } from "@/lib/phone";
 import { sellByToken, sellRange, type SellResult } from "../actions";
 
 interface StockRow {
@@ -269,7 +270,7 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
           <p className="mb-3 text-sm text-muted-foreground">Ticket scanned. Buyer details are optional.</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
             <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} placeholder="Buyer name" maxLength={80} />
-            <Input value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)} placeholder="Phone" maxLength={20} inputMode="tel" />
+            <Input value={buyerPhone} onChange={(e) => setBuyerPhone(phoneInput(e.target.value))} placeholder="0300 1234567" maxLength={16} type="tel" inputMode="tel" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button

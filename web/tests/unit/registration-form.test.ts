@@ -34,9 +34,10 @@ describe("registration form (D-068)", () => {
 
   it("checks types and required built-ins", () => {
     const e = checkAnswers(DEFAULT_FORM.member, { name: "A", phone: "123", email: "x@" });
-    expect(e).toMatchObject({ name: "Full name", phone: expect.any(String), university: "Required", email: "Check the email" });
+    expect(e).toMatchObject({ name: expect.stringMatching(/at least 2/), phone: expect.stringMatching(/Pakistani/), university: "Required", email: expect.stringMatching(/valid email/) });
     const url: FormField = { id: "gh", type: "url", label: "GitHub", required: false, hidden: false };
-    expect(checkAnswers([url], { gh: "github.com/x" }).gh).toBeDefined();
+    expect(checkAnswers([url], { gh: "github.com/x" }).gh).toBeUndefined(); // D-073: https:// is added when sent
+    expect(checkAnswers([url], { gh: "not a link" }).gh).toBeDefined();
   });
 
   it("built-in details go on the member, the rest into answers; hidden or not shown are dropped", () => {

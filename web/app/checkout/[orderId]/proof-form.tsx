@@ -10,6 +10,8 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { submitPaymentProof } from "../actions";
+import { paymentProofSchema } from "@/lib/validation/payments";
+import { fieldErrors } from "@/lib/validation/common";
 
 const MAX = 5 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -96,9 +98,15 @@ export function ProofForm(props: {
     if (shotErr) errs.screenshot = shotErr;
     const cardErr = checkFile(fd.get("student_card") as File, "Student card photo", props.requiresCard);
     if (cardErr) errs.student_card = cardErr;
+    const text = paymentProofSchema.safeParse({
+      transaction_id: String(fd.get("transaction_id") ?? ""),
+      sender_name: String(fd.get("sender_name") ?? ""),
+      payment_account_id: String(fd.get("payment_account_id") ?? ""),
+    });
+    if (!text.success) Object.assign(errs, fieldErrors(text.error));
     if (props.paid) {
-      if (String(fd.get("transaction_id") ?? "").trim().length < 4) errs.transaction_id = "Enter the transaction ID from your bank app.";
-      if (String(fd.get("sender_name") ?? "").trim().length < 2) errs.sender_name = "Enter the name of the account you paid from.";
+      if (!errs.transaction_id && String(fd.get("transaction_id") ?? "").trim().length < 4) errs.transaction_id = "Enter the transaction ID from your bank app.";
+      if (!errs.sender_name && String(fd.get("sender_name") ?? "").trim().length < 2) errs.sender_name = "Enter the name of the account you paid from.";
       if (props.accounts.length > 1 && !fd.get("payment_account_id")) errs.payment_account_id = "Choose the account you sent money to.";
     }
     setErrors(errs);
@@ -145,10 +153,10 @@ export function ProofForm(props: {
             <input type="hidden" name="payment_account_id" value={props.accounts[0]?.id ?? ""} />
           )}
           <FormField id="transaction_id" label="Transaction ID" hint="Shown on your bank/wallet receipt (TID / reference no.)" error={errors.transaction_id} required>
-            <Input name="transaction_id" autoComplete="off" autoCapitalize="characters" {...fieldAria("transaction_id", errors.transaction_id, true)} />
+            <Input name="transaction_id" maxLength={60} autoComplete="off" autoCapitalize="characters" {...fieldAria("transaction_id", errors.transaction_id, true)} />
           </FormField>
           <FormField id="sender_name" label="Sender's name" hint="Name on the account the money came from" error={errors.sender_name} required>
-            <Input name="sender_name" autoComplete="name" {...fieldAria("sender_name", errors.sender_name, true)} />
+            <Input name="sender_name" maxLength={100} autoComplete="name" {...fieldAria("sender_name", errors.sender_name, true)} />
           </FormField>
         </>
       ) : (
