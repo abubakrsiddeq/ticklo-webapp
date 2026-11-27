@@ -317,6 +317,25 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: registration fixes across all formats (D-063, D-064)
+- Competitions ask Individuals or Teams (min/max members); organizers choose required member
+  details (mobile, email, roll no, university; new competitions: mobile + university).
+- Every team member gets their own ticket (also with a per-team fee) and, with an email, their
+  own QR by email. Individuals: no team name, same names allowed. Nobody in two teams.
+- Shortlisting: accepting holds the place 48 hours to pay; no accepting past the places.
+  Accepted teams pay with a promo/ambassador code from My tickets.
+- Leads change members until the competition starts (count fixed after paying, ticket names
+  follow); "registering but not taking part"; lead's own name/phone asked when missing.
+- Festivals: tickets sell until their session starts (passes: last pass session).
+- Event form: name / university of the person on each ticket (off / optional / required);
+  session questions per ticket. Schedule: "Get ticket", consistent Register/Apply/Full/Closed;
+  competition events show a Register card in the sidebar. Checkout: cancel an unpaid booking.
+- A festival needs a session and a competition event a competition before review.
+- Migration `20261127002100_registration_fixes.sql` (**not applied to TICkLO yet**). The live
+  build keeps working after it (new parameters are optional; per-team entries simply get one
+  ticket per member from then on). DB tests: 10 new (`registration-fixes.test.ts`), 122 pass.
+- Not built: waitlist ("notify me when a place opens") and winner certificates / results emails.
+
 ## Change 2026-11-27: festivals without capacity (D-062)
 - Migration `20261127002000_festival_capacity.sql` applied to TICkLO (2026-11-27, D-034 method,
   recorded in the migration history). There were no festival events yet, so no rows changed.
@@ -405,6 +424,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127002100_registration_fixes.sql` to TICkLO** (Mumbai) before deploying
+  the build with the registration fixes (D-064) – the new build sends `p_attendees` and reads
+  the new columns.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

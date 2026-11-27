@@ -51,6 +51,9 @@ const FRIENDLY: Record<string, string> = {
   ALREADY_REGISTERED: "You have already registered a team for this competition.",
   INVALID_UNIVERSITY: "Enter your university's full name and city.",
   INVALID_HEAD: "Check the society head's name, phone and email.",
+  ATTENDEE_REQUIRED: "Fill in the details for every ticket.",
+  MEMBER_TAKEN: "One of these people is already in another team for this competition.",
+  NO_SESSIONS: "Add the sessions or the competition before sending the event for review.",
 };
 
 interface ErrorLike {

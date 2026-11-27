@@ -731,3 +731,46 @@ registered – the same thing the existing "already registered" error already di
 - The event form shows a note under a new competition: the next step asks individuals or teams,
   team size, entry fee and how many can register. The public registration form already asks
   only for the participant when the competition is individual.
+
+## D-064 Registration fixes after reviewing all three formats (owner request, 2026-11-27)
+- **Team tickets:** every member gets their own ticket with their name (and university), also
+  when the fee is per team (the bill stays one team entry). Gate and session scans are once per
+  ticket, so one "Team X" ticket let only one person in. `tickets.team_member_index` links a
+  ticket to its member; members with an email get their own QR by email.
+- **Festival sale ends:** a ticket without "sale ends" sells until its session starts (session
+  tickets) or until the last pass session starts (passes); a festival ticket with no sessions
+  until the festival ends (`ticket_type_default_sale_end`, mirrored by `ticketSaleEnd`). Single
+  events and competitions keep "until the event starts".
+- **Shortlisting:** accepting sets `pay_by = least(now + 48h, competition start)` and that team
+  holds a place until then; accepting is refused once paid + paying + held teams reach the
+  places. An accepted team pays until its competition starts (registration closing does not
+  block it). After `pay_by` it may still pay if a place is free.
+- **Individuals:** the participant's name is the entry name and the unique-name rule applies only
+  to teams, so two "Ali Khan"s can enter a quiz.
+- **Member details:** the organizer ticks which are required (`event_sessions.member_required`;
+  mobile, email, roll / student ID, university). New competitions start with mobile +
+  university (owner asked for university). Phones must be +92… after normalising, emails valid;
+  the same mobile / email / roll no + university cannot be in two active teams of one
+  competition, nor twice in one team.
+- **Editing a team:** the lead changes members and the team name until the competition starts
+  (`update_team_members`). After paying (or sending payment) the member count stays; names on
+  tickets that were not scanned yet follow. A per-member unpaid booking is expired when the
+  count changes (book again for the new amount).
+- **Lead not playing:** "I am registering the team but not taking part" leaves member 1 empty.
+- **Profile:** when the lead's account has no name / phone, the team form asks and saves them.
+- **Codes for shortlisted teams:** "Pay now" in My tickets takes a promo / ambassador code and
+  keeps the remembered ambassador link.
+- **Ticket holder details are the organizer's choice:** `events.attendee_names` and
+  `attendee_university` (off / optional / required, default off). Off keeps D-033 (buyer's name
+  on every ticket). Stored per ticket (`tickets.holder_university`, `orders.attendees`).
+- **Session questions per ticket:** answers are asked and stored per ticket (`tickets.answers`);
+  `orders.answers` keeps the first ticket's answers for older screens.
+- **Cancel a booking:** the buyer can cancel an unpaid booking without a payment sent
+  (`cancel_my_order`, status expired) to book something else (D-007 still allows one at a time).
+- **Event page:** sessions with their own ticket show "Get ticket" (opens the ticket list with it
+  selected); competition buttons share one rule (`competitionState`): Register / Register team /
+  Apply, "Full" only without shortlisting, closed from the registration end or the start.
+  Competition events show a Register card in the sidebar.
+- **Review:** a festival needs at least one session and a competition event a competition before
+  it can be sent for review (`TL:NO_SESSIONS`), instead of "add a ticket type".
+- Not built (larger features, offered separately): waitlist and winner certificates / emails.
