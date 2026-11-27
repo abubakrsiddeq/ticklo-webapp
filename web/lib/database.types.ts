@@ -3060,6 +3060,29 @@ export type Database = {
           ref_code: string;
         }[];
       };
+      my_decision_history: {
+        Args: {
+          p_order_id?: string | null;
+          p_limit?: number | null;
+          p_offset?: number | null;
+        };
+        Returns: {
+          id: number;
+          action: string;
+          created_at: string;
+          decided_by: string;
+          by_ticklo: boolean;
+          subject: string;
+          extra: string;
+          reason: string;
+          amount_paisa: number;
+          order_id: string;
+          event_name: string;
+          event_slug: string;
+          org_slug: string;
+          total_count: number;
+        }[];
+      };
       my_team_registrations: {
         Args: never;
         Returns: {

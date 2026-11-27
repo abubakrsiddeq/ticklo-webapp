@@ -33,6 +33,7 @@ export const DECISION_ACTIONS: Record<string, DecisionAction> = {
   "event.cancel": { kind: "events", label: "Cancelled", outcome: "rejected" },
   "order.approve": { kind: "payments", label: "Approved", outcome: "approved" },
   "order.reject": { kind: "payments", label: "Rejected", outcome: "rejected" },
+  "order.cancel_by_buyer": { kind: "payments", label: "Cancelled by buyer", outcome: "step" },
   "team.approve": { kind: "teams", label: "Approved", outcome: "approved" },
   "team.reject": { kind: "teams", label: "Rejected", outcome: "rejected" },
   "ambassador.approve": { kind: "ambassadors", label: "Approved", outcome: "approved" },
@@ -88,4 +89,21 @@ export function orgDecisionActions(kind: DecisionKind | null, result: ResultFilt
   const kinds = ORG_DECISION_KINDS.filter((k) => !(forEvent && k === "societies"));
   const chosen = kind && kinds.includes(kind) ? [kind] : kinds;
   return chosen.flatMap((k) => decisionActions(k, result));
+}
+
+// D-078: wording for the student's own history.
+export const STUDENT_LABELS: Record<string, string> = {
+  "order.approve": "Payment approved",
+  "order.reject": "Payment not approved",
+  "order.cancel_by_buyer": "Booking cancelled",
+  "dispute.resolve": "Report answered",
+  "team.approve": "Team accepted",
+  "team.reject": "Team not accepted",
+  "ambassador.approve": "Application accepted",
+  "ambassador.reject": "Application not accepted",
+};
+
+/** Text of the reason line on the student's history. */
+export function studentReasonLabel(action: string): string {
+  return action === "dispute.resolve" ? "TickLO's note" : "Reason";
 }

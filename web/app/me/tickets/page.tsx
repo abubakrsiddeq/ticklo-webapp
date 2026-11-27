@@ -103,9 +103,15 @@ export default async function MyTicketsPage({ searchParams }: { searchParams: Pr
   return (
     <div className="grid gap-6">
       <SellerBanner />
-      <div>
-        <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Your wallet</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">My tickets</h1>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold tracking-widest text-brand-strong uppercase">Your wallet</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy sm:text-4xl">My tickets</h1>
+        </div>
+        {/* D-078 */}
+        <Link href="/me/history" className="inline-flex min-h-11 items-center text-sm font-medium text-brand-strong hover:underline">
+          My history →
+        </Link>
       </div>
       {upcoming.length ? <InstallHint /> : null}
       {sp.team === "applied" ? (

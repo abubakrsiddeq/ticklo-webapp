@@ -1014,3 +1014,20 @@ registered – the same thing the existing "already registered" error already di
   shared with organizers). Organizers who decided are shown by name.
 - Rows about an event that was later deleted drop out of the organizer view (they stay in the
   admin Decisions page). Only drafts can be deleted, so this hides nothing that was reviewed.
+
+## D-078 Students see their own decision history (owner request, 2026-11-28)
+- **My history** (`/me/history`, in the user menu and on My tickets): every decision about the
+  student's own payments (approved / not approved, or cancelled by them), payment reports
+  (TickLO's note), team registrations (as team lead) and ambassador applications, with who
+  decided, when and the reason. 50 per page.
+- **Order status page**: a "Decisions on this order" card when an order had more than one
+  decision (e.g. not approved → report answered → approved).
+- Who decided is shown as the **society's name** for organizer decisions and **"TickLO team"**
+  for TickLO admins; organizers' personal names are not shown to students. The student's own
+  cancellations show "By you".
+- Read through `my_decision_history(order, limit, offset)` (migration
+  `20261128000500_my_decision_history.sql`), which only returns rows about the caller's own
+  orders, reports, team registrations and applications. Team members other than the lead do not
+  see the team's decisions (only the lead's account is linked to the registration).
+- `order.cancel_by_buyer` now also shows in the admin Decisions page under Payments as
+  "Cancelled by buyer" (a step, not a decision).

@@ -48,3 +48,15 @@ describe("organizer decision history (D-077)", () => {
     expect(orgDecisionActions("payments", "rejected")).toEqual(["order.reject"]);
   });
 });
+
+describe("student decision history (D-078)", () => {
+  it("has student wording for every action the student history returns", async () => {
+    const { STUDENT_LABELS, DECISION_ACTIONS, studentReasonLabel } = await import("@/lib/decisions");
+    for (const a of ["order.approve", "order.reject", "order.cancel_by_buyer", "dispute.resolve", "team.approve", "team.reject", "ambassador.approve", "ambassador.reject"]) {
+      expect(STUDENT_LABELS[a]).toBeTruthy();
+      expect(DECISION_ACTIONS[a]).toBeTruthy();
+    }
+    expect(studentReasonLabel("dispute.resolve")).toBe("TickLO's note");
+    expect(studentReasonLabel("order.reject")).toBe("Reason");
+  });
+});

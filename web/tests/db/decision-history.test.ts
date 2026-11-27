@@ -118,3 +118,51 @@ describe("decision history for organizers (D-077)", () => {
     await expect(asAnon(c, () => c.query("select * from public.org_decision_history($1::uuid)", [orgId]))).rejects.toThrow(/permission denied/);
   });
 });
+
+describe("decision history for students (D-078)", () => {
+  type Row = { action: string; decided_by: string; by_ticklo: boolean; subject: string; extra: string | null; reason: string | null; event_name: string; order_id: string | null; total_count: string };
+  const mine = (userId: string, orderId: string | null = null) =>
+    asUser(c, userId, async () => (await c.query<Row>("select * from public.my_decision_history($1::uuid, 200, 0)", [orderId])).rows);
+
+  it("shows a student's payments, reports and applications, with the society or TickLO as the decider", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 50000, quantity: 10 }]);
+    const stu = await createUser(c, "History Student");
+    const o = await book(c, stu.id, eventId, items([typeIds[0], 2]));
+    await submitProof(c, stu.id, o.order_id);
+    await asUser(c, SEED.organizer, () => rpc(c, "reject_order", [o.order_id, "Screenshot is cut off"], ["uuid", "text"]));
+    const disputeId = (
+      await c.query("insert into public.disputes (order_id, user_id, message) values ($1, $2, 'I paid the full amount, please check') returning id", [o.order_id, stu.id])
+    ).rows[0].id;
+    await asUser(c, SEED.admin, () => rpc(c, "admin_resolve_dispute", [disputeId, "Asked the society to check again"], ["uuid", "text"]));
+    await submitProof(c, stu.id, o.order_id, { txn: "TXN-SECOND", hash: "b".repeat(64) });
+    await asUser(c, SEED.member, () => rpc(c, "approve_order", [o.order_id], ["uuid"]));
+    const appId = (await c.query("insert into public.ambassador_applications (event_id, user_id) values ($1, $2) returning id", [eventId, stu.id])).rows[0].id;
+    await asUser(c, SEED.organizer, () => rpc(c, "decide_ambassador_application", [appId, false], ["uuid", "bool"]));
+    const cancelled = await book(c, stu.id, eventId, items([typeIds[0], 1]));
+    await asUser(c, stu.id, () => rpc(c, "cancel_my_order", [cancelled.order_id], ["uuid"]));
+
+    const society = (await c.query("select name from public.organizations where id = $1", [SEED.org])).rows[0].name;
+    const rows = await mine(stu.id);
+    expect(rows.map((r) => r.action)).toEqual(["order.cancel_by_buyer", "ambassador.reject", "order.approve", "dispute.resolve", "order.reject"]);
+    expect(rows[0]).toMatchObject({ decided_by: "You", subject: cancelled.ref_code });
+    expect(rows[1]).toMatchObject({ decided_by: society, subject: "Ambassador application" });
+    expect(rows[2]).toMatchObject({ decided_by: society, by_ticklo: false, subject: o.ref_code, extra: "2 tickets" });
+    expect(rows[3]).toMatchObject({ decided_by: "TickLO team", by_ticklo: true, reason: "Asked the society to check again", subject: `Report on ${o.ref_code}` });
+    expect(rows[4]).toMatchObject({ decided_by: society, reason: "Screenshot is cut off", event_name: "Test Event" });
+    expect(JSON.stringify(rows)).not.toMatch(/Test User|Organizer/i);
+
+    const one = await mine(stu.id, o.order_id);
+    expect(one.map((r) => r.action)).toEqual(["order.approve", "dispute.resolve", "order.reject"]);
+  });
+
+  it("shows nobody else's history and needs a login", async () => {
+    const { eventId, typeIds } = await createEvent(c, [{ price: 50000, quantity: 10 }]);
+    const a = await createUser(c);
+    const o = await book(c, a.id, eventId, items([typeIds[0], 1]));
+    await submitProof(c, a.id, o.order_id);
+    await asUser(c, SEED.organizer, () => rpc(c, "approve_order", [o.order_id], ["uuid"]));
+    expect(await mine((await createUser(c)).id, o.order_id)).toEqual([]);
+    expect((await mine(a.id)).length).toBe(1);
+    await expect(asAnon(c, () => c.query("select * from public.my_decision_history()"))).rejects.toThrow(/permission denied/);
+  });
+});

@@ -317,6 +317,17 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: decision history for students (D-078)
+- **My history** (`/me/history`, user menu + My tickets): payments, payment reports, team
+  registrations and ambassador applications with who / when / reason. Deciders are shown as the
+  society or "TickLO team". Order status page shows all decisions on that order.
+- Migration `20261128000500_my_decision_history.sql` (function `my_decision_history`).
+  **Not yet applied to TICkLO** (see Needs from Abubakar).
+- Unit tests: 1 new, 102 pass. DB tests: 2 new, 143 pass. Typecheck, lint and build pass.
+- Test: book a paid ticket → organizer rejects with a reason → My history shows "Payment not
+  approved" by the society with the reason → upload again → approve → order status page shows
+  "Decisions on this order".
+
 ## Change 2026-11-28: decision history for organizers (D-077)
 - **Society dashboard → History** and **event → History**: society review, event reviews,
   payments, team registrations and ambassador applications with who / when / reason. TickLO admins
@@ -528,9 +539,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077):** the migrations are applied; until the
+- **Apply migration `20261128000500_my_decision_history.sql` to TICkLO (D-078):** `supabase db push`
+  or ask Claude to apply it. It only adds one read function. Without it My history shows "Your
+  history could not be loaded" (the order status page just hides the card).
+- **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077, D-078):** the migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails, and
-  the admin Decisions tab and organizer History tab are not there yet.
+  the admin Decisions tab, organizer History tab and student My history are not there yet.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails

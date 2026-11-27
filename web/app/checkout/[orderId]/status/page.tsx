@@ -12,6 +12,8 @@ import { formatDateTime, formatEventRange, formatPKR } from "@/lib/format";
 import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
 import { DisputeForm } from "./dispute-form";
+import { createClient } from "@/lib/supabase/server";
+import { MyHistoryList } from "@/components/history/my-history-list";
 
 export const metadata: Metadata = { title: "Order status", robots: { index: false } };
 
@@ -27,6 +29,9 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ or
   const ev = order.events;
   if (status === "awaiting_payment") redirect(`/checkout/${order.id}`);
   const openDispute = disputes.find((d) => d.status === "open");
+  // D-078: every decision on this order (e.g. rejected, report answered, then approved)
+  const supabase = await createClient();
+  const { data: decisions } = await supabase.rpc("my_decision_history", { p_order_id: order.id, p_limit: 20 });
   const lastDispute = disputes[0];
 
   const view = {
@@ -106,6 +111,18 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ or
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {(decisions?.length ?? 0) > 1 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <h2 className="mb-3 font-semibold text-navy">Decisions on this order</h2>
+            <MyHistoryList rows={decisions ?? []} compact />
+            <Link href="/me/history" className="mt-3 inline-block text-sm text-brand-strong underline">
+              All my history
+            </Link>
           </CardContent>
         </Card>
       ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ChevronDown, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
+import { CalendarDays, ChevronDown, History, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -60,6 +60,11 @@ export function UserMenu(props: {
         <DropdownMenuItem asChild>
           <Link href="/me/tickets" className="min-h-11">
             <Ticket /> My tickets
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/me/history" className="min-h-11">
+            <History /> My history
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="sm:hidden">
