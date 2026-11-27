@@ -322,7 +322,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   payments, team registrations and ambassador applications with who / when / reason. TickLO admins
   are shown as "TickLO team". Owners and members only.
 - Migration `20261128000400_org_decision_history.sql` (function `org_decision_history`).
-  **Not yet applied to TICkLO** (see Needs from Abubakar).
+  Applied to TICkLO (2026-11-28, D-034 method, recorded in the migration history) and checked:
+  logged-in users can call it, visitors cannot, and a caller who is not in the society gets
+  "Only this society's organizers can see its history.".
 - Unit tests: 1 new, 101 pass. DB tests: 2 new, 141 pass. Typecheck, lint and build pass.
 - Test: as owner, Society dashboard → History shows "Registered" and TickLO's decision; reject a
   payment with a reason in an event → event → History shows it with the reason and your name.
@@ -526,11 +528,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Apply migration `20261128000400_org_decision_history.sql` to TICkLO (D-077):** my attempt was
-  blocked by the permission check. `supabase db push`, or the D-034 method (`supabase db query
-  --linked -f <file>` then record version `20261128000400` / `org_decision_history` in
-  `supabase_migrations.schema_migrations`). It only adds one read function. Without it the
-  organizer History tab shows "History could not be loaded".
 - **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077):** the migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails, and
   the admin Decisions tab and organizer History tab are not there yet.
