@@ -131,7 +131,22 @@ If a session stops, resume from the first unchecked milestone below.
 Every **Must**, **Should** and **Could** in the requirements doc is implemented. Details and
 deviations: `DECISIONS.md`.
 
-## Staging Supabase project – connected (2026-11-26)
+## Production Supabase project – Mumbai (2026-11-27, D-055)
+Project **TickLO Production** (`qfawucwisnygbwcqwglq`, ap-south-1 Mumbai). Replaces the Seoul
+project below, which is **paused** (free plan allows 2 active projects; restorable for 90 days).
+- All 16 migrations pushed (34 tables, all with RLS; 154 functions; pg_cron hold expiry every
+  minute; realtime on orders/tickets/checkins; 6 storage buckets). Only the 15 universities
+  from `seed.sql` loaded – no test accounts or events.
+- Edge Functions deployed; `QR_SIGNING_SECRET` and `CRON_SECRET` are the same values as before
+  (existing QRs and `hostinger-cron.txt` keep working).
+- Auth settings copied from Seoul (site URL, redirect URLs, Hostinger SMTP, email templates and
+  subjects, rate limits, 8-char passwords). JWTs signed with ES256 (local `getClaims` works).
+- Google and Apple providers are **off** until their secrets are pasted again (the API does not
+  return them) and the callback URL is updated in Google Cloud / Apple Developer.
+- `env.txt` and `web/.env.local` point at the new project; DB password is
+  `SUPABASE_DB_PASSWORD_MUMBAI` in `env.txt`.
+
+## Staging Supabase project – Seoul, paused 2026-11-27 (was connected 2026-11-26)
 Project **TICkLO** (`jquhutbruqevnilbthkb`, ap-northeast-2):
 - 8 migrations applied (19 tables, all with RLS; 60 functions; pg_cron hold expiry every
   minute; realtime on orders/tickets/checkins; 6 storage buckets + policies) and recorded in
@@ -403,7 +418,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   `web/scripts/apple-client-secret.mjs` pasted in Supabase → Providers → Apple, sender registered for
   Apple's private email relay. Renew the secret every 6 months (next: ~2027-05).
 - Domain name and Hostinger Node.js app setup (root `web/`), cron jobs (README section 4).
-- Optional speed-up: the Supabase project is in Seoul. When creating the production project,
-  pick **Mumbai (ap-south-1)** – every database query gets ~2x faster from Pakistan (D-038).
+- After the Mumbai move (D-055): new env values in Hostinger + restart; Google/Apple secrets and
+  callback URLs; create the admin with `web/scripts/create-admin.mjs`.
 - Decisions on the doc's open questions (retention days → `PROOF_RETENTION_DAYS`, review time
   limit, privacy/terms author, pilot society).

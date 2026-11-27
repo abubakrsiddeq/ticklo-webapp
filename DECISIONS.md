@@ -593,3 +593,13 @@ returns a fake user with an empty `identities` list (anti-enumeration). The app 
 Signup now detects the empty `identities` and shows "This email already has a TickLO
 account" with Log in / Google / Set a password links. This tells a visitor that the email is
 registered – the same thing the existing "already registered" error already did, so no new leak.
+
+## D-055 Production Supabase in Mumbai (owner request, 2026-11-27)
+- Supabase cannot change a project's region, so a new project **TickLO Production**
+  (`qfawucwisnygbwcqwglq`, ap-south-1) was created; the Seoul project held only test data, so
+  nothing was copied except the 15 universities (reference data from `seed.sql`).
+- The free plan allows 2 active projects, so the Seoul project was paused first (owner's choice
+  over pausing another project or upgrading). It can be restored within 90 days.
+- Same `QR_SIGNING_SECRET` / `CRON_SECRET` as before. Auth config copied through the
+  Management API; OAuth secrets are not returned by the API, so Google/Apple stay off until
+  re-entered. All users must log in again (new project, new JWT keys).
