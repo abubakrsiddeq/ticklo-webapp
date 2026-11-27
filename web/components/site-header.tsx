@@ -119,7 +119,10 @@ async function SiteHeaderContent() {
               </Button>
             </>
           )}
-          <MobileMenu items={items} loggedIn={Boolean(user)} />
+          <MobileMenu
+            items={items}
+            user={user ? { name: user.profile.full_name ?? user.email, email: user.email, avatarUrl: user.profile.avatar_url } : null}
+          />
         </>
       }
     />

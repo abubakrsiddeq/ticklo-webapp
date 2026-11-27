@@ -526,3 +526,12 @@ and guide the rest from that.
 ## D-049 Active header link is a filled pill (owner request, 2026-11-27)
 - The active link in the header pill is a solid brand-green pill with white text (owner's
   reference was blue; green keeps the brand). Replaces the green underline from D-048.
+
+## D-050 Modern mobile menu (owner request, 2026-11-27)
+- The phone menu (slides in from the right, where the menu button is) is a rounded glass panel
+  with a soft green glow and a blurred backdrop. Signed in: a profile card at the top (avatar,
+  name, email → /me/profile) and "Log out" at the bottom. Signed out: a navy card at the bottom
+  with "Create free account" and "Log in".
+- Each link has an icon and a chevron; the active link is a solid green pill like the desktop
+  header (D-049). Rows fade in one after another (off when the user prefers reduced motion).
+- `SheetContent` gained an `overlayClassName` prop for the backdrop.
