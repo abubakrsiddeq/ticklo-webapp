@@ -535,3 +535,11 @@ and guide the rest from that.
 - Each link has an icon and a chevron; the active link is a solid green pill like the desktop
   header (D-049). Rows fade in one after another (off when the user prefers reduced motion).
 - `SheetContent` gained an `overlayClassName` prop for the backdrop.
+
+## D-051 Emails go through Hostinger SMTP (owner request, 2026-11-27)
+App emails are sent with nodemailer over the Hostinger mailbox
+`noreply@ticklo.bkrtechsolutions.com` (smtp.hostinger.com:465, TLS/SSL). Order in
+`lib/emails/send.ts`: SMTP when `SMTP_HOST` is set → Resend when `RESEND_API_KEY` is
+set → console. Resend code is kept as a fallback. The same mailbox is the suggested
+Supabase Auth SMTP so signup/reset emails stop hitting the built-in rate limit.
+Hostinger's per-mailbox sending limit replaces the Resend 100/day note in D-023.

@@ -1,6 +1,7 @@
 import "server-only";
 import type { ReactElement } from "react";
 import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import { render } from "@react-email/render";
 import { serverEnv } from "@/lib/env.server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,6 +19,15 @@ export interface EmailMessage {
 
 let resend: Resend | null = null;
 const getResend = () => (resend ??= new Resend(serverEnv.resendApiKey));
+
+let smtp: Transporter | null = null;
+const getSmtp = () =>
+  (smtp ??= nodemailer.createTransport({
+    host: serverEnv.smtp.host,
+    port: serverEnv.smtp.port,
+    secure: serverEnv.smtp.port === 465, // 465 = TLS/SSL from the start; 587 = STARTTLS
+    auth: { user: serverEnv.smtp.user, pass: serverEnv.smtp.pass },
+  }));
 
 async function log(
   msg: EmailMessage,
@@ -45,12 +55,25 @@ async function log(
 /**
  * Send one email. NEVER throws: an email problem must not affect the order or
  * ticket ("Email fail ho jaye to order ya ticket pe koi asar nahi").
- * Without RESEND_API_KEY the email is printed to the server console instead.
+ * Provider: SMTP when SMTP_HOST is set (Hostinger, D-051), else Resend when
+ * RESEND_API_KEY is set, else the email is printed to the server console.
  */
 export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
   if (!msg.to) return { ok: false };
   try {
     const [html, text] = await Promise.all([render(msg.react), render(msg.react, { plainText: true })]);
+    if (serverEnv.smtp.host) {
+      const info = await getSmtp().sendMail({
+        from: serverEnv.emailFrom,
+        to: msg.to,
+        subject: msg.subject,
+        html,
+        text,
+        attachments: msg.attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType, cid: a.contentId })),
+      });
+      await log(msg, "sent", { providerId: info.messageId });
+      return { ok: true };
+    }
     if (!serverEnv.resendApiKey) {
       console.info(`\n[email → console] to=${msg.to} | ${msg.subject}${msg.attachments?.length ? ` | ${msg.attachments.length} attachment(s)` : ""}\n${text}\n`);
       await log(msg, "logged");

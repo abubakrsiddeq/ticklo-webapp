@@ -236,18 +236,20 @@ otp_length = 8
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
+# TickLO: Hostinger mailbox (D-051). Uncomment, set SMTP_PASS in the shell, then
+# `supabase config push` – or enter the same values in Dashboard → Auth → SMTP.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.hostinger.com"
+# port = 465
+# user = "noreply@ticklo.bkrtechsolutions.com"
+# pass = "env(SMTP_PASS)"
+# admin_email = "noreply@ticklo.bkrtechsolutions.com"
+# sender_name = "TickLO"
 
 # TickLO auth emails (EML-01). Links use token_hash so they work on any device.
 # Supabase free tier blocks template changes while the default email provider is
-# used. After setting up Resend SMTP, uncomment these and run `supabase config push`.
+# used. After setting up SMTP (above), uncomment these and run `supabase config push`.
 # [auth.email.template.confirmation]
 # subject = "Confirm your TickLO account"
 # content_path = "./supabase/templates/confirmation.html"

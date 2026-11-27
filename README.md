@@ -12,7 +12,7 @@ Ticketing and gate verification for events at Pakistani universities.
 | `DECISIONS.md` | Every decision taken where the requirements were open |
 
 **Stack:** Next.js 16 (App Router, TypeScript strict) · Tailwind CSS 4 · shadcn/ui · Supabase
-(Postgres, Auth, Storage, Realtime, Edge Functions) · Resend + React Email · Hostinger Node.js
+(Postgres, Auth, Storage, Realtime, Edge Functions) · Hostinger SMTP (nodemailer) / Resend + React Email · Hostinger Node.js
 hosting. Free tiers only.
 
 ---
@@ -130,9 +130,10 @@ See `supabase/functions/README.md` for the function API (also used by the Flutte
 - **Email:** keep "Confirm email" ON (AUTH-01).
 - **Email templates:** paste `supabase/templates/confirmation.html` into "Confirm signup" and
   `supabase/templates/recovery.html` into "Reset password" (links work on any device).
-- **SMTP:** the built-in Supabase mailer only sends a few emails per hour. Use Resend SMTP
-  (Project Settings → Auth → SMTP): host `smtp.resend.com`, port 465, user `resend`,
-  password = your Resend API key, sender = your verified domain address.
+- **SMTP:** the built-in Supabase mailer only sends a few emails per hour. Use the Hostinger
+  mailbox (Project Settings → Auth → SMTP): host `smtp.hostinger.com`, port 465,
+  user/sender `noreply@ticklo.bkrtechsolutions.com`, password = the mailbox password,
+  sender name `TickLO`.
 - **Google (AUTH-02):** create an OAuth client in Google Cloud (Authorized redirect URI:
   `https://<project-ref>.supabase.co/auth/v1/callback`) and paste the client ID/secret in
   Providers → Google.
@@ -162,8 +163,9 @@ Never commit real values.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | anon / publishable key |
 | `NEXT_PUBLIC_SITE_URL` | browser + server | e.g. `https://ticklo.pk` (used in emails and redirects) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **server only** | service role / secret key – never exposed to the browser |
-| `RESEND_API_KEY` | server only | empty → emails are printed to the server console instead |
-| `EMAIL_FROM` | server only | e.g. `TickLO <tickets@ticklo.pk>` (verified domain in Resend) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | server only | Hostinger: `smtp.hostinger.com`, `465`, the mailbox + its password. When `SMTP_HOST` is set, SMTP is used |
+| `RESEND_API_KEY` | server only | used only when `SMTP_HOST` is empty; both empty → emails are printed to the server console |
+| `EMAIL_FROM` | server only | `TickLO <noreply@ticklo.bkrtechsolutions.com>` (must be the SMTP mailbox) |
 | `QR_SIGNING_SECRET` | server only | signs ticket QR codes – same value as the Edge Function secret |
 | `CRON_SECRET` | server only | long random string for `/api/cron/*` |
 | `PROOF_RETENTION_DAYS` | server only (optional) | delete payment screenshots N days after the event; unset = keep |
@@ -216,7 +218,7 @@ web/
     supabase/            server, browser, admin (service role) clients + proxy session refresh
     validation/          zod schemas shared by forms and server actions
     payments/            manual bank/wallet transfer provider (gateway can be added here later)
-    emails/              sending (Resend / console) + notifications
+    emails/              sending (SMTP / Resend / console) + notifications
     queries/             data loaders
   proxy.ts               keeps the Supabase session fresh (Next 16 "proxy", formerly middleware)
 supabase/

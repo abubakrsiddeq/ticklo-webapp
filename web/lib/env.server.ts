@@ -5,6 +5,13 @@ import "server-only";
 export const serverEnv = {
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
+  /** SMTP (e.g. Hostinger mail). When SMTP_HOST is set it is used instead of Resend. */
+  smtp: {
+    host: process.env.SMTP_HOST ?? "",
+    port: Number(process.env.SMTP_PORT ?? 465),
+    user: process.env.SMTP_USER ?? "",
+    pass: process.env.SMTP_PASS ?? "",
+  },
   emailFrom: process.env.EMAIL_FROM ?? "TickLO <onboarding@resend.dev>",
   cronSecret: process.env.CRON_SECRET ?? "",
   /** Same value as the Edge Function secret QR_SIGNING_SECRET (D-037). */

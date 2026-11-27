@@ -359,6 +359,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Hostinger SMTP for emails (D-051):** in the Hostinger Node.js app settings add
+  `SMTP_HOST=smtp.hostinger.com`, `SMTP_PORT=465`, `SMTP_USER=noreply@ticklo.bkrtechsolutions.com`,
+  `SMTP_PASS=<mailbox password>` and set `EMAIL_FROM=TickLO <noreply@ticklo.bkrtechsolutions.com>`
+  (all already in `env.txt`), then redeploy. Also enter the same mailbox in Supabase →
+  Auth → SMTP (sender name `TickLO`) so signup/reset emails use it. Local `.env.local` is set
+  and the SMTP login was verified on 2026-11-27.
 - **Apply migration `20261127001600_event_format.sql` to TICkLO** (adds `events.format`; the live
   build ignores it) before deploying the new web build – the new build needs it.
 - **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is
