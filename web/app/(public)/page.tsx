@@ -115,9 +115,9 @@ function HeroVisual() {
 }
 
 const STATS = [
-  { icon: WifiOff, value: "0 MB", label: "Internet needed at the gate", short: "Internet at gate" },
-  { icon: Ticket, value: "Rs 0", label: "TickLO fees", short: "TickLO fees" },
-  { icon: ScanLine, value: "1 tap", label: "Gate check-in", short: "Gate check-in" },
+  { icon: WifiOff, value: "0 MB", label: "Internet at gate" },
+  { icon: Ticket, value: "Rs 0", label: "TickLO fees" },
+  { icon: ScanLine, value: "1 tap", label: "Gate check-in" },
 ];
 
 const STEPS = [
@@ -163,24 +163,21 @@ export default async function HomePage() {
             <div className="mt-7 max-w-2xl sm:mt-8">
               <EventFilters universities={universities} className="p-2 shadow-lift ring-white" />
             </div>
-            {/* Phone: one row of three in a glass card. sm+: inline with dividers. */}
-            <dl className="mt-8 grid grid-cols-3 rounded-3xl bg-white/75 py-4 shadow-card ring-1 ring-white backdrop-blur sm:mt-10 sm:flex sm:flex-wrap sm:gap-y-5 sm:rounded-none sm:bg-transparent sm:py-0 sm:shadow-none sm:ring-0 sm:backdrop-blur-none">
-              {STATS.map(({ icon: Icon, value, label, short }, i) => (
+            {/* One glass card, three columns: stacked + centred on phones, icon beside text from sm up. */}
+            <dl className="mt-8 grid max-w-2xl grid-cols-3 rounded-3xl bg-white/75 py-4 shadow-card ring-1 ring-white backdrop-blur sm:mt-10 sm:py-3">
+              {STATS.map(({ icon: Icon, value, label }, i) => (
                 <div
                   key={label}
                   className={cn(
-                    "flex min-w-0 flex-col items-center gap-2 px-1.5 text-center sm:flex-row sm:items-start sm:gap-3 sm:px-0 sm:text-left",
-                    i > 0 && "border-l border-navy/10 sm:ml-8 sm:pl-8",
+                    "flex min-w-0 flex-col items-center gap-2 px-1.5 text-center sm:flex-row sm:gap-3 sm:px-3 sm:py-2.5 sm:text-left lg:px-4",
+                    i > 0 && "border-l border-navy/10",
                   )}
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong sm:mt-1 sm:size-auto sm:rounded-none sm:bg-transparent sm:text-navy">
-                    <Icon className="size-5 sm:size-7" aria-hidden />
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-strong sm:size-11 sm:rounded-2xl">
+                    <Icon className="size-5 sm:size-6" aria-hidden />
                   </span>
                   <div className="flex min-w-0 flex-col-reverse">
-                    <dt className="text-[11px] leading-tight text-slate-500 sm:max-w-[9rem] sm:text-sm sm:leading-snug">
-                      <span className="sm:hidden">{short}</span>
-                      <span className="hidden sm:inline">{label}</span>
-                    </dt>
+                    <dt className="text-[11px] leading-tight whitespace-nowrap text-slate-500 sm:mt-0.5 sm:text-[13px]">{label}</dt>
                     <dd className="font-heading text-xl leading-tight font-bold text-navy sm:text-2xl">{value}</dd>
                   </div>
                 </div>
