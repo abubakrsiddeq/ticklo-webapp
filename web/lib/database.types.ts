@@ -354,6 +354,7 @@ export type Database = {
       };
       event_sessions: {
         Row: {
+          member_required: string[];
           capacity: number | null;
           created_at: string;
           created_by: string | null;
@@ -377,6 +378,7 @@ export type Database = {
           venue: string | null;
         };
         Insert: {
+          member_required?: string[];
           capacity?: number | null;
           created_at?: string;
           created_by?: string | null;
@@ -400,6 +402,7 @@ export type Database = {
           venue?: string | null;
         };
         Update: {
+          member_required?: string[];
           capacity?: number | null;
           created_at?: string;
           created_by?: string | null;
@@ -493,6 +496,8 @@ export type Database = {
       };
       events: {
         Row: {
+          attendee_names: string;
+          attendee_university: string;
           cancel_reason: string | null;
           cancelled_at: string | null;
           capacity: number;
@@ -520,6 +525,8 @@ export type Database = {
           visibility: Database["public"]["Enums"]["event_visibility"];
         };
         Insert: {
+          attendee_names?: string;
+          attendee_university?: string;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           capacity: number;
@@ -547,6 +554,8 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["event_visibility"];
         };
         Update: {
+          attendee_names?: string;
+          attendee_university?: string;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           capacity?: number;
@@ -638,6 +647,7 @@ export type Database = {
       };
       orders: {
         Row: {
+          attendees: Json;
           answers: Json;
           approved_at: string | null;
           buyer_email: string | null;
@@ -664,6 +674,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          attendees?: Json;
           answers?: Json;
           approved_at?: string | null;
           buyer_email?: string | null;
@@ -690,6 +701,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          attendees?: Json;
           answers?: Json;
           approved_at?: string | null;
           buyer_email?: string | null;
@@ -1710,6 +1722,7 @@ export type Database = {
       };
       team_registrations: {
         Row: {
+          pay_by: string | null;
           answers: Json;
           created_at: string;
           decided_at: string | null;
@@ -1727,6 +1740,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          pay_by?: string | null;
           answers?: Json;
           created_at?: string;
           decided_at?: string | null;
@@ -1744,6 +1758,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          pay_by?: string | null;
           answers?: Json;
           created_at?: string;
           decided_at?: string | null;
@@ -1944,6 +1959,9 @@ export type Database = {
       };
       tickets: {
         Row: {
+          holder_university: string | null;
+          answers: Json;
+          team_member_index: number | null;
           batch_id: string | null;
           cancelled_at: string | null;
           checked_in_at: string | null;
@@ -1971,6 +1989,9 @@ export type Database = {
           ticket_type_id: string;
         };
         Insert: {
+          holder_university?: string | null;
+          answers?: Json;
+          team_member_index?: number | null;
           batch_id?: string | null;
           cancelled_at?: string | null;
           checked_in_at?: string | null;
@@ -1998,6 +2019,9 @@ export type Database = {
           ticket_type_id: string;
         };
         Update: {
+          holder_university?: string | null;
+          answers?: Json;
+          team_member_index?: number | null;
           batch_id?: string | null;
           cancelled_at?: string | null;
           checked_in_at?: string | null;
@@ -2438,6 +2462,27 @@ export type Database = {
         };
         Returns: boolean;
       };
+      cancel_my_order: {
+        Args: {
+          p_order_id: string;
+        };
+        Returns: undefined;
+      };
+      update_team_members: {
+        Args: {
+          p_registration_id: string;
+          p_team_name: string;
+          p_members: Json;
+        };
+        Returns: undefined;
+      };
+      set_session_member_fields: {
+        Args: {
+          p_session_id: string;
+          p_required: string[];
+        };
+        Returns: undefined;
+      };
       cancel_event: {
         Args: {
           p_event_id: string | null;
@@ -2467,6 +2512,7 @@ export type Database = {
           p_ref?: string | null;
           p_answers?: Json | null;
           p_registration_id?: string | null;
+          p_attendees?: Json | null;
         };
         Returns: Json;
       };
@@ -2885,6 +2931,11 @@ export type Database = {
           hold_expires_at: string;
           fee_paisa: number;
           fee_mode: string;
+          members: Json;
+          pay_by: string | null;
+          team_min: number;
+          team_max: number;
+          member_required: string[];
         }[];
       };
       normalize_code: {
@@ -3203,6 +3254,7 @@ export type Database = {
           ticket_id: string;
           code: string;
           holder_name: string;
+          holder_university: string | null;
           ticket_type: string;
           source: string;
           serial: string;

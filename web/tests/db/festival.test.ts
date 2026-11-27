@@ -214,7 +214,7 @@ describe("session scanning (FES-06, FES-07, FES-12)", () => {
 });
 
 describe("competitions (FES-10, FES-11, FES-13)", () => {
-  it("registers a free team at once with the team name on the ticket", async () => {
+  it("registers a free team at once with a ticket for every member (D-064)", async () => {
     const { eventId } = await createEvent(c, [{ price: 100000 }]);
     const comp = await session(eventId, { name: "Debate", kind: "competition", capacity: 1, team_min: 2, team_max: 2, fee_paisa: 0 });
     const lead = await buyer("Ali Lead");
@@ -222,7 +222,7 @@ describe("competitions (FES-10, FES-11, FES-13)", () => {
     const r = await register(lead.id, comp, "Alpha", [{ name: "Ali Lead" }, { name: "Sara Two" }]);
     expect(r.status).toBe("approved");
     expect(r.order?.status).toBe("approved");
-    expect((await ticketsOf(r.order!.order_id)).map((t) => t.holder_name)).toEqual(["Team Alpha"]);
+    expect((await ticketsOf(r.order!.order_id)).map((t) => t.holder_name)).toEqual(["Ali Lead", "Sara Two"]);
     await expectTL(register(lead.id, comp, "Beta", [{ name: "Ali Lead" }, { name: "X Y" }]), "ALREADY_REGISTERED");
     const other = await buyer();
     await expectTL(register(other.id, comp, "Gamma", [{ name: "A B" }, { name: "C D" }]), "SOLD_OUT");
