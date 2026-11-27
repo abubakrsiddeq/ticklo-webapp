@@ -17,7 +17,9 @@ import { formatPhone } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { normalizeCode, refCookieName, rewardLabel, REF_PARAM, type DiscountType } from "@/lib/referrals";
-import { BookingWidget, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
+import { BookingWidget, type AttendeeSetting, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
+import { CompetitionCard } from "@/components/sessions/competition-card";
+import { ticketSaleEnd } from "@/lib/sessions";
 import { RefCapture } from "./ref-capture";
 import { AmbassadorCta } from "./ambassador-cta";
 import { PublicSchedule } from "@/components/sessions/public-schedule";
@@ -94,7 +96,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   // D-044: competition entry fees are paid through team registration, not the ticket list
   const types: WidgetTicketType[] = ticketTypes.filter((t) => !t.registration_session_id).map((t) => {
     const start = t.sale_starts_at ? new Date(t.sale_starts_at).getTime() : null;
-    const end = new Date(t.sale_ends_at ?? event.starts_at).getTime();
+    // D-064: festival tickets sell until their session starts
+    const end = new Date(ticketSaleEnd(event.format, t, sessions, event)).getTime();
     const saleState = start && now < start ? "not_started" : now >= end ? "ended" : "on";
     return {
       id: t.id,
@@ -119,13 +122,24 @@ export default async function EventPage({ params, searchParams }: { params: Prom
         ? "Preview – tickets go on sale after TickLO approves this event."
         : types.every((t) => t.remaining <= 0)
           ? "Sold out."
-          : started
+          : started && event.format !== "festival"
             ? "Online booking closed when the event started."
             : types.some((t) => t.saleState === "not_started")
               ? "Ticket sale has not started yet."
               : "Ticket sale is closed.";
 
   const pagePath = eventPath(org.slug, event.slug);
+  const eventOpen = !cancelled && !ended && event.status === "published";
+  // D-064: a session's "Get ticket" button picks a ticket on sale that opens it by name
+  const sessionTickets: Record<string, string> = {};
+  for (const s of sessions) {
+    if (s.kind === "competition") continue;
+    const t = types.find((x) => !x.all_sessions && x.session_ids.includes(s.id) && x.saleState === "on" && x.remaining > 0);
+    if (t) sessionTickets[s.id] = t.id;
+  }
+  const competitions = sessions.filter((s) => s.kind === "competition");
+  const showCompetitionCard = competitions.length > 0 && (event.format === "competition" || !types.length);
+  const preselect = typeof sp.ticket === "string" ? sp.ticket : null;
   const needs =
     user && (!user.profile.full_name || !user.profile.phone)
       ? { full_name: user.profile.full_name ?? "", phone: formatPhone(user.profile.phone) }
@@ -225,13 +239,23 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               eventVenue={event.venue}
               registerBase={`${pagePath}/register`}
               eventUrl={absoluteUrl(pagePath)}
-              open={!cancelled && !ended && event.status === "published"}
+              open={eventOpen}
               now={now}
+              sessionTickets={sessionTickets}
             />
           ) : null}
         </div>
 
-        <aside className="lg:sticky lg:top-28 lg:self-start">
+        <aside className="grid gap-4 lg:sticky lg:top-28 lg:self-start">
+          {showCompetitionCard ? (
+            <CompetitionCard
+              competitions={competitions}
+              registerBase={`${pagePath}/register`}
+              now={now}
+              eventOpen={eventOpen}
+              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : "Registration opens after TickLO approves this event."}
+            />
+          ) : null}
           {types.length ? (
           <BookingWidget
             eventId={event.id}
@@ -243,6 +267,10 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             loginHref={`/login?next=${encodeURIComponent(pagePath)}`}
             needs={needs}
             referral={referral}
+            attendeeNames={event.attendee_names as AttendeeSetting}
+            attendeeUniversity={event.attendee_university as AttendeeSetting}
+            buyerName={user?.profile.full_name ?? ""}
+            preselect={preselect}
             sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions }))}
           />
           ) : null}

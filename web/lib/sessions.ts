@@ -192,3 +192,42 @@ export const FESTIVAL_CAPACITY = 100000;
 export const FESTIVAL_MAX_PER_ORDER = 10;
 
 export const asEventFormat = (v: string | null | undefined): EventFormat => (v === "festival" || v === "competition" ? v : "single");
+
+/**
+ * D-064: when a ticket type stops selling when it has no "sale ends" (mirrors
+ * ticket_type_default_sale_end in Postgres). Festivals: until its session starts
+ * (passes: the last pass session), else when the event starts.
+ */
+export function ticketSaleEnd(
+  format: string | null | undefined,
+  t: { sale_ends_at: string | null; all_sessions: boolean; session_ids: string[] },
+  sessions: { id: string; starts_at: string; pass_access: boolean }[],
+  event: { starts_at: string; ends_at: string },
+): string {
+  if (t.sale_ends_at) return t.sale_ends_at;
+  if (format !== "festival") return event.starts_at;
+  const relevant = t.all_sessions ? sessions.filter((s) => s.pass_access) : sessions.filter((s) => t.session_ids.includes(s.id));
+  if (!relevant.length) return event.ends_at;
+  return relevant.reduce((latest, s) => (s.starts_at > latest ? s.starts_at : latest), relevant[0].starts_at);
+}
+
+export type CompetitionState = "open" | "full" | "closed" | "not_open";
+
+/** D-064: one rule for the schedule card, the sidebar card and the register page. */
+export function competitionState(
+  s: { capacity: number | null; remaining: number | null; needs_approval: boolean; registration_ends_at: string | null; starts_at: string; registration_type_id?: string | null },
+  now: number,
+  eventOpen: boolean,
+): CompetitionState {
+  if (!eventOpen || s.registration_type_id === null) return "not_open";
+  const closesAt = new Date(s.registration_ends_at ?? s.starts_at).getTime();
+  if (now >= closesAt) return "closed";
+  // with shortlisting people may still apply when places are taken (someone may not pay)
+  if (!s.needs_approval && s.capacity !== null && s.remaining !== null && s.remaining <= 0) return "full";
+  return "open";
+}
+
+export function competitionCta(s: { needs_approval: boolean; team_max: number }): string {
+  if (s.needs_approval) return "Apply";
+  return participationOf(s.team_max) === "team" ? "Register team" : "Register";
+}

@@ -6,7 +6,7 @@ import { CalendarPlus, Clock, MapPin, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/calendar";
-import { feeLabel, groupByDay, kindEmoji, kindLabel, seatsLabel, SESSION_KINDS, teamSizeLabel } from "@/lib/sessions";
+import { competitionCta, competitionState, feeLabel, groupByDay, kindEmoji, kindLabel, seatsLabel, SESSION_KINDS, teamSizeLabel } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 
 export interface PublicSession {
@@ -26,6 +26,7 @@ export interface PublicSession {
   fee_paisa: number | null;
   needs_approval: boolean;
   registration_ends_at: string | null;
+  registration_type_id?: string | null;
   results: { place: number; label: string; name: string }[];
 }
 
@@ -37,6 +38,8 @@ export function PublicSchedule(props: {
   eventUrl: string;
   open: boolean; // event live (not cancelled/ended)
   now: number;
+  /** D-064: session id → a ticket type on sale that opens it ("Get ticket") */
+  sessionTickets?: Record<string, string>;
 }) {
   const days = useMemo(() => groupByDay(props.sessions), [props.sessions]);
   const [day, setDay] = useState(days[0]?.day ?? "");
@@ -95,6 +98,9 @@ export function PublicSchedule(props: {
           const seats = seatsLabel(s);
           const full = s.capacity !== null && s.remaining !== null && s.remaining <= 0;
           const regClosed = competition && s.registration_ends_at ? props.now >= new Date(s.registration_ends_at).getTime() : false;
+          // D-064: one rule with the sidebar card and the register page
+          const state = competition ? competitionState(s, props.now, props.open) : null;
+          const ticketId = !competition && props.open ? props.sessionTickets?.[s.id] : undefined;
           return (
             <li key={s.id} className="grid gap-2 rounded-2xl border border-navy/10 p-4 sm:grid-cols-[88px_1fr_auto] sm:items-start">
               <div className="text-sm font-semibold text-navy tabular-nums">
@@ -136,14 +142,17 @@ export function PublicSchedule(props: {
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
-                {competition && props.open ? (
-                  full || regClosed ? (
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600">{full ? "Full" : "Registration closed"}</span>
-                  ) : (
-                    <Button asChild size="sm" variant="brand">
-                      <Link href={`${props.registerBase}/${s.id}`}>{s.needs_approval ? "Apply" : "Register team"}</Link>
-                    </Button>
-                  )
+                {state === "open" ? (
+                  <Button asChild size="sm" variant="brand">
+                    <Link href={`${props.registerBase}/${s.id}`}>{competitionCta(s)}</Link>
+                  </Button>
+                ) : state === "full" || state === "closed" ? (
+                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600">{state === "full" ? "Full" : "Registration closed"}</span>
+                ) : null}
+                {ticketId && !full ? (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={`?ticket=${ticketId}#tickets`}>Get ticket</a>
+                  </Button>
                 ) : null}
                 {props.open ? (
                   <a

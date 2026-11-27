@@ -18,6 +18,18 @@ const itemsSchema = z
   .min(1, "Choose at least one ticket")
   .max(10);
 
+// D-064: one entry per ticket (holder name / university / session answers); Postgres checks them again
+const attendeesSchema = z
+  .array(
+    z.object({
+      ticket_type_id: z.string().uuid(),
+      name: z.string().trim().max(80).optional(),
+      university: z.string().trim().max(120).optional(),
+      answers: z.record(z.string(), z.record(z.string(), z.string().max(1000))).optional(),
+    }),
+  )
+  .max(20);
+
 /** PAY-01/PAY-02/PAY-12: create the order (holds tickets for 60 minutes). */
 export async function bookTickets(
   eventId: string,
@@ -25,6 +37,7 @@ export async function bookTickets(
   buyer: { full_name: string; phone: string } | null,
   code: string | null = null,
   answers: Record<string, Record<string, string>> | null = null,
+  attendees: unknown = null,
 ): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in to book tickets." };
@@ -32,6 +45,8 @@ export async function bookTickets(
 
   const parsedItems = itemsSchema.safeParse(items);
   if (!parsedItems.success) return { ok: false, error: "Choose at least one ticket." };
+  const parsedAttendees = attendees === null ? null : attendeesSchema.safeParse(attendees);
+  if (parsedAttendees && !parsedAttendees.success) return { ok: false, error: "Please check the details for every ticket." };
 
   let buyerName: string | null = null;
   let buyerPhone: string | null = null;
@@ -57,6 +72,7 @@ export async function bookTickets(
     p_ref: remembered && remembered.length <= 16 ? remembered : null,
     // FES-09: answers per session; the database checks them against the questions
     p_answers: answers && JSON.stringify(answers).length <= 20000 ? answers : null,
+    p_attendees: parsedAttendees?.data ?? null,
   });
   if (error) return fail(error);
 
