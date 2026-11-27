@@ -65,6 +65,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
     if (serverEnv.smtp.host) {
       const info = await getSmtp().sendMail({
         from: serverEnv.emailFrom,
+        replyTo: serverEnv.emailReplyTo || undefined,
         to: msg.to,
         subject: msg.subject,
         html,
@@ -81,6 +82,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
     }
     const { data, error } = await getResend().emails.send({
       from: serverEnv.emailFrom,
+      replyTo: serverEnv.emailReplyTo || undefined,
       to: msg.to,
       subject: msg.subject,
       html,

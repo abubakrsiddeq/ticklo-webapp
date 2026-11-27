@@ -359,6 +359,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Emails landing in spam (D-053):** (1) create a `support@ticklo.bkrtechsolutions.com` mailbox
+  and set `EMAIL_REPLY_TO` to it on Hostinger; (2) add the domain to Google Postmaster Tools
+  (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
+  in Gmail/Outlook, press "Not spam", add the sender to contacts and reply once; (4) after ~2
+  weeks of clean sending change `_dmarc.ticklo` to `v=DMARC1; p=quarantine; adkim=s; aspf=s`.
+  Re-paste the updated templates (step below) – they changed.
 - **Auth email templates + confirm-link fix (D-052):** deploy the new web build, then in
   Supabase → Auth → Emails → Templates paste `supabase/templates/confirmation.html`
   ("Confirm sign up", subject `Confirm your TickLO account`) and `recovery.html`

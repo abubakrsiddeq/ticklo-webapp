@@ -576,3 +576,12 @@ one-time token; (2) the default template's `?code=` only works in the browser th
   `noreply@ticklo.bkrtechsolutions.com` under "Sign in with Apple for Email Communication" (SPF on
   `ticklo.bkrtechsolutions.com` already includes Hostinger).
 - The Apple button shows even before Apple is turned on in Supabase; deploy after it is set up.
+
+## D-053 Keeping emails out of spam (owner report, 2026-11-27)
+Checked on 2026-11-27: SPF, DKIM and DMARC pass; the Hostinger relay IP and both domains are on
+no blacklist; reverse DNS is fine. The main cause is domain age – bkrtechsolutions.com was
+registered on 2026-11-15, and Gmail/Outlook distrust brand-new senders until people open,
+reply and click "Not spam". Code side: auth templates got a proper <head>, preview text, a
+copy-paste link and a "why you got this" footer; app emails can send a Reply-To
+(`EMAIL_REPLY_TO`, optional). Reputation steps (Postmaster Tools, DMARC quarantine, warm-up)
+are listed in PROGRESS "Needs from Abubakar". No code can promise 0 % spam.

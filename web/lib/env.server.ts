@@ -12,6 +12,8 @@ export const serverEnv = {
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
   },
+  /** Optional real inbox people can reply to (e.g. support@…); empty = no Reply-To. */
+  emailReplyTo: process.env.EMAIL_REPLY_TO ?? "",
   emailFrom: process.env.EMAIL_FROM ?? "TickLO <onboarding@resend.dev>",
   cronSecret: process.env.CRON_SECRET ?? "",
   /** Same value as the Edge Function secret QR_SIGNING_SECRET (D-037). */

@@ -1,13 +1,22 @@
 <!doctype html>
-<html lang="en"><body style="margin:0;padding:24px 0;background:#F3F5F8;font-family:Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Reset your TickLO password</title>
+</head>
+<body style="margin:0;padding:24px 0;background:#F3F5F8;font-family:Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden">Choose a new password for your TickLO account.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:12px;overflow:hidden">
 <tr><td style="background:#0B1F3A;padding:20px 28px;color:#fff;font-size:24px;font-weight:700">Tick<span style="color:#0F9D58">LO</span></td></tr>
 <tr><td style="padding:28px;color:#1F2937;font-size:15px;line-height:24px">
 <h1 style="color:#0B1F3A;font-size:22px;margin:0 0 12px">Reset your password</h1>
-<p style="margin:0 0 16px">Someone (hopefully you) asked to reset your TickLO password. Tap the button to choose a new one. The link works for 1 hour.</p>
-<p style="margin:20px 0"><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery" style="background:#0B7D47;color:#fff;padding:12px 22px;border-radius:8px;font-weight:600;text-decoration:none;display:inline-block">Choose a new password</a></p>
+<p style="margin:0 0 16px">We got a request to reset your TickLO password. Tap the button to choose a new one. The link works for 1 hour.</p>
+<p style="margin:20px 0"><a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=recovery" style="background:#0B7D47;color:#fff;padding:12px 22px;border-radius:8px;font-weight:600;text-decoration:none;display:inline-block">Choose a new password</a></p>
+<p style="margin:0 0 16px;color:#6B7280;font-size:13px">Button not working? Copy this link into your browser:<br><a href="{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=recovery" style="color:#0B7D47;word-break:break-all">{{ .RedirectTo }}&amp;token_hash={{ .TokenHash }}&amp;type=recovery</a></p>
 <p style="margin:0;color:#6B7280;font-size:13px">If you didn't ask for this, ignore this email – your password stays the same.</p>
 </td></tr>
-<tr><td style="padding:16px 28px;border-top:1px solid #E5E7EB;color:#6B7280;font-size:12px">TickLO se ticket lo, befikar raho!</td></tr>
+<tr><td style="padding:16px 28px;border-top:1px solid #E5E7EB;color:#6B7280;font-size:12px;line-height:18px">TickLO se ticket lo, befikar raho!<br>You get this email because a password reset was requested for {{ .Email }} at ticklo.bkrtechsolutions.com.</td></tr>
 </table></td></tr></table></body></html>
