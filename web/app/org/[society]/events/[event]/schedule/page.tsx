@@ -108,6 +108,7 @@ export default async function SchedulePage({
                   member_required: s.member_required,
                   attendee_names: s.attendee_names,
                   attendee_university: s.attendee_university,
+                  poster_url: s.poster_url,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
@@ -118,10 +119,17 @@ export default async function SchedulePage({
                   <article key={s.id} className="grid gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] md:grid-cols-[1fr_auto]">
                     <div className="grid gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-lg" aria-hidden>
-                          {kindEmoji(s.kind)}
-                        </span>
+                        {s.poster_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={s.poster_url} alt="" className="h-12 w-10 rounded-md object-cover ring-1 ring-border" />
+                        ) : (
+                          <span className="text-lg" aria-hidden>
+                            {kindEmoji(s.kind)}
+                          </span>
+                        )}
                         <p className="font-semibold text-navy">{s.name}</p>
+                        {/* D-066 */}
+                        {s.poster_url ? null : <Pill tone="warning">Poster missing</Pill>}
                         <Pill tone="neutral">{kindLabel(s.kind)}</Pill>
                         {s.pass_access ? <Pill tone="success">In passes</Pill> : null}
                         {competition && s.needs_approval ? <Pill tone="info">Shortlisting</Pill> : null}

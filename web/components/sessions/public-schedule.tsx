@@ -27,6 +27,7 @@ export interface PublicSession {
   needs_approval: boolean;
   registration_ends_at: string | null;
   registration_type_id?: string | null;
+  poster_url?: string | null;
   results: { place: number; label: string; name: string }[];
 }
 
@@ -107,7 +108,12 @@ export function PublicSchedule(props: {
                 {formatTime(s.starts_at)}
                 <span className="block text-xs font-normal text-muted-foreground">to {formatTime(s.ends_at)}</span>
               </div>
-              <div className="min-w-0">
+              <div className="flex min-w-0 gap-3">
+                {s.poster_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.poster_url} alt={`${s.name} poster`} loading="lazy" className="h-24 w-20 shrink-0 rounded-xl object-cover ring-1 ring-navy/10" />
+                ) : null}
+                <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-2 font-semibold text-navy">
                   <span aria-hidden>{kindEmoji(s.kind)}</span> {s.name}
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-slate-600">{kindLabel(s.kind)}</span>
@@ -140,6 +146,7 @@ export function PublicSchedule(props: {
                     ))}
                   </ol>
                 ) : null}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
                 {state === "open" ? (

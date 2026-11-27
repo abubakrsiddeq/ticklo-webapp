@@ -224,3 +224,16 @@ describe("festivals ask ticket-holder details per session (D-065)", () => {
     expect((await tickets(p.order_id))[0].holder_name).toBe("Fan");
   });
 });
+
+describe("session posters (D-066)", () => {
+  it("organizers set a session poster; others cannot; the schedule shows it", async () => {
+    const { eventId } = await createEvent(c, [{ price: 0 }]);
+    const ws = await session(eventId, { name: "Poster Workshop", kind: "workshop" });
+    const url = "https://example.supabase.co/storage/v1/object/public/posters/x.jpg";
+    await expectTL(asUser(c, (await buyer()).id, () => rpc(c, "set_session_poster", [ws, url], ["uuid", "text"])), "FORBIDDEN");
+    await expectTL(org(() => rpc(c, "set_session_poster", [ws, "javascript:alert(1)"], ["uuid", "text"])), "INVALID_ITEMS");
+    await org(() => rpc(c, "set_session_poster", [ws, url], ["uuid", "text"]));
+    const row = await c.query("select poster_url from public.event_schedule($1) where id = $2", [eventId, ws]);
+    expect(row.rows[0].poster_url).toBe(url);
+  });
+});

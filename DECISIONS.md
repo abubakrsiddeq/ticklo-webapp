@@ -785,3 +785,14 @@ registered – the same thing the existing "already registered" error already di
   opens no session asks nothing (buyer's name).
 - Single events and competition events keep the event-level setting (D-064). Saving a festival
   stores the event-level setting as off.
+
+## D-066 Every session has a poster / banner (owner request, 2026-11-27)
+- The session dialog (workshop, competition, concert, talk) has **Poster / banner** (JPG, PNG or
+  WebP, up to 5 MB, same upload as event posters). Required when adding a session, and when
+  saving an older session that has none; with a poster saved, uploading again replaces it.
+  Checked in the browser and in `saveSession` (uploaded before the session is saved, then
+  stored with `set_session_poster`, organizers only, https URLs only).
+- The database column `event_sessions.poster_url` stays nullable (sessions made before this have
+  none); the organizer schedule marks them "Poster missing".
+- Shown on the public festival schedule (thumbnail per session), on the competition register
+  page, and in the organizer schedule list. `event_schedule` returns it.

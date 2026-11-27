@@ -354,6 +354,7 @@ export type Database = {
       };
       event_sessions: {
         Row: {
+          poster_url: string | null;
           attendee_names: string;
           attendee_university: string;
           member_required: string[];
@@ -380,6 +381,7 @@ export type Database = {
           venue: string | null;
         };
         Insert: {
+          poster_url?: string | null;
           attendee_names?: string;
           attendee_university?: string;
           member_required?: string[];
@@ -406,6 +408,7 @@ export type Database = {
           venue?: string | null;
         };
         Update: {
+          poster_url?: string | null;
           attendee_names?: string;
           attendee_university?: string;
           member_required?: string[];
@@ -2482,6 +2485,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_session_poster: {
+        Args: {
+          p_session_id: string;
+          p_url: string;
+        };
+        Returns: undefined;
+      };
       set_session_attendee_fields: {
         Args: {
           p_session_id: string;
@@ -2693,6 +2703,7 @@ export type Database = {
           member_required: string[];
           attendee_names: string;
           attendee_university: string;
+          poster_url: string | null;
         }[];
       };
       event_stats: {

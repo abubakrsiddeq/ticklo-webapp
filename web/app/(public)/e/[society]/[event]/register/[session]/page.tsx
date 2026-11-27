@@ -43,6 +43,10 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
       <Link href={back} className="text-sm text-muted-foreground hover:underline">
         ← {event.name}
       </Link>
+      {s.poster_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={s.poster_url} alt={`${s.name} poster`} className="mt-3 max-h-80 w-full rounded-3xl bg-navy object-contain shadow-card" />
+      ) : null}
       <h1 className="mt-2 flex items-center gap-2 text-3xl font-bold text-navy">
         <Trophy className="size-7 text-brand-strong" aria-hidden /> {s.name}
       </h1>

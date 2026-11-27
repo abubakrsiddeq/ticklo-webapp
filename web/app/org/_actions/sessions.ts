@@ -8,6 +8,7 @@ import { fail, ok, type ActionResult } from "@/lib/errors";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
 import { parseTeamSize } from "@/lib/sessions";
+import { readUpload, uploadPublicImage } from "@/lib/storage";
 
 // Festival sessions (D-044). Every write is a Postgres function that checks the
 // organizer again; these actions only parse forms.
@@ -47,7 +48,13 @@ export interface SessionFormValues {
   registration_ends_at: string;
 }
 
-export async function saveSession(orgSlug: string, eventId: string, sessionId: string | null, v: SessionFormValues): Promise<ActionResult<{ id: string }>> {
+export async function saveSession(
+  orgSlug: string,
+  eventId: string,
+  sessionId: string | null,
+  v: SessionFormValues,
+  files: FormData | null = null,
+): Promise<ActionResult<{ id: string }>> {
   const access = await staffContext(orgSlug);
   if (!access || !uuid.safeParse(eventId).success) return { ok: false, error: "Not allowed." };
   if (sessionId && !uuid.safeParse(sessionId).success) return { ok: false, error: "Session not found." };
@@ -69,7 +76,24 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
   if (competition && !Number.isFinite(fee)) errs.fee = "Rupees";
   const regEnds = v.registration_ends_at ? fromPKTInputValue(v.registration_ends_at) : null;
   if (v.registration_ends_at && !regEnds) errs.registration_ends_at = "Check the date";
+  // D-066: every session has a poster – required for a new one, and for an older one without it
+  const poster = await readUpload(files?.get("poster") ?? null, { label: "Poster" });
+  if (poster.error) errs.poster = poster.error;
+  else if (!poster.file) {
+    let hasPoster = false;
+    if (sessionId) {
+      const { data: cur } = await (await createClient()).from("event_sessions").select("poster_url").eq("id", sessionId).maybeSingle();
+      hasPoster = Boolean(cur?.poster_url);
+    }
+    if (!hasPoster) errs.poster = "Add a poster or banner for this session";
+  }
   if (Object.keys(errs).length) return { ok: false, error: "Please check the form.", fieldErrors: errs };
+  let posterUrl: string | null = null;
+  try {
+    if (poster.file) posterUrl = await uploadPublicImage("posters", access.org.id, poster.file);
+  } catch (e) {
+    return fail(e);
+  }
 
   const data = {
     name: v.name.trim(),
@@ -98,6 +122,10 @@ export async function saveSession(orgSlug: string, eventId: string, sessionId: s
     p_data: data as unknown as Json,
   });
   if (error) return fail(error);
+  if (posterUrl) {
+    const { error: posterError } = await supabase.rpc("set_session_poster", { p_session_id: String(id), p_url: posterUrl });
+    if (posterError) return fail(posterError);
+  }
   if (competition) {
     const { error: fieldsError } = await supabase.rpc("set_session_member_fields", {
       p_session_id: String(id),

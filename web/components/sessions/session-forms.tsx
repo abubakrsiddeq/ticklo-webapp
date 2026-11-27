@@ -48,6 +48,7 @@ export interface SessionValue {
   member_required?: string[];
   attendee_names?: string;
   attendee_university?: string;
+  poster_url?: string | null;
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -140,8 +141,22 @@ export function SessionDialog({
                 needs_approval: needsApproval,
                 registration_ends_at: String(fd.get("registration_ends_at") ?? ""),
               };
+              // D-066: a poster is required (new sessions, and older ones that have none)
+              const posterFile = fd.get("poster");
+              const hasFile = posterFile instanceof File && posterFile.size > 0;
+              if (!hasFile && !session?.poster_url) {
+                setErrors((e) => ({ ...e, poster: "Add a poster or banner for this session" }));
+                toast.error("Add a poster or banner for this session.");
+                return;
+              }
+              if (hasFile && posterFile.size > 5 * 1024 * 1024) {
+                setErrors((e) => ({ ...e, poster: "Poster must be 5 MB or smaller" }));
+                return;
+              }
+              const files = new FormData();
+              if (hasFile) files.set("poster", posterFile);
               run(async () => {
-                const res = await saveSession(orgSlug, eventId, session?.id ?? null, v);
+                const res = await saveSession(orgSlug, eventId, session?.id ?? null, v, files);
                 setErrors(res.ok ? {} : (res.fieldErrors ?? {}));
                 return res;
               }, () => setOpen(false));
@@ -195,6 +210,21 @@ export function SessionDialog({
                 <Input id={`${p}-cap`} name="capacity" inputMode="numeric" defaultValue={session?.capacity ?? ""} placeholder={competition ? (solo ? "100" : "30") : "40"} />
               </FormField>
             </div>
+            <FormField
+              id={`${p}-poster`}
+              label={session?.poster_url ? "Poster / banner (upload to replace)" : "Poster / banner"}
+              hint="JPG, PNG or WebP, up to 5 MB. Shown on the schedule and the register page."
+              error={errors.poster}
+              required={!session?.poster_url}
+            >
+              <div className="flex items-center gap-3">
+                {session?.poster_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={session.poster_url} alt="" className="h-16 w-14 shrink-0 rounded-lg object-cover ring-1 ring-border" />
+                ) : null}
+                <Input id={`${p}-poster`} name="poster" type="file" accept="image/jpeg,image/png,image/webp" className="pt-2" />
+              </div>
+            </FormField>
             <FormField id={`${p}-desc`} label="Description (optional)">
               <Textarea id={`${p}-desc`} name="description" defaultValue={session?.description ?? ""} maxLength={2000} rows={3} placeholder="What happens, who should come, what to bring…" />
             </FormField>
