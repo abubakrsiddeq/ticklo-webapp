@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { NativeSelect } from "@/components/native-select";
 import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
 import { removeOrgMember, setOrgRole, setPlatformAdmin } from "../../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export const ROLE_LABELS: Record<string, string> = {
   owner: "Owner",
@@ -40,7 +41,7 @@ export function PlatformAdminToggle({ userId, isAdmin, name }: { userId: string;
 /** D-037: change this user's role in one society, or remove them. */
 export function OrgRoleRow({ orgId, userId, role, orgName }: { orgId: string; userId: string; role: string; orgName: string }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const isOwner = role === "owner";
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -85,7 +86,7 @@ export function OrgRoleRow({ orgId, userId, role, orgName }: { orgId: string; us
 /** D-037: add this user to a society with a role. */
 export function AddToOrgForm({ userId, orgs }: { userId: string; orgs: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [orgId, setOrgId] = useState("");
   const [role, setRole] = useState("member");
   if (!orgs.length) return <p className="text-sm text-muted-foreground">This person is already in every society.</p>;

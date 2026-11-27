@@ -120,6 +120,42 @@ describe("team entries", () => {
   });
 });
 
+describe("the same person twice in one team (D-074)", () => {
+  it("refuses a repeated roll number or a member with every detail the same, and names the members", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    const comp = await session(eventId, { name: "Web Dev", kind: "competition", capacity: 10, team_min: 2, team_max: 3, fee_paisa: 0 });
+    const lead = await buyer();
+    const detail = async (p: Promise<unknown>) => {
+      try {
+        await p;
+      } catch (e) {
+        return (e as { detail?: string }).detail ?? (e as Error).message;
+      }
+      throw new Error("expected a refusal");
+    };
+    // only names asked: two identical entries are a mistake
+    expect(await detail(register(lead.id, comp, "Same", [{ name: "Ali Khan" }, { name: "ali  khan" }]))).toBe(
+      "Member 2 has the same details as member 1. Each member must be a different person.",
+    );
+    expect(
+      await detail(
+        register(lead.id, comp, "Same", [
+          { name: "Ali Khan", roll_no: "21-CS-01", university: "NUST" },
+          { name: "Sara Ali", roll_no: "21-cs-01", university: "nust" },
+        ]),
+      ),
+    ).toBe("Member 2 has the same roll number as member 1. Each member must be a different person.");
+    expect(
+      await detail(register(lead.id, comp, "Same", [{ name: "Ali Khan", email: "a@x.pk" }, { name: "Sara Ali" }, { name: "Bilal", email: "a@x.pk" }])),
+    ).toBe("Member 3 has the same email as member 1. Each member must be a different person.");
+    // same roll number at another university, or two people sharing a name, are fine
+    await register(lead.id, comp, "Fine", [
+      { name: "Ali Khan", roll_no: "21-CS-01", university: "NUST" },
+      { name: "Ali Khan", roll_no: "21-CS-01", university: "FAST" },
+    ]);
+  });
+});
+
 describe("shortlisting holds places", () => {
   it("accepting holds a place to pay; no accepting past the places; the hold ends after its time", async () => {
     const { eventId } = await createEvent(c, [{ price: 100000 }]);

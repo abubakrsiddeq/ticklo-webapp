@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/notify";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { normalizeCode, refCookieName } from "@/lib/referrals";
 import { parseRegMembers, regAnswersSchema, teamNameError } from "@/lib/validation/team";
 import { runWaitlist } from "@/lib/waitlist";
@@ -28,8 +29,8 @@ export async function payTeam(registrationId: string, eventId: string, code: str
   if (error) return fail(error);
   const order = data as { order_id: string; status: string; existing: boolean };
   if (!order.existing) {
-    if (order.status === "approved") await notifyOrderConfirmed(order.order_id);
-    else await notifyPaymentInstructions(order.order_id);
+    // D-074: emails after the response
+    after(() => (order.status === "approved" ? notifyOrderConfirmed(order.order_id) : notifyPaymentInstructions(order.order_id)));
   }
   redirect(order.status === "approved" ? `/checkout/${order.order_id}/status?new=1` : order.status === "awaiting_payment" ? `/checkout/${order.order_id}` : `/checkout/${order.order_id}/status`);
 }

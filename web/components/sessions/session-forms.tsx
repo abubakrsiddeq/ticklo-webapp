@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -18,10 +18,11 @@ import { FormBuilder, type FormSource } from "@/components/sessions/form-builder
 import { DEFAULT_FORM, DEFAULT_TICKET_FIELDS, asForm, checkForm, ticketFieldsOf, type RegistrationForm } from "@/lib/registration-form";
 import type { ActionResult } from "@/lib/errors";
 import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 function useAction() {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const run = (fn: () => Promise<ActionResult<unknown>>, after?: () => void) =>
     start(async () => {
       const res = await fn();

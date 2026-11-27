@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -11,10 +11,11 @@ import { SubmitButton } from "@/components/submit-button";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { Button } from "@/components/ui/button";
 import { loginAction, resendConfirmationAction } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function LoginForm({ next }: { next: string }) {
-  const [pending, start] = useTransition();
-  const [resending, startResend] = useTransition();
+  const [pending, start] = useActionTransition();
+  const [resending, startResend] = useActionTransition();
   const [unconfirmed, setUnconfirmed] = useState(false);
   const form = useForm<LoginInput>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
   const { errors } = form.formState;

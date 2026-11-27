@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Gift, Loader2, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -23,10 +23,11 @@ import {
   setPromoActive,
   setSellerCode,
 } from "@/app/org/_actions/ambassadors";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 function useAction() {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const run = (fn: () => Promise<ActionResult<unknown>>, after?: () => void) =>
     start(async () => {
       const res = await fn();

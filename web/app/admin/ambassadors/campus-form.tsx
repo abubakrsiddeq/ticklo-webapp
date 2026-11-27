@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Power } from "lucide-react";
 import { toast } from "sonner";
@@ -10,12 +10,13 @@ import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { saveCampusAmbassador } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** AMB-14: add a TickLO campus ambassador by email. */
 export function CampusAmbassadorForm({ universities }: { universities: { id: string; name: string }[] }) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <form
       className="grid gap-3 sm:grid-cols-[2fr_1fr_1.5fr_auto] sm:items-end"
@@ -64,7 +65,7 @@ export function CampusAmbassadorForm({ universities }: { universities: { id: str
 
 export function CampusToggle({ userId, code, universityId, active }: { userId: string; code: string; universityId: string | null; active: boolean }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <Button
       size="sm"

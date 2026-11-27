@@ -183,10 +183,87 @@ export function checkAnswers(fields: FormField[], answers: Answers): Record<stri
   return e;
 }
 
+/** A member as sent to the server (built-in details on the member, the rest in answers). */
+export interface MemberLike {
+  name?: unknown;
+  phone?: unknown;
+  email?: unknown;
+  roll_no?: unknown;
+  university?: unknown;
+  answers?: unknown;
+}
+
+export type RepeatField = "phone" | "email" | "roll_no" | "name";
+export interface RepeatedMember {
+  /** the member listed again (0-based) */
+  index: number;
+  /** the earlier member it repeats */
+  of: number;
+  field: RepeatField;
+}
+
+const text = (v: unknown) => (typeof v === "string" ? v.trim().replace(/\s+/g, " ").toLowerCase() : "");
+
+/** Sorted, comparable copy of a member's details (so key order never matters). */
+function memberFingerprint(m: MemberLike): string {
+  const answers = m.answers && typeof m.answers === "object" ? (m.answers as Record<string, unknown>) : {};
+  const norm = (v: unknown) => (Array.isArray(v) ? v.map(text).sort() : text(v));
+  return JSON.stringify([
+    text(m.name),
+    typeof m.phone === "string" ? (normalizePhone(m.phone) ?? text(m.phone)) : "",
+    text(m.email),
+    text(m.roll_no),
+    text(m.university),
+    Object.keys(answers)
+      .sort()
+      .map((k) => [k, norm(answers[k])]),
+  ]);
+}
+
+/**
+ * D-074: the same person listed twice in one team: same mobile number, same email, same roll
+ * number at the same university, or every detail the same. Mirrors clean_members_form in Postgres.
+ * One entry per repeated member (the first reason found).
+ */
+export function repeatedMembers(members: MemberLike[]): RepeatedMember[] {
+  const seen = new Map<string, number>();
+  const out: RepeatedMember[] = [];
+  members.forEach((m, i) => {
+    const phone = typeof m.phone === "string" ? normalizePhone(m.phone) : null;
+    const keys: [RepeatField, string | null][] = [
+      ["phone", phone ? `p:${phone}` : null],
+      ["email", text(m.email) ? `e:${text(m.email)}` : null],
+      ["roll_no", text(m.roll_no) ? `r:${text(m.roll_no)}|${text(m.university)}` : null],
+      ["name", `all:${memberFingerprint(m)}`],
+    ];
+    let found: RepeatedMember | null = null;
+    for (const [field, key] of keys) {
+      if (!key) continue;
+      const first = seen.get(key);
+      if (first !== undefined && !found) found = { index: i, of: first, field };
+      if (first === undefined) seen.set(key, i);
+    }
+    if (found) out.push(found);
+  });
+  return out;
+}
+
+const REPEAT_FIELD_TEXT: Record<RepeatField, string> = {
+  phone: "mobile number",
+  email: "email",
+  roll_no: "roll number",
+  name: "details",
+};
+
+/** "Member 2 has the same mobile number as member 1." */
+export function repeatedMemberMessage(r: RepeatedMember): string {
+  return `Member ${r.index + 1} has the same ${REPEAT_FIELD_TEXT[r.field]} as member ${r.of + 1}. Each member must be a different person.`;
+}
+
 /**
  * A whole registration: team name, every member's answers, the same person not listed twice
- * (same mobile number or email, as Postgres refuses), and the team's answers.
- * Keys: "team", "m{i}-{field}", "t-{field}".
+ * (see repeatedMembers; Postgres refuses it too), and the team's answers.
+ * Keys: "team", "m{i}-{field}", "t-{field}", and "members" for a repeat whose field is not shown.
  */
 export function checkRegistration(
   form: RegistrationForm,
@@ -199,24 +276,26 @@ export function checkRegistration(
     const problem = teamNameProblem(teamName);
     if (problem) errs.team = problem;
   }
-  const phones = new Map<string, number>();
-  const emails = new Map<string, number>();
   members.forEach((m, i) => {
     for (const [k, v] of Object.entries(checkAnswers(form.member, m))) errs[`m${i}-${k}`] = v;
-    const shown = (id: string) => form.member.find((f) => f.id === id && isShown(f, m));
-    const phone = shown("phone") && typeof m.phone === "string" ? normalizePhone(m.phone) : null;
-    const email = shown("email") && typeof m.email === "string" ? m.email.trim().toLowerCase() : "";
-    if (phone) {
-      if (phones.has(phone) && !errs[`m${i}-phone`]) errs[`m${i}-phone`] = `Same number as member ${phones.get(phone)! + 1}`;
-      else phones.set(phone, i);
-    }
-    if (email) {
-      if (emails.has(email) && !errs[`m${i}-email`]) errs[`m${i}-email`] = `Same email as member ${emails.get(email)! + 1}`;
-      else emails.set(email, i);
-    }
   });
+  for (const r of repeatedMembers(members.map((m) => memberPayload(form.member, m)))) {
+    const key = `m${r.index}-${r.field}`;
+    const shown = form.member.some((f) => f.id === r.field && isShown(f, members[r.index]));
+    const message =
+      r.field === "name" ? `Same details as member ${r.of + 1}` : `Same ${REPEAT_FIELD_TEXT[r.field]} as member ${r.of + 1}`;
+    if (shown && !errs[key]) errs[key] = message;
+    else if (!shown) errs.members = errs.members ?? repeatedMemberMessage(r);
+  }
   for (const [k, v] of Object.entries(checkAnswers(form.team, teamAnswers))) errs[`t-${k}`] = v;
   return errs;
+}
+
+/** The toast for a registration that did not pass checkRegistration. */
+export function registrationErrorSummary(errs: Record<string, string>): string {
+  if (errs.members) return errs.members;
+  if (Object.values(errs).some((v) => v.startsWith("Same "))) return "The same person is listed twice. Each member must be a different person.";
+  return "Please fill in the highlighted fields.";
 }
 
 /** A typed answer as it is sent: phones as +92…, emails lower-case, links with https://. */

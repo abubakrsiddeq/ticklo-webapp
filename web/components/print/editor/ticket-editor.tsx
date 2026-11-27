@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { DesignCanvas } from "./design-canvas";
 import { PropertiesPanel, layerLabel, type LayerPatch } from "./properties-panel";
 import { useHistory } from "./use-history";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 const STAR_PATH = "M50 0L61 35H98L68 57L79 91L50 70L21 91L32 57L2 35H39Z";
 
@@ -207,7 +208,14 @@ export function TicketEditor({
     setUploading(true);
     const fd = new FormData();
     fd.set("file", file);
-    const res = await uploadTicketImage(orgSlug, fd);
+    let res: Awaited<ReturnType<typeof uploadTicketImage>>;
+    try {
+      res = await uploadTicketImage(orgSlug, fd);
+    } catch (error) {
+      setUploading(false);
+      toast.error(actionErrorMessage(error, "Upload failed. Please try again."));
+      return;
+    }
     setUploading(false);
     if (!res.ok || !res.data) {
       toast.error(res.ok ? "Upload failed." : res.error);

@@ -937,3 +937,27 @@ registered – the same thing the existing "already registered" error already di
   the browser too; the buyer's name and phone are checked before booking; ambassador application
   messages and session forms get server-side length and character checks.
 
+## D-074 No full-page error screen after a form is sent (owner request, 2026-11-28)
+- **What happened:** a team was registered for a web dev competition with both members' details
+  the same, and the page turned into "Something went wrong" (no Ref code, so the browser threw:
+  React 19 sends an error inside a transition to the error boundary). Any server action that
+  throws (no internet, the server failing or timing out behind Hostinger, or a new version
+  deployed while the page was open) did the same on all 40+ forms.
+- **Forms:** every client form now uses `useActionTransition` (`lib/use-action-transition.ts`)
+  instead of `useTransition`. If the action throws, a toast says what to do and the form keeps
+  what was typed; `redirect()` and `notFound()` from actions still work (`unstable_rethrow`).
+  Messages (`lib/action-errors.ts`): no internet / "TickLO was just updated, refresh the page" /
+  "Something went wrong on our side, try again in a moment". Booking and registration say "Open
+  My tickets to check, then try again if it is not there", since the order may already exist.
+  `ActionButton` and the ticket editor's image upload use the same messages.
+- **Server:** `registerTeam` catches anything unexpected and returns that message instead of
+  throwing. Order emails (QR codes, SMTP) for bookings, registrations and team payments are sent
+  with `after()`, after the response, so a slow mail server never holds up the page.
+- **Same person twice in a team:** besides the same mobile number or email, the same roll number
+  at the same university and two members with every detail the same are refused, in the browser
+  (under the field), the server action and Postgres (`clean_members_form`), with which members
+  repeat: "Member 2 has the same mobile number as member 1. Each member must be a different
+  person." Two people may still share a name.
+- The error page itself says "refresh the page or start again from the home page" (it said
+  "check your internet connection", which was usually wrong) and has a Go to home button.
+

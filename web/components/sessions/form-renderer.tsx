@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { NativeSelect } from "@/components/native-select";
 import { phoneInput } from "@/lib/phone";
 import { isShown, type AnswerValue, type Answers, type FormField as Field } from "@/lib/registration-form";
 import { uploadRegistrationFile } from "@/app/(public)/e/[society]/[event]/register/actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** D-068: the organizer's form fields, for one member or for the team. */
 export function FormRenderer({
@@ -56,7 +56,7 @@ function FieldInput({
   error?: string;
   preview: boolean;
 }) {
-  const [uploading, start] = useTransition();
+  const [uploading, start] = useActionTransition();
   const str = typeof value === "string" ? value : "";
   const arr = Array.isArray(value) ? value : [];
   const common = fieldAria(id, error, Boolean(f.help));

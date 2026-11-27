@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Banknote, Loader2, Lock, Pencil, Plus, Trash2, Unlock } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import {
   savePrintSeller,
   settlePrintSeller,
 } from "@/app/org/_actions/print-sales";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface SellerOption {
   id: string;
@@ -34,7 +35,7 @@ export interface TeamOption {
 
 function useAction() {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const run = (fn: () => Promise<ActionResult<unknown>>, after?: () => void) =>
     start(async () => {
       const res = await fn();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Plus, UserCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -10,10 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { NativeSelect } from "@/components/native-select";
 import { checkInForSession, decideTeam, saveResults } from "@/app/manage/actions";
 import type { ActionResult } from "@/lib/errors";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 function useAction() {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const run = (fn: () => Promise<ActionResult<unknown>>, after?: () => void) =>
     start(async () => {
       const res = await fn();

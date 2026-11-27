@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { cancelEvent } from "@/app/org/_actions/events";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 // ORG-11: confirm, then all ticket holders are emailed (EML-05)
 export function CancelEventButton({ orgSlug, eventId, ticketCount }: { orgSlug: string; eventId: string; ticketCount: number }) {
@@ -25,7 +26,7 @@ export function CancelEventButton({ orgSlug, eventId, ticketCount }: { orgSlug: 
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

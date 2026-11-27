@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { UniversityPicker, type UniversityChoice } from "@/components/university
 import { SubmitButton } from "@/components/submit-button";
 import { profileSchema, type ProfileInput } from "@/lib/validation/profile";
 import { updateProfile } from "./actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function ProfileForm({
   defaults,
@@ -21,7 +22,7 @@ export function ProfileForm({
   avatarUrl: string | null;
   universities: UniversityChoice[];
 }) {
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const form = useForm<ProfileInput>({ resolver: zodResolver(profileSchema), defaultValues: defaults });
   const { errors } = form.formState;

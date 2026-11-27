@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +8,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { orgHeadSchema, type HeadInput } from "@/lib/validation/org";
 import { HeadFields, type HeadAccount } from "../../head-fields";
 import { updateOrgHead } from "../../_actions/org";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** D-061: owners change (or add) the society head from Settings. */
 export function HeadForm({
@@ -23,7 +23,7 @@ export function HeadForm({
   otherDefaults?: { name: string; phone: string; email: string };
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const form = useForm<HeadInput>({ resolver: zodResolver(orgHeadSchema), defaultValues: defaults });
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { SubmitButton } from "@/components/submit-button";
 import { resolveDispute } from "./actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function ResolveDispute({ id }: { id: string }) {
   const router = useRouter();
   const [note, setNote] = useState("");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <form
       className="flex flex-col gap-2 sm:flex-row"

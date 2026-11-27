@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, UserCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { formatPhone } from "@/lib/phone";
 import { manualCheckIn } from "@/app/org/_actions/manage";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface AttendeeRow {
   id: string;
@@ -28,7 +29,7 @@ export interface AttendeeRow {
 
 function CheckInButton({ orgSlug, row }: { orgSlug: string; row: AttendeeRow }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <Button
       size="sm"

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { joinWaitlist, leaveWaitlist } from "@/app/(public)/e/[society]/[event]/waitlist-actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface WaitlistEntry {
   id: string;
@@ -33,7 +33,7 @@ export function WaitlistButton({
   className?: string;
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   if (!loggedIn) {
     return (
       <Link href={loginHref} className={`inline-flex items-center gap-1.5 text-xs font-semibold text-brand-strong hover:underline ${className ?? ""}`}>

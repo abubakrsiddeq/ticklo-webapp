@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -10,13 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { approveOrder, rejectOrder } from "@/app/org/_actions/manage";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 const QUICK_REASONS = ["Amount does not match", "Payment not received in our account", "Screenshot is unclear", "Student card missing or not valid"];
 
 export function ReviewActions({ orgSlug, orderId, refCode, duplicate }: { orgSlug: string; orderId: string; refCode: string; duplicate: boolean }) {
   const router = useRouter();
-  const [approving, startApprove] = useTransition();
-  const [rejecting, startReject] = useTransition();
+  const [approving, startApprove] = useActionTransition();
+  const [rejecting, startReject] = useActionTransition();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
 

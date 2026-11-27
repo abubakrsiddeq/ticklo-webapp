@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ArrowLeft, ArrowRight, Loader2, Printer, Save } from "lucide-react";
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { TicketFonts } from "./ticket-fonts";
 import { TemplateGallery, type ChosenTemplate, type SavedTemplate } from "./template-gallery";
 import { DesignThumb } from "./design-thumb";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => m.TicketEditor), {
   ssr: false,
@@ -82,7 +83,7 @@ export function PrintWizard({
   const [confirm, setConfirm] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   const type = types.find((t) => t.id === typeId) ?? firstAvailable;
   const cleanPrefix = prefix.trim().toUpperCase();

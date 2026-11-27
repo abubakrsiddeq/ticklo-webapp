@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -15,9 +14,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { requestDeletion } from "./actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function DeleteAccount({ requestedAt }: { requestedAt: string | null }) {
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   if (requestedAt) {
     return <p className="text-sm text-muted-foreground">Deletion requested. TickLO will process it soon.</p>;
   }

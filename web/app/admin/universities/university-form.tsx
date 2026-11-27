@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { NativeSelect } from "@/components/native-select";
 import { universityLabel } from "@/lib/university-label";
 import { approveUniversity, mergeUniversity, saveUniversity } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface UniRow {
   id: string;
@@ -20,7 +21,7 @@ export interface UniRow {
 
 export function UniversityForm({ uni, onDone, approve }: { uni?: UniRow; onDone?: () => void; approve?: boolean }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [v, setV] = useState({ name: uni?.name ?? "", short_name: uni?.short_name ?? "", city: uni?.city ?? "", email_domain: uni?.email_domain ?? "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   return (
@@ -113,7 +114,7 @@ export function UniversityRequestRow({
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "approve">("view");
   const [into, setInto] = useState("");
-  const [merging, startMerge] = useTransition();
+  const [merging, startMerge] = useActionTransition();
   const used = [
     info.students ? `${info.students} student${info.students === 1 ? "" : "s"}` : null,
     info.societies ? `${info.societies} societ${info.societies === 1 ? "y" : "ies"}` : null,

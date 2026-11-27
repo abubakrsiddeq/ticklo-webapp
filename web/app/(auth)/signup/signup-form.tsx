@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MailCheck } from "lucide-react";
@@ -11,9 +11,10 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { signupSchema, type SignupInput } from "@/lib/validation/auth";
 import { signupAction } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function SignupForm({ next }: { next: string }) {
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [exists, setExists] = useState(false);
   const form = useForm<SignupInput>({

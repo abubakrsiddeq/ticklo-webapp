@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -19,8 +20,7 @@ function ownFiles(userId: string, values: unknown[]): boolean {
   return values.every((v) => typeof v !== "string" || !/^[0-9a-f-]{36}\//.test(v) || v.startsWith(`${userId}/`));
 }
 
-/** FES-10: register a team for a competition (pays at once, or waits for shortlisting). */
-export async function registerTeam(input: {
+type RegisterTeamInput = {
   eventId: string;
   sessionId: string;
   teamName: string;
@@ -29,7 +29,25 @@ export async function registerTeam(input: {
   code: string | null;
   /** D-064: the lead's own name and phone when the account has none yet */
   leaderProfile?: { full_name: string; phone: string } | null;
-}): Promise<ActionResult> {
+};
+
+/** FES-10: register a team for a competition (pays at once, or waits for shortlisting). */
+export async function registerTeam(input: RegisterTeamInput): Promise<ActionResult> {
+  let next: string;
+  try {
+    const res = await registerTeamOrFail(input);
+    if (!res.ok) return res;
+    next = res.data!;
+  } catch (e) {
+    // D-074: never the full-page error screen; the registration may or may not have been saved
+    console.error("registerTeam failed", e);
+    return { ok: false, error: "We could not confirm your registration. Open My tickets to check, then try again if it is not there." };
+  }
+  redirect(next);
+}
+
+/** The registration itself; returns where to go next. */
+async function registerTeamOrFail(input: RegisterTeamInput): Promise<ActionResult<string>> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in to register." };
   if (!z.string().uuid().safeParse(input.eventId).success || !z.string().uuid().safeParse(input.sessionId).success) return { ok: false, error: "Competition not found." };
@@ -66,12 +84,13 @@ export async function registerTeam(input: {
   });
   if (error) return fail(error);
   const res = data as { registration_id: string; status: string; order: { order_id: string; status: string; existing: boolean } | null };
-  if (!res.order) redirect(`/me/tickets?team=applied#teams`);
-  if (!res.order.existing) {
-    if (res.order.status === "approved") await notifyOrderConfirmed(res.order.order_id);
-    else await notifyPaymentInstructions(res.order.order_id);
+  const order = res.order;
+  if (!order) return { ok: true, data: `/me/tickets?team=applied#teams` };
+  if (!order.existing) {
+    // emails (with QR codes) go out after the response, so a slow mail server never holds up the page
+    after(() => (order.status === "approved" ? notifyOrderConfirmed(order.order_id) : notifyPaymentInstructions(order.order_id)));
   }
-  redirect(res.order.status === "approved" ? `/checkout/${res.order.order_id}/status?new=1` : `/checkout/${res.order.order_id}`);
+  return { ok: true, data: order.status === "approved" ? `/checkout/${order.order_id}/status?new=1` : `/checkout/${order.order_id}` };
 }
 
 /** D-068: a file for a registration form field (CV, student card…), stored privately under the user's folder. */

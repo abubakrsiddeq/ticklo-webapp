@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import type { ActionResult } from "@/lib/errors";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** Approve / reject with a required reason for rejections (ADM-01, ADM-02). */
 export function ReviewButtons({ name, review }: { name: string; review: (input: { approve: boolean; note: string }) => Promise<ActionResult> }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
 

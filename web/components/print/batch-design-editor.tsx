@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { updatePrintBatchDesign } from "@/app/org/_actions/print";
 import { designProblems, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => m.TicketEditor), {
   ssr: false,
@@ -35,7 +36,7 @@ export function BatchDesignEditor({
 }) {
   const router = useRouter();
   const [design, setDesign] = useState(initialDesign);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const problems = designProblems(design);
 
   return (

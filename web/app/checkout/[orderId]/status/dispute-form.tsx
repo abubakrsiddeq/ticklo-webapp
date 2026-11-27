@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { openDispute } from "../../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function DisputeForm({ orderId }: { orderId: string }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [done, setDone] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   if (done) return <p className="rounded-lg bg-brand-soft p-3 text-sm text-navy" role="status">{done}</p>;
   if (!open) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { setScannerSessions } from "@/app/org/_actions/sessions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** FES-07: limit a volunteer to some sessions (nothing ticked = whole event incl. main entry). */
 export function ScannerSessionsDialog(props: { orgSlug: string; eventId: string; userId: string; name: string; sessions: { id: string; name: string }[]; selected: string[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(props.selected);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <>
       <Button variant="ghost" size="icon" aria-label={`Sessions ${props.name} can scan`} onClick={() => setOpen(true)}>

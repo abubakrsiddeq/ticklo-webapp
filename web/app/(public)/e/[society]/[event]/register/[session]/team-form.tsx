@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Plus, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,10 @@ import { SubmitButton } from "@/components/submit-button";
 import { FormRenderer } from "@/components/sessions/form-renderer";
 import { formatPKR } from "@/lib/format";
 import { normalizePhone, phoneInput } from "@/lib/phone";
-import { checkRegistration, memberPayload, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
+import { checkRegistration, registrationErrorSummary, memberPayload, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
 import { personNameProblem } from "@/lib/validation/common";
 import { registerTeam } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** FES-10 / D-064 / D-068: team name, members (min–max) and the organizer's form, optional code. */
 export function TeamForm(props: {
@@ -39,7 +40,7 @@ export function TeamForm(props: {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [code, setCode] = useState("");
   const [showCode, setShowCode] = useState(false);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition("We could not confirm your registration. Open My tickets to check, then try again if it is not there.");
   const total = props.feeMode === "per_member" ? props.feePaisa * members.length : props.feePaisa;
 
   function toggleLeadPlays(on: boolean) {
@@ -59,7 +60,7 @@ export function TeamForm(props: {
     }
     setErrors(errs);
     if (Object.keys(errs).length) {
-      toast.error("Please fill in the highlighted fields.");
+      toast.error(registrationErrorSummary(errs));
       return;
     }
     start(async () => {
@@ -140,6 +141,11 @@ export function TeamForm(props: {
             />
           </div>
         ))}
+        {errors.members ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {errors.members}
+          </p>
+        ) : null}
         {members.length < props.teamMax ? (
           <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, {}])}>
             <Plus /> Add member

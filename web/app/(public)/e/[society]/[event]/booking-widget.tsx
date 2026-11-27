@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { AlertTriangle, DoorOpen, Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
 import { clashes, kindEmoji, type Question, priceNow } from "@/lib/sessions";
 import { FormRenderer } from "@/components/sessions/form-renderer";
@@ -25,6 +25,7 @@ import { buyerDetailsSchema } from "@/lib/validation/profile";
 import { phoneInput } from "@/lib/phone";
 import { fieldErrors } from "@/lib/validation/common";
 import { bookTickets, checkCode, type CodePreview } from "./actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface WidgetReferral {
   code: string;
@@ -107,11 +108,11 @@ export function BookingWidget(props: {
   });
   const [buyer, setBuyer] = useState(props.needs ?? { full_name: "", phone: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition("We could not confirm your booking. Open My tickets to check, then try again if it is not there.");
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [applied, setApplied] = useState<CodePreview | null>(null);
-  const [checking, startCheck] = useTransition();
+  const [checking, startCheck] = useActionTransition();
   const [holders, setHolders] = useState<Record<string, Holder>>({});
   const [holderErrors, setHolderErrors] = useState<Record<string, string>>({});
 

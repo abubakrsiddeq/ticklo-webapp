@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { deleteTicketTemplate } from "@/app/org/_actions/print";
 import { TEMPLATES, TEMPLATE_CATEGORIES } from "@/lib/print/templates";
 import { parseDesign, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
 import { DesignThumb } from "./design-thumb";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface SavedTemplate {
   id: string;
@@ -38,7 +39,7 @@ export function TemplateGallery({
 }) {
   const router = useRouter();
   const [category, setCategory] = useState<string>("all");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const mine = useMemo(
     () => saved.flatMap((s) => {
       const d = parseDesign(s.design);

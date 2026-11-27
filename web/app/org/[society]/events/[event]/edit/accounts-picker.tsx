@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { SubmitButton } from "@/components/submit-button";
 import { setEventAccounts } from "@/app/org/_actions/events";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 // ORG-02: per event, choose which accounts students see
 export function AccountsPicker({
@@ -23,7 +24,7 @@ export function AccountsPicker({
 }) {
   const router = useRouter();
   const [chosen, setChosen] = useState(new Set(selected));
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   if (!accounts.length) {
     return (

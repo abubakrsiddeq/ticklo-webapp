@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { setOrgReferral } from "../../_actions/org";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** AMB-14: "Who told you about TickLO?" – once, in the first 30 days. */
 export function ReferralCodeForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <form
       className="flex flex-col gap-2 sm:flex-row sm:items-end"

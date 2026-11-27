@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizePhone } from "@/lib/phone";
+import { repeatedMemberMessage, repeatedMembers } from "@/lib/registration-form";
 import { emailField, hasControlChars, isEmail, personNameProblem, teamNameProblem } from "./common";
 
 // ORG-03
@@ -44,14 +45,8 @@ export function parseRegMembers(input: unknown): { ok: true; members: z.output<t
     phone: m.phone ? normalizePhone(m.phone)! : undefined,
     email: m.email || undefined,
   }));
-  const seen = new Set<string>();
-  for (const m of members) {
-    for (const key of [m.phone && `p:${m.phone}`, m.email && `e:${m.email}`]) {
-      if (!key) continue;
-      if (seen.has(key)) return { ok: false, error: "The same person is listed twice (same mobile number or email)." };
-      seen.add(key);
-    }
-  }
+  const repeat = repeatedMembers(members)[0];
+  if (repeat) return { ok: false, error: repeatedMemberMessage(repeat) };
   return { ok: true, members };
 }
 

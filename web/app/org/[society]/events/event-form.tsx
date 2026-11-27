@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { eventSchema, type EventInput } from "@/lib/validation/event";
 import { EVENT_FORMATS } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/errors";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 // ORG-04: name, description, poster, venue, start/end (PKT), capacity, visibility, max per order
 // (capacity and max per order are not asked for a festival – D-062)
@@ -37,7 +38,7 @@ export function EventForm({
 }) {
   const savedTicketForm: RegistrationForm | null = ticketFields ? { member: ticketFields, team: [] } : null;
   const [ticketForm, setTicketForm] = useState<RegistrationForm>(() => savedTicketForm ?? { member: DEFAULT_TICKET_FIELDS.map((f) => ({ ...f })), team: [] });
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [posterError, setPosterError] = useState<string | undefined>();
   const [preview, setPreview] = useState<string | null>(posterUrl ?? null);
   const form = useForm<EventInput>({ resolver: zodResolver(eventSchema), defaultValues: defaults });

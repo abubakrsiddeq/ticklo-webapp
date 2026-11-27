@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +11,7 @@ import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { paymentAccountSchema, type PaymentAccountInput } from "@/lib/validation/payments";
 import { savePaymentAccount } from "@/app/org/_actions/manage";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function AccountForm({
   orgSlug,
@@ -25,7 +25,7 @@ export function AccountForm({
   onDone?: () => void;
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const form = useForm<PaymentAccountInput>({
     resolver: zodResolver(paymentAccountSchema),
     defaultValues: defaults ?? { kind: "bank", bank_name: "", account_title: "", account_number: "", iban: "" },

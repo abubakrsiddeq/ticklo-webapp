@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
@@ -98,8 +99,8 @@ export async function bookTickets(
 
   const order = data as { order_id: string; status: string; existing: boolean };
   if (!order.existing) {
-    if (order.status === "approved") await notifyOrderConfirmed(order.order_id); // free tickets
-    else await notifyPaymentInstructions(order.order_id); // EML-02
+    // D-074: emails after the response (free tickets: confirmed with QR codes; EML-02: how to pay)
+    after(() => (order.status === "approved" ? notifyOrderConfirmed(order.order_id) : notifyPaymentInstructions(order.order_id)));
   }
   redirect(order.status === "approved" ? `/checkout/${order.order_id}/status?new=1` : `/checkout/${order.order_id}${order.existing ? "?existing=1" : ""}`);
 }

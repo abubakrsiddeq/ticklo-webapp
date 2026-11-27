@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { FormField } from "@/components/form-field";
 import { StatusBadge } from "@/components/status-badge";
 import { setPrintedTicketBuyer, voidPrintedTickets } from "@/app/org/_actions/print";
 import { formatPhone } from "@/lib/phone";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface BatchTicketRow {
   id: string;
@@ -31,7 +32,7 @@ export function BatchTickets({ orgSlug, rows, canEdit }: { orgSlug: string; rows
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "valid" | "checked_in" | "cancelled">("all");
   const [editing, setEditing] = useState<BatchTicketRow | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -162,7 +163,7 @@ export function parseSerialInput(v: string): number | null {
 /** PRT-07: void lost/stolen printed tickets by serial range. */
 export function VoidRangeForm({ orgSlug, batchId, first, last, prefix }: { orgSlug: string; batchId: string; first: number; last: number; prefix: string }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   return (
     <form

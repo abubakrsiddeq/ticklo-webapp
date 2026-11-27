@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/action-button";
 import { formatDateTime, formatPKR, paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
 import { ticketTypeSchema, type TicketTypeInput } from "@/lib/validation/event";
 import { deleteTicketType, saveTicketType } from "@/app/org/_actions/events";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export interface AccessSession {
   id: string;
@@ -61,7 +62,7 @@ function TypeForm({
   festival?: boolean;
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   // FES-15: festival tickets say what they open right in the form
   const choosable = sessions.filter((x) => x.kind !== "competition");
   const [allSessions, setAllSessions] = useState(type ? type.all_sessions : choosable.length === 0 || choosable.some((x) => x.pass_access));

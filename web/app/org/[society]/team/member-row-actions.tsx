@@ -1,15 +1,15 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { NativeSelect } from "@/components/native-select";
 import { ActionButton } from "@/components/action-button";
 import { changeMemberRole, removeMember } from "@/app/org/_actions/manage";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function MemberRowActions({ orgSlug, userId, name, role }: { orgSlug: string; userId: string; name: string; role: string }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <NativeSelect

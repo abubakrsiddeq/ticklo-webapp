@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { ActionResult } from "@/lib/errors";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 /**
  * A button that runs a server action, shows a toast and refreshes the page.
@@ -47,8 +48,9 @@ export function ActionButton({
         }
       } catch (e) {
         // redirect() inside an action throws a special error that Next handles
-        if (e && typeof e === "object" && "digest" in e && String((e as { digest: string }).digest).startsWith("NEXT_REDIRECT")) throw e;
-        toast.error("Something went wrong. Please try again.");
+        unstable_rethrow(e);
+        console.error(e);
+        toast.error(actionErrorMessage(e));
       }
     });
 

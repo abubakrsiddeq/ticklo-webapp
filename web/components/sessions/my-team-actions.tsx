@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Tag, X } from "lucide-react";
 import { toast } from "sonner";
@@ -10,14 +10,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { FormRenderer } from "@/components/sessions/form-renderer";
-import { checkRegistration, memberPayload, memberToAnswers, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
+import { checkRegistration, registrationErrorSummary, memberPayload, memberToAnswers, teamPayload, type Answers, type RegistrationForm } from "@/lib/registration-form";
 import { payTeam, updateTeam } from "@/app/me/tickets/team-actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** D-064: pay for an accepted team, optionally with a promo / ambassador code. */
 export function PayTeamButton({ registrationId, eventId, label, withCode }: { registrationId: string; eventId: string; label: string; withCode: boolean }) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const pay = () =>
     start(async () => {
       const res = await payTeam(registrationId, eventId, code || null);
@@ -59,7 +60,7 @@ export function EditTeamButton(props: {
   const [members, setMembers] = useState<Answers[]>(() => props.members.map(memberToAnswers));
   const [teamAnswers, setTeamAnswers] = useState<Answers>(props.teamAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const min = props.fixedCount ? props.members.length : props.teamMin;
   const max = props.fixedCount ? props.members.length : props.teamMax;
 
@@ -67,7 +68,7 @@ export function EditTeamButton(props: {
     const errs = checkRegistration(props.form, members, teamAnswers, solo ? null : team);
     setErrors(errs);
     if (Object.keys(errs).length) {
-      toast.error("Please fill in the highlighted fields.");
+      toast.error(registrationErrorSummary(errs));
       return;
     }
     start(async () => {
@@ -128,6 +129,11 @@ export function EditTeamButton(props: {
                 />
               </div>
             ))}
+            {errors.members ? (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {errors.members}
+              </p>
+            ) : null}
             {members.length < max ? (
               <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setMembers((all) => [...all, {}])}>
                 <Plus /> Add member

@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,10 +11,11 @@ import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { inviteSchema } from "@/lib/validation/team";
 import { inviteMember } from "@/app/org/_actions/manage";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function InviteForm({ orgSlug }: { orgSlug: string }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const form = useForm<z.infer<typeof inviteSchema>>({ resolver: zodResolver(inviteSchema), defaultValues: { email: "", role: "scanner" } });
   const { errors } = form.formState;
   const onSubmit = form.handleSubmit((values) =>

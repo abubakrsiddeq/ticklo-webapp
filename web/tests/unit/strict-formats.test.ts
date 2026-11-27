@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkAnswers, checkRegistration, memberPayload, teamPayload, DEFAULT_FORM, type FormField } from "@/lib/registration-form";
+import { checkAnswers, checkRegistration, memberPayload, registrationErrorSummary, repeatedMembers, teamPayload, DEFAULT_FORM, type FormField } from "@/lib/registration-form";
+import { actionErrorMessage, FALLBACK_MESSAGE, NETWORK_MESSAGE, UPDATED_MESSAGE } from "@/lib/action-errors";
 import { isEmail, isWebLink, normalizeLink, personNameProblem, teamNameProblem } from "@/lib/validation/common";
 import { signupSchema } from "@/lib/validation/auth";
 import { buyerDetailsSchema } from "@/lib/validation/profile";
@@ -59,10 +60,37 @@ describe("strict formats (D-073)", () => {
   it("a registration cannot list the same person twice", () => {
     const m = { name: "Ali Raza", phone: "0300 1234567", university: "LUMS" };
     const errs = checkRegistration(DEFAULT_FORM, [m, { ...m, name: "Sara Khan", phone: "+92 300 1234567" }], {}, "Team One");
-    expect(errs["m1-phone"]).toMatch(/Same number/);
+    expect(errs["m1-phone"]).toBe("Same mobile number as member 1");
     expect(parseRegMembers([memberPayload(DEFAULT_FORM.member, m), memberPayload(DEFAULT_FORM.member, { ...m, name: "Sara Khan" })])).toMatchObject({ ok: false });
     expect(parseRegMembers([{ name: "Ali 007" }])).toMatchObject({ ok: false });
     expect(parseRegMembers([memberPayload(DEFAULT_FORM.member, m)])).toMatchObject({ ok: true });
+  });
+
+  it("D-074: a repeated roll number or identical details are caught, with which members repeat", () => {
+    const form = { ...DEFAULT_FORM, member: DEFAULT_FORM.member.map((f) => (f.id === "roll_no" ? { ...f, hidden: false } : f)) };
+    const a = { name: "Ali Raza", phone: "0300 1234567", email: "ali@gmail.com", roll_no: "21-CS-01", university: "LUMS" };
+    // the lead copied into member 2: every detail the same
+    const same = checkRegistration(form, [a, { ...a }], {}, "Team One");
+    expect(same["m1-phone"]).toBe("Same mobile number as member 1");
+    expect(registrationErrorSummary(same)).toBe("The same person is listed twice. Each member must be a different person.");
+    expect(parseRegMembers([memberPayload(form.member, a), memberPayload(form.member, a)])).toEqual({
+      ok: false,
+      error: "Member 2 has the same mobile number as member 1. Each member must be a different person.",
+    });
+    // names only: identical entries
+    expect(repeatedMembers([{ name: "Ali Khan" }, { name: "ali  khan " }])).toEqual([{ index: 1, of: 0, field: "name" }]);
+    // same roll number at the same university (any case), not at another one
+    expect(repeatedMembers([{ name: "A", roll_no: "21-cs-01", university: "LUMS" }, { name: "B", roll_no: "21-CS-01", university: "lums" }])[0]?.field).toBe("roll_no");
+    expect(repeatedMembers([{ name: "A", roll_no: "21-CS-01", university: "LUMS" }, { name: "B", roll_no: "21-CS-01", university: "NUST" }])).toEqual([]);
+    // two people may share a name
+    expect(repeatedMembers([{ name: "Ali Khan", phone: "03001234567" }, { name: "Ali Khan", phone: "03007654321" }])).toEqual([]);
+  });
+
+  it("D-074: actions that could not run get a sentence people can act on", () => {
+    expect(actionErrorMessage(new TypeError("Failed to fetch"))).toBe(NETWORK_MESSAGE);
+    expect(actionErrorMessage(new Error('Server Action "abc" was not found on the server.'))).toBe(UPDATED_MESSAGE);
+    expect(actionErrorMessage(new Error("An unexpected response was received from the server."))).toBe(FALLBACK_MESSAGE);
+    expect(actionErrorMessage(new Error("boom"), "Check My tickets.")).toBe("Check My tickets.");
   });
 
   it("signup passwords need a letter and a number; buyer details are strict", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -10,9 +10,10 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { newPasswordSchema, resetRequestSchema } from "@/lib/validation/auth";
 import { requestResetAction, updatePasswordAction } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function ResetRequestForm() {
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [done, setDone] = useState<string | null>(null);
   const form = useForm<z.infer<typeof resetRequestSchema>>({ resolver: zodResolver(resetRequestSchema), defaultValues: { email: "" } });
   const err = form.formState.errors.email?.message;
@@ -35,7 +36,7 @@ export function ResetRequestForm() {
 }
 
 export function NewPasswordForm() {
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const form = useForm<z.infer<typeof newPasswordSchema>>({
     resolver: zodResolver(newPasswordSchema),
     defaultValues: { password: "", confirm: "" },

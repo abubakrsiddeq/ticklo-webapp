@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { setPrintBatchOptions } from "@/app/org/_actions/print-sales";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** "Only valid after sale" + printing cost for one batch (D-041). */
 export function BatchOptionsForm({ orgSlug, batchId, requireSale, printingCost }: { orgSlug: string; batchId: string; requireSale: boolean; printingCost: string }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   return (
     <form
       className="grid gap-4"

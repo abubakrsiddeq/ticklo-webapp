@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { UniversityPicker, type UniversityChoice } from "@/components/university
 import { checkOrgFile, orgCreateSchema, orgSchema, type OrgInput } from "@/lib/validation/org";
 import { HeadFields, type HeadAccount } from "./head-fields";
 import type { ActionResult } from "@/lib/errors";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 export function OrgForm({
   defaults,
@@ -32,7 +33,7 @@ export function OrgForm({
   account?: HeadAccount;
 }) {
   const logoRequired = mode === "create" || !hasLogo;
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const form = useForm<OrgInput>({
     resolver: zodResolver(mode === "create" ? orgCreateSchema : orgSchema) as Resolver<OrgInput>,

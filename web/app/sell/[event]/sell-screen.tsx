@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IScannerControls } from "@zxing/browser";
 import { Camera, CameraOff, CheckCircle2, Gift, Loader2, XCircle } from "lucide-react";
@@ -14,6 +14,7 @@ import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedba
 import { cn } from "@/lib/utils";
 import { phoneInput } from "@/lib/phone";
 import { sellByToken, sellRange, type SellResult } from "../actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 interface StockRow {
   serial: string;
@@ -66,7 +67,7 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
   const [buyerName, setBuyerName] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [result, setResult] = useState<{ ok: boolean; title: string; sub?: string } | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   const mine = useMemo(() => {
     const inStock = initialStock.filter((s) => s.sale_status === "in_stock" && s.status === "valid");

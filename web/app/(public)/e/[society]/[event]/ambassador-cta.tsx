@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Megaphone } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { SubmitButton } from "@/components/submit-button";
 import { applyAmbassador } from "./ambassador-actions";
+import { useActionTransition } from "@/lib/use-action-transition";
 
 /** AMB-11: "Become an ambassador" on the event page (only when the organizer opened applications). */
 export function AmbassadorCta(props: {
@@ -23,7 +24,7 @@ export function AmbassadorCta(props: {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [pending, start] = useTransition();
+  const [pending, start] = useActionTransition();
 
   function apply() {
     start(async () => {
