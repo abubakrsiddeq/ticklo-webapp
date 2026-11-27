@@ -901,3 +901,15 @@ registered – the same thing the existing "already registered" error already di
   "Book now – held for you"; organizers see "N on the waitlist" on the schedule and per ticket
   type on the event edit page (a sign to add places).
 - Not for competitions with shortlisting (they keep taking applications while full).
+
+## D-072 Early-bird prices (owner request, 2026-11-28)
+- Any ticket type – including a competition's entry fee – can have an **early-bird price until a
+  date** (`ticket_types.early_price_paisa`, `early_until`; both or neither, lower than the normal
+  price). Set in the ticket editor ("🐦 Early-bird price", "Early bird until") and in the
+  competition dialog next to the entry fee.
+- **The database charges it:** `create_order` and the promo / ambassador maths use the price in
+  force (`ticket_type_price_at`), so a promo code works on top of the early price. A team that
+  applied (shortlisting) before the early-bird date keeps the early fee when it pays later.
+- **Shown:** booking widget (early price, normal price struck through, "🐦 Early bird until …"),
+  "From Rs …", "Get ticket · Rs …", and competition fees everywhere ("Rs 2,000 🐦 early bird ·
+  Rs 3,000 after 1 Dec"); the team form total uses the early fee.

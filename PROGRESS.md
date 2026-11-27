@@ -317,6 +317,11 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: early-bird prices (D-072)
+- Early-bird price until a date for any ticket and competition fee; charged by the database;
+  shown with the normal price struck through.
+- Migration `20261127002800_early_bird.sql` (**not applied to TICkLO yet**). DB tests: 2 new, 133 pass.
+
 ## Change 2026-11-27: waitlist in line order (D-071)
 - Join the waitlist of sold-out tickets / full competitions; the next person in line gets a
   2-hour held offer by email, then the next. My tickets lists waitlists; organizers see counts.
@@ -467,6 +472,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261127002800_early_bird.sql` to TICkLO** (Mumbai) before deploying the build
+  with early-bird prices (D-072).
 - **Apply migration `20261127002700_waitlist.sql` to TICkLO** (Mumbai) before deploying the build
   with the waitlist (D-071).
 - **Hostinger cron:** add job 4 from `hostinger-cron.txt` (`/api/cron/waitlist`, every 5 minutes).

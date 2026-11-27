@@ -6,7 +6,7 @@ import { CalendarPlus, Clock, MapPin, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatPKR, formatTime } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/calendar";
-import { competitionCta, competitionState, feeLabel, groupByDay, kindEmoji, kindLabel, seatsLabel, SESSION_KINDS, teamSizeLabel } from "@/lib/sessions";
+import { competitionCta, competitionState, groupByDay, kindEmoji, kindLabel, seatsLabel, SESSION_KINDS, teamSizeLabel, competitionFeeText } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 
 export interface PublicSession {
@@ -29,6 +29,8 @@ export interface PublicSession {
   registration_type_id?: string | null;
   poster_url?: string | null;
   slug?: string;
+  early_fee_paisa?: number | null;
+  early_until?: string | null;
   results: { place: number; label: string; name: string }[];
 }
 
@@ -137,7 +139,7 @@ export function PublicSchedule(props: {
                   </span>
                   {competition ? (
                     <span className="flex items-center gap-1">
-                      <Users className="size-3.5" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {feeLabel(s.fee_paisa, s.fee_mode)}
+                      <Users className="size-3.5" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {competitionFeeText(s, props.now)}
                     </span>
                   ) : null}
                   {competition && s.registration_ends_at && !regClosed ? (

@@ -53,6 +53,8 @@ export interface SessionValue {
   poster_url?: string | null;
   form?: unknown;
   listed?: boolean;
+  early_fee_paisa?: number | null;
+  early_until?: string | null;
   fee_mode: string;
   fee_paisa: number | null;
   needs_approval: boolean;
@@ -148,6 +150,8 @@ export function SessionDialog({
                 fee: String(fd.get("fee") ?? "0"),
                 needs_approval: needsApproval,
                 registration_ends_at: String(fd.get("registration_ends_at") ?? ""),
+                early_fee: String(fd.get("early_fee") ?? ""),
+                early_until: String(fd.get("early_until") ?? ""),
               };
               // D-068: the registration form must make sense before it is sent
               const formProblem = competition ? checkForm(regForm) : checkForm(ticketForm, "ticket");
@@ -329,6 +333,21 @@ export function SessionDialog({
                   )}
                 </div>
                 <FormBuilder value={regForm} onChange={setRegForm} solo={solo} sources={formSources} locked={formLocked} saved={savedForm} />
+                {/* D-072 */}
+                <div className="grid grid-cols-2 gap-3 rounded-xl bg-brand-soft/60 p-3 sm:max-w-lg">
+                  <FormField id={`${p}-efee`} label={solo ? "🐦 Early-bird fee per person (Rs)" : "🐦 Early-bird fee (Rs)"} hint="Optional, lower than the fee" error={errors.early_fee}>
+                    <Input
+                      id={`${p}-efee`}
+                      name="early_fee"
+                      inputMode="decimal"
+                      placeholder="e.g. 2000"
+                      defaultValue={session?.early_fee_paisa != null ? paisaToRupeesInput(session.early_fee_paisa) : ""}
+                    />
+                  </FormField>
+                  <FormField id={`${p}-euntil`} label="Early bird until (PKT)" hint="Then the normal fee" error={errors.early_until}>
+                    <Input id={`${p}-euntil`} name="early_until" type="datetime-local" defaultValue={toPKTInputValue(session?.early_until)} />
+                  </FormField>
+                </div>
                 <FormField id={`${p}-regend`} label="Registration closes (PKT)" hint="Empty = when the competition starts" error={errors.registration_ends_at}>
                   <Input id={`${p}-regend`} name="registration_ends_at" type="datetime-local" defaultValue={toPKTInputValue(session?.registration_ends_at)} className="sm:max-w-xs" />
                 </FormField>

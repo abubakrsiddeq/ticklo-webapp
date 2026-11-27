@@ -231,3 +231,21 @@ export function competitionCta(s: { needs_approval: boolean; team_max: number })
   if (s.needs_approval) return "Apply";
   return participationOf(s.team_max) === "team" ? "Register team" : "Register";
 }
+
+/** D-072: the price in force now (early bird until its date). Mirrors ticket_type_price_at. */
+export function priceNow(price: number, earlyPrice: number | null | undefined, earlyUntil: string | null | undefined, now: number): number {
+  return earlyPrice != null && earlyUntil && now < new Date(earlyUntil).getTime() ? earlyPrice : price;
+}
+
+export function isEarlyBird(earlyPrice: number | null | undefined, earlyUntil: string | null | undefined, now: number): boolean {
+  return earlyPrice != null && Boolean(earlyUntil) && now < new Date(earlyUntil!).getTime();
+}
+
+/** Competition fee text with an early bird: "Rs 2,000 per team (early bird) · Rs 3,000 after 1 Dec". */
+export function competitionFeeText(
+  s: { fee_paisa: number | null; fee_mode: string; early_fee_paisa?: number | null; early_until?: string | null },
+  now: number,
+): string {
+  if (!isEarlyBird(s.early_fee_paisa, s.early_until, now)) return feeLabel(s.fee_paisa, s.fee_mode);
+  return `${feeLabel(s.early_fee_paisa, s.fee_mode)} 🐦 early bird · ${formatPKR(s.fee_paisa ?? 0)} after ${new Date(s.early_until!).toLocaleDateString("en-PK", { day: "numeric", month: "short", timeZone: PKT_TIME_ZONE })}`;
+}

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { AlertTriangle, DoorOpen, Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
-import { clashes, kindEmoji, type Question } from "@/lib/sessions";
+import { clashes, kindEmoji, type Question, priceNow } from "@/lib/sessions";
 import { FormRenderer } from "@/components/sessions/form-renderer";
 import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import {
@@ -42,6 +42,9 @@ export interface WidgetTicketType {
   // D-044
   all_sessions: boolean;
   session_ids: string[];
+  // D-072
+  early_price_paisa?: number | null;
+  early_until?: string | null;
 }
 
 export type AttendeeSetting = "off" | "optional" | "required";
@@ -88,7 +91,12 @@ export function BookingWidget(props: {
   /** D-071: my waitlist entries by ticket type, and whether sold-out tickets take a waitlist */
   waitlist?: Record<string, WaitlistEntry>;
   waitlistOpen?: boolean;
+  /** server time (early-bird prices) */
+  now?: number;
 }) {
+  // D-072: the price in force (early bird until its date) – Postgres charges the same
+  const nowMs = props.now ?? 0;
+  const priceOf = (t: WidgetTicketType) => priceNow(t.price_paisa, t.early_price_paisa, t.early_until, nowMs);
   const sessions = props.sessions ?? [];
   const [qty, setQty] = useState<Record<string, number>>(() => {
     const t = props.types.find((x) => x.id === props.preselect);
@@ -105,10 +113,7 @@ export function BookingWidget(props: {
   const [holderErrors, setHolderErrors] = useState<Record<string, string>>({});
 
   const totalQty = Object.values(qty).reduce((a, b) => a + b, 0);
-  const total = useMemo(
-    () => props.types.reduce((sum, t) => sum + (qty[t.id] ?? 0) * t.price_paisa, 0),
-    [qty, props.types],
-  );
+  const total = props.types.reduce((sum, t) => sum + (qty[t.id] ?? 0) * priceOf(t), 0);
   const needsCard = props.types.some((t) => t.requires_student_card && (qty[t.id] ?? 0) > 0);
 
   // FES-04/FES-09: sessions picked by name (not passes) – their questions, and time clashes
@@ -147,7 +152,7 @@ export function BookingWidget(props: {
       : t.session_ids.map((id) => sessionById.get(id)).filter(Boolean).map((x) => `${kindEmoji(x!.kind)} ${x!.name} · ${formatDateTime(x!.starts_at)}`).join(" | ");
 
   // AMB-07: same maths as Postgres – one discount per order, the bigger one wins
-  const priced: PricedItem[] = props.types.map((t) => ({ ticketTypeId: t.id, quantity: qty[t.id] ?? 0, pricePaisa: t.price_paisa }));
+  const priced: PricedItem[] = props.types.map((t) => ({ ticketTypeId: t.id, quantity: qty[t.id] ?? 0, pricePaisa: priceOf(t) }));
   const ambassador = applied?.kind === "ambassador" ? applied : props.referral ? { ...props.referral, kind: "ambassador" as const } : null;
   const ambassadorDiscount = ambassador ? discountFor(priced, { type: ambassador.discountType, value: ambassador.discountValue }) : 0;
   const promo = applied?.kind === "promo" ? applied : null;
@@ -235,7 +240,18 @@ export function BookingWidget(props: {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-medium text-navy">{t.name}</p>
-                  <p className="text-sm font-semibold">{formatPKR(t.price_paisa, { freeLabel: "Free" })}</p>
+                  <p className="text-sm font-semibold">
+                    {formatPKR(priceOf(t), { freeLabel: "Free" })}
+                    {priceOf(t) < t.price_paisa ? (
+                      <>
+                        {" "}
+                        <span className="font-normal text-muted-foreground line-through">{formatPKR(t.price_paisa)}</span>
+                        <span className="ml-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-strong">
+                          🐦 Early bird until {formatDateTime(t.early_until!)}
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
                   {t.description ? <p className="mt-1 text-sm text-muted-foreground">{t.description}</p> : null}
                   {sessions.length && opens(t) ? (
                     <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-700">
@@ -298,7 +314,7 @@ export function BookingWidget(props: {
     { key: "entry", title: "🚪 Entry tickets", types: props.types.filter((t) => !t.all_sessions && !t.session_ids.length) },
   ];
   const onSaleTypes = props.types.filter((t) => t.saleState === "on" && t.remaining > 0);
-  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => t.price_paisa)) : null;
+  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => priceOf(t))) : null;
 
   return (
     <section id="tickets" aria-labelledby="tickets-heading" className="scroll-mt-28 rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">

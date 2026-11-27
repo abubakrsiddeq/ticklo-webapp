@@ -3,7 +3,7 @@ import { Clock, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import { formatDateTime, formatEventRange } from "@/lib/format";
-import { competitionCta, competitionState, feeLabel, seatsLabel, teamSizeLabel } from "@/lib/sessions";
+import { competitionCta, competitionState, seatsLabel, teamSizeLabel, competitionFeeText } from "@/lib/sessions";
 
 export interface CardCompetition {
   id: string;
@@ -20,6 +20,8 @@ export interface CardCompetition {
   needs_approval: boolean;
   registration_ends_at: string | null;
   registration_type_id: string | null;
+  early_fee_paisa?: number | null;
+  early_until?: string | null;
 }
 
 /** D-064: the main call to action of a competition event, in the sidebar (not below the description). */
@@ -61,7 +63,7 @@ export function CompetitionCard({
               <p className="font-semibold text-navy">{s.name}</p>
               <p className="text-xs text-muted-foreground">{formatEventRange(s.starts_at, s.ends_at)}</p>
               <p className="flex items-center gap-1.5 text-sm text-slate-700">
-                <Users className="size-4 shrink-0 text-brand-strong" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {feeLabel(s.fee_paisa, s.fee_mode)}
+                <Users className="size-4 shrink-0 text-brand-strong" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {competitionFeeText(s, now)}
               </p>
               {state === "open" ? (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">

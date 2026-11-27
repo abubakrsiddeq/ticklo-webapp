@@ -6,7 +6,7 @@ import { Pill } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime, toPKTInputValue } from "@/lib/format";
-import { asQuestions, feeLabel, groupByDay, kindEmoji, kindLabel, teamSizeLabel } from "@/lib/sessions";
+import { asQuestions, groupByDay, kindEmoji, kindLabel, teamSizeLabel, competitionFeeText } from "@/lib/sessions";
 import { DeleteSessionButton, SessionDialog, SessionManagers, type SessionValue } from "@/components/sessions/session-forms";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SetupChecklist } from "@/components/sessions/setup-checklist";
@@ -147,6 +147,8 @@ export default async function SchedulePage({
                   poster_url: s.poster_url,
                   form: s.form,
                   listed: s.listed,
+                  early_fee_paisa: s.early_fee_paisa,
+                  early_until: s.early_until,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
@@ -188,7 +190,7 @@ export default async function SchedulePage({
                         </span>
                         {competition ? (
                           <span className="flex items-center gap-1">
-                            <Users className="size-3.5" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {feeLabel(s.fee_paisa, s.fee_mode)}
+                            <Users className="size-3.5" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {competitionFeeText(s, Date.now())}
                           </span>
                         ) : null}
                       </p>

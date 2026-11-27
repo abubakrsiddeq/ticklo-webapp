@@ -8,7 +8,7 @@ import { formatDate, formatEventRange, formatPKR, formatTime } from "@/lib/forma
 import { absoluteUrl, eventPath } from "@/lib/site";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { serverNow } from "@/lib/time";
-import { competitionCta, competitionState, feeLabel, kindEmoji, kindLabel, seatsLabel, teamSizeLabel, ticketSaleEnd } from "@/lib/sessions";
+import { competitionCta, competitionState, kindEmoji, kindLabel, seatsLabel, teamSizeLabel, ticketSaleEnd, competitionFeeText } from "@/lib/sessions";
 
 type Params = { society: string; event: string; session: string };
 
@@ -93,7 +93,7 @@ export default async function SessionPage({ params }: { params: Promise<Params> 
           <li className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] sm:col-span-2">
             <Users className="mt-0.5 size-5 shrink-0 text-brand-strong" aria-hidden />
             <span>
-              {teamSizeLabel(s.team_min, s.team_max)} · {feeLabel(s.fee_paisa, s.fee_mode)}
+              {teamSizeLabel(s.team_min, s.team_max)} · {competitionFeeText(s, now)}
               {seatsLabel(s) ? ` · ${seatsLabel(s)}` : ""}
             </span>
           </li>

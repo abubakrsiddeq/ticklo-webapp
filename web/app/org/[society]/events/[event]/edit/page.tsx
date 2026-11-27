@@ -65,6 +65,8 @@ export default async function EditEventPage({
     sale_starts_at: t.sale_starts_at,
     sale_ends_at: t.sale_ends_at,
     requires_student_card: t.requires_student_card,
+    early_price_paisa: t.early_price_paisa,
+    early_until: t.early_until,
     booked: booked.has(t.id),
     taken: t.quantity - (remaining.get(t.id) ?? t.quantity),
     all_sessions: t.all_sessions,

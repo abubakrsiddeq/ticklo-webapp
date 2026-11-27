@@ -60,7 +60,12 @@ export const ticketTypeSchema = z
     sale_starts_at: optionalPktDateTime,
     sale_ends_at: optionalPktDateTime,
     requires_student_card: z.boolean(),
+    // D-072: early-bird price until a date (both or neither)
+    early_price: z.string().trim().regex(/^(\d+(\.\d{1,2})?)?$/, "Rupees, e.g. 1200"),
+    early_until: optionalPktDateTime,
   })
+  .refine((v) => !v.early_price === !v.early_until, { message: "Give both the early-bird price and its last date", path: ["early_until"] })
+  .refine((v) => !v.early_price || Number(v.early_price) < Number(v.price), { message: "Must be lower than the normal price", path: ["early_price"] })
   .refine(
     (v) =>
       !v.sale_starts_at ||

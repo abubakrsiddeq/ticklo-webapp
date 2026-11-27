@@ -181,6 +181,8 @@ export async function saveTicketType(
     sale_starts_at: fromPKTInputValue(d.sale_starts_at),
     sale_ends_at: fromPKTInputValue(d.sale_ends_at),
     requires_student_card: d.requires_student_card,
+    early_price_paisa: d.early_price ? rupeesToPaisa(d.early_price) : null,
+    early_until: d.early_price ? fromPKTInputValue(d.early_until) : null,
   };
   const supabase = await createClient();
   let id = ticketTypeId;

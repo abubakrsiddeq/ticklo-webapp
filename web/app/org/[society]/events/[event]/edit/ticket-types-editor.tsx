@@ -31,6 +31,8 @@ export interface EditorTicketType {
   sale_starts_at: string | null;
   sale_ends_at: string | null;
   requires_student_card: boolean;
+  early_price_paisa?: number | null;
+  early_until?: string | null;
   booked: boolean; // has non-expired orders → price & card locked (ORG-07)
   taken: number; // sold + held
   // D-044: what the ticket opens
@@ -74,6 +76,8 @@ function TypeForm({
       sale_starts_at: toPKTInputValue(type?.sale_starts_at),
       sale_ends_at: toPKTInputValue(type?.sale_ends_at),
       requires_student_card: type?.requires_student_card ?? false,
+      early_price: type?.early_price_paisa != null ? paisaToRupeesInput(type.early_price_paisa) : "",
+      early_until: toPKTInputValue(type?.early_until),
     },
   });
   const { errors } = form.formState;
@@ -126,6 +130,15 @@ function TypeForm({
         </FormField>
         <FormField id={`${p}-se`} label="Sale ends (optional)" hint={festival ? "Empty = until its session starts (passes: until the last pass session starts)" : "Empty = when the event starts"} error={errors.sale_ends_at?.message}>
           <Input type="datetime-local" {...fieldAria(`${p}-se`, errors.sale_ends_at?.message, true)} {...form.register("sale_ends_at")} />
+        </FormField>
+      </div>
+      {/* D-072 */}
+      <div className="grid gap-3 rounded-xl bg-brand-soft/60 p-3 sm:grid-cols-2">
+        <FormField id={`${p}-ep`} label="🐦 Early-bird price (Rs, optional)" hint="Lower price until the date on the right" error={errors.early_price?.message}>
+          <Input inputMode="decimal" placeholder="e.g. 1200" {...fieldAria(`${p}-ep`, errors.early_price?.message, true)} {...form.register("early_price")} />
+        </FormField>
+        <FormField id={`${p}-eu`} label="Early bird until" hint="After this the normal price applies" error={errors.early_until?.message}>
+          <Input type="datetime-local" {...fieldAria(`${p}-eu`, errors.early_until?.message, true)} {...form.register("early_until")} />
         </FormField>
       </div>
       <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-navy">

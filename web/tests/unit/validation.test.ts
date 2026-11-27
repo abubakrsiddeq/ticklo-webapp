@@ -45,7 +45,11 @@ describe("shared zod schemas (NFR-05)", () => {
   });
 
   it("validates ticket types (price in rupees, 0 = free)", () => {
-    const base = { name: "VIP", description: "", price: "2500", quantity: "100", sale_starts_at: "", sale_ends_at: "", requires_student_card: false };
+    const base = { name: "VIP", description: "", price: "2500", quantity: "100", sale_starts_at: "", sale_ends_at: "", requires_student_card: false, early_price: "", early_until: "" };
+    // D-072: early bird needs both fields and must be lower than the price
+    expect(ticketTypeSchema.safeParse({ ...base, early_price: "2000" }).success).toBe(false);
+    expect(ticketTypeSchema.safeParse({ ...base, early_price: "3000", early_until: "2026-12-01T10:00" }).success).toBe(false);
+    expect(ticketTypeSchema.safeParse({ ...base, early_price: "2000", early_until: "2026-12-01T10:00" }).success).toBe(true);
     expect(ticketTypeSchema.safeParse(base).success).toBe(true);
     expect(ticketTypeSchema.safeParse({ ...base, price: "0" }).success).toBe(true);
     expect(ticketTypeSchema.safeParse({ ...base, price: "-5" }).success).toBe(false);

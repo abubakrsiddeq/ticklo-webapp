@@ -53,6 +53,9 @@ export interface SessionFormValues {
   fee: string; // rupees
   needs_approval: boolean;
   registration_ends_at: string;
+  /** D-072: early-bird entry fee (rupees) until a date */
+  early_fee?: string;
+  early_until?: string;
 }
 
 export async function saveSession(
@@ -82,6 +85,11 @@ export async function saveSession(
   const fee = competition ? rupeesToPaisa(v.fee.trim() || "0") : 0;
   if (competition && !Number.isFinite(fee)) errs.fee = "Rupees";
   const regEnds = v.registration_ends_at ? fromPKTInputValue(v.registration_ends_at) : null;
+  const earlyFeeRaw = (v.early_fee ?? "").trim();
+  const earlyFee = competition && earlyFeeRaw ? rupeesToPaisa(earlyFeeRaw) : null;
+  const earlyUntil = competition && v.early_until ? fromPKTInputValue(v.early_until) : null;
+  if (competition && earlyFeeRaw && (!Number.isFinite(earlyFee) || (earlyFee ?? 0) >= fee)) errs.early_fee = "Lower than the fee";
+  if (competition && Boolean(earlyFeeRaw) !== Boolean(earlyUntil)) errs.early_until = "Give both the early-bird fee and its last date";
   if (v.registration_ends_at && !regEnds) errs.registration_ends_at = "Check the date";
   // D-066: every session has a poster – required for a new one, and for an older one without it
   const poster = await readUpload(files?.get("poster") ?? null, { label: "Poster" });
@@ -132,6 +140,14 @@ export async function saveSession(
   if (typeof v.listed === "boolean") {
     const { error: listError } = await supabase.rpc("set_session_listing", { p_session_id: String(id), p_listed: v.listed });
     if (listError) return fail(listError);
+  }
+  if (competition) {
+    // D-072: the early-bird fee lives on the competition's entry ticket
+    const { error: earlyError } = await supabase
+      .from("ticket_types")
+      .update({ early_price_paisa: earlyFee, early_until: earlyFee !== null ? earlyUntil : null })
+      .eq("registration_session_id", String(id));
+    if (earlyError) return fail(earlyError, { early_fee: "Check the early-bird fee" });
   }
   if (posterUrl) {
     const { error: posterError } = await supabase.rpc("set_session_poster", { p_session_id: String(id), p_url: posterUrl });

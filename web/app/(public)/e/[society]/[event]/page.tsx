@@ -20,7 +20,7 @@ import { normalizeCode, refCookieName, rewardLabel, REF_PARAM, type DiscountType
 import { BookingWidget, type AttendeeSetting, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
 import { CompetitionCard } from "@/components/sessions/competition-card";
 import type { WaitlistEntry } from "@/components/waitlist-button";
-import { ticketSaleEnd } from "@/lib/sessions";
+import { priceNow, ticketSaleEnd } from "@/lib/sessions";
 import { ticketFieldsOf } from "@/lib/registration-form";
 import { RefCapture } from "./ref-capture";
 import { AmbassadorCta } from "./ambassador-cta";
@@ -112,6 +112,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
       saleStartsAt: t.sale_starts_at,
       all_sessions: t.all_sessions,
       session_ids: t.session_ids,
+      early_price_paisa: t.early_price_paisa,
+      early_until: t.early_until,
     };
   });
 
@@ -137,7 +139,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   for (const s of sessions) {
     if (s.kind === "competition") continue;
     const t = types.find((x) => !x.all_sessions && x.session_ids.includes(s.id) && x.saleState === "on" && x.remaining > 0);
-    if (t) sessionTickets[s.id] = { id: t.id, price: t.price_paisa };
+    if (t) sessionTickets[s.id] = { id: t.id, price: priceNow(t.price_paisa, t.early_price_paisa, t.early_until, now) };
   }
   const hasPass = types.some((t) => t.all_sessions && t.saleState === "on" && t.remaining > 0);
   const competitions = sessions.filter((s) => s.kind === "competition");
@@ -145,7 +147,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   // D-070: a festival also shows its competitions in the sidebar, after the tickets
   const showCompeteBelow = competitions.length > 0 && !showCompetitionCard && event.format === "festival";
   const onSaleTypes = types.filter((t) => t.saleState === "on" && t.remaining > 0);
-  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => t.price_paisa)) : null;
+  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => priceNow(t.price_paisa, t.early_price_paisa, t.early_until, now))) : null;
   const preselect = typeof sp.ticket === "string" ? sp.ticket : null;
   // D-071: my waitlist entries here (place in line, or a place held for me)
   const waitlist: Record<string, WaitlistEntry> = {};
@@ -296,6 +298,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             format={event.format}
             waitlist={waitlist}
             waitlistOpen={eventOpen}
+            now={now}
             eventFields={event.format === "festival" ? undefined : ticketFieldsOf({ member: event.ticket_form }, { names: event.attendee_names, university: event.attendee_university })}
             sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions, attendee_names: x.attendee_names, attendee_university: x.attendee_university, form: x.form }))}
           />

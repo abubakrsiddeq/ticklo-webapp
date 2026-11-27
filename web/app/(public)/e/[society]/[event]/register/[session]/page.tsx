@@ -11,7 +11,7 @@ import { formatDateTime, formatEventRange } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
-import { competitionState, feeLabel, participationOf, seatsLabel, teamSizeLabel } from "@/lib/sessions";
+import { priceNow, competitionState, participationOf, seatsLabel, teamSizeLabel, competitionFeeText } from "@/lib/sessions";
 import { TeamForm } from "./team-form";
 import { WaitlistButton, type WaitlistEntry } from "@/components/waitlist-button";
 import { asForm } from "@/lib/registration-form";
@@ -67,7 +67,7 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
           <MapPin className="size-4 text-brand-strong" aria-hidden /> {s.venue ?? event.venue}
         </li>
         <li className="flex items-center gap-2">
-          <Users className="size-4 text-brand-strong" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {feeLabel(s.fee_paisa, s.fee_mode)}
+          <Users className="size-4 text-brand-strong" aria-hidden /> {teamSizeLabel(s.team_min, s.team_max)} · {competitionFeeText(s, now)}
         </li>
         <li className="text-muted-foreground">
           {seatsLabel(s) ?? ""} {closed ? "" : `· register by ${formatDateTime(new Date(closesAt).toISOString())}`}
@@ -111,7 +111,7 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
             sessionId={s.id}
             teamMin={s.team_min}
             teamMax={s.team_max}
-            feePaisa={s.fee_paisa ?? 0}
+            feePaisa={priceNow(s.fee_paisa ?? 0, s.early_fee_paisa, s.early_until, now)}
             feeMode={s.fee_mode}
             needsApproval={s.needs_approval}
             form={asForm(s.form)}
