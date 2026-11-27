@@ -317,6 +317,10 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: festivals without capacity (D-062)
+- Migration `20261127002000_festival_capacity.sql` applied to TICkLO (2026-11-27, D-034 method,
+  recorded in the migration history). There were no festival events yet, so no rows changed.
+
 ## Change 2026-11-27: register society form (D-059, D-060)
 - LinkedIn link required (Facebook removed), logo required, stricter link/name checks,
   university suggestions under "Other", no repeated city in university lists.
@@ -324,7 +328,7 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   account, locked; phone editable) or "Someone else" (all three typed). All required. Stored
   in `organization_heads` (admins + society owners only). Shown on Admin → Approvals.
 - Owners change or add the society head in Settings (D-061). Migration
-  `20261127001900_org_head_edit.sql` (**not applied to TICkLO yet**; only adds a function, the live
+  `20261127001900_org_head_edit.sql` applied to TICkLO (2026-11-27, D-034 method; only adds a function, the live
   build is not affected). DB tests: 3 more, 112 pass.
 - Migration `20261127001800_org_heads.sql` applied to TICkLO (2026-11-27) in one transaction
   (D-034 method, recorded in the migration history) and checked: RLS on, read policy only,
@@ -401,9 +405,6 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Festival capacity (D-062):** run `supabase/migrations/20261127002000_festival_capacity.sql`
-  on TICkLO (Mumbai). It only raises existing festivals to capacity 100000 (no festival-wide
-  limit). Safe to run before or after the deploy.
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
   (postmaster.google.com, TXT record in Cloudflare); (3) for the first weeks, open TickLO emails
