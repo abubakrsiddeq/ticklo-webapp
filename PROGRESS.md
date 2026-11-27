@@ -323,8 +323,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
   booking emails go out after the response.
 - The same person twice in a team is also caught by roll number (same university) and by
   identical details, with "Member 2 has the same … as member 1." in the browser, server and DB.
-- Migration `20261128000200_team_repeat_members.sql` – **not applied to TICkLO yet** (apply
-  with the D-034 method, after `…000100`). Unit tests: 2 new, 96 pass. DB tests: 1 new, 134 pass.
+- Migration `20261128000200_team_repeat_members.sql` applied to TICkLO (2026-11-28, D-034 method,
+  recorded in the migration history) and checked: a team with the same mobile twice is refused
+  with "Member 2 has the same mobile number as member 1.". Unit tests: 2 new, 96 pass. DB tests: 1 new, 134 pass.
 - How to test: register a team with member 2 a copy of member 1: the fields are marked "Same
   mobile number as member 1" and nothing is sent. Turn off Wi-Fi and press Register: a toast says
   there is no internet and the form stays filled.
@@ -496,9 +497,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **D-073 + D-074 live:** apply migrations `20261128000100_strict_form_formats.sql` and
-  `20261128000200_team_repeat_members.sql` to TICkLO, then deploy the new web build on Hostinger.
-  Until the build is deployed, the live site still shows the full-page error screen.
+- **Deploy the new web build on Hostinger (D-073, D-074):** both migrations are applied; until the
+  build is deployed the live site still shows the full-page error screen when a form fails.
 - **Hostinger cron:** add job 4 from `hostinger-cron.txt` (`/api/cron/waitlist`, every 5 minutes).
 - **Emails landing in spam (D-053):** (1) set `EMAIL_REPLY_TO=ticklopakistan@gmail.com` on Hostinger
   (already in `env.txt`; support inbox, also linked in the site footer); (2) add the domain to Google Postmaster Tools
