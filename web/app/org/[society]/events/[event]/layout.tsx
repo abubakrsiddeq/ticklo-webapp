@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { NavTabs } from "@/components/nav-tabs";
-import { StatusBadge } from "@/components/status-badge";
+import { Pill, StatusBadge } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { formatEventRange } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -27,10 +27,12 @@ export default async function EventLayout({
     <div>
       <div className="mb-3 flex flex-col gap-1">
         <Link href={`/org/${org.slug}`} className="no-print text-sm text-muted-foreground hover:underline">
-          ← All events
+          ← All events &amp; festivals
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-heading text-2xl font-bold text-navy">{event.name}</h2>
+          {/* D-067 */}
+          {event.format === "festival" ? <Pill tone="success">🎪 Festival</Pill> : event.format === "competition" ? <Pill tone="success">🏆 Competition</Pill> : null}
           <StatusBadge status={event.status} />
         </div>
         <p className="text-sm text-muted-foreground">

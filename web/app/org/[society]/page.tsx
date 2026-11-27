@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StatusBadge, Pill } from "@/components/status-badge";
 import { requireOrgStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatTime } from "@/lib/format";
+import { formatDate, formatEventRange, formatTime } from "@/lib/format";
 import { serverNow } from "@/lib/time";
 
 export default async function OrgDashboardPage({
@@ -27,12 +27,21 @@ export default async function OrgDashboardPage({
     .order("starts_at", { ascending: false });
   const ids = (events ?? []).map((e) => e.id);
 
-  const [{ data: reviews }, { data: tickets }] = ids.length
+  const [{ data: reviews }, { data: tickets }, { data: sessionRows }] = ids.length
     ? await Promise.all([
         supabase.from("orders").select("event_id").in("event_id", ids).eq("status", "under_review"),
         supabase.from("tickets").select("event_id, status").in("event_id", ids).in("status", ["valid", "checked_in"]),
+        supabase.from("event_sessions").select("event_id, kind").in("event_id", ids),
       ])
-    : [{ data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }, { data: [] }];
+  // D-067: a festival is a programme of sessions, a competition event holds its competitions
+  const sessionsByEvent = new Map<string, { all: number; competitions: number }>();
+  for (const x of sessionRows ?? []) {
+    const c = sessionsByEvent.get(x.event_id) ?? { all: 0, competitions: 0 };
+    c.all += 1;
+    if (x.kind === "competition") c.competitions += 1;
+    sessionsByEvent.set(x.event_id, c);
+  }
 
   const pendingByEvent = new Map<string, number>();
   for (const r of reviews ?? []) pendingByEvent.set(r.event_id, (pendingByEvent.get(r.event_id) ?? 0) + 1);
@@ -65,10 +74,10 @@ export default async function OrgDashboardPage({
       ) : null}
 
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-navy">Events</h2>
+        <h2 className="text-xl font-semibold text-navy">Events &amp; festivals</h2>
         <Button asChild variant="brand">
           <Link href={`/org/${org.slug}/events/new`}>
-            <CalendarPlus /> New event
+            <CalendarPlus /> New event / festival
           </Link>
         </Button>
       </div>
@@ -79,6 +88,9 @@ export default async function OrgDashboardPage({
             const pending = pendingByEvent.get(e.id) ?? 0;
             const sold = soldByEvent.get(e.id) ?? 0;
             const ended = new Date(e.ends_at).getTime() < now;
+            const counts = sessionsByEvent.get(e.id) ?? { all: 0, competitions: 0 };
+            const festival = e.format === "festival";
+            const competitionEvent = e.format === "competition";
             return (
               <li key={e.id}>
                 <Link
@@ -88,18 +100,39 @@ export default async function OrgDashboardPage({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-navy">{e.name}</span>
+                      {festival ? <Pill tone="success">🎪 Festival</Pill> : competitionEvent ? <Pill tone="success">🏆 Competition</Pill> : null}
                       <StatusBadge status={e.status} />
                       {ended && e.status === "published" ? <Pill>Ended</Pill> : null}
                       {e.visibility === "link_only" ? <Pill tone="info">Link only</Pill> : null}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(e.starts_at)} · {formatTime(e.starts_at)}
+                      {festival ? formatEventRange(e.starts_at, e.ends_at) : `${formatDate(e.starts_at)} · ${formatTime(e.starts_at)}`}
                     </p>
+                    {festival || competitionEvent ? (
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                        {festival ? (
+                          counts.all ? (
+                            <span className="text-slate-700">
+                              {counts.all} {counts.all === 1 ? "session" : "sessions"}
+                              {counts.competitions ? ` · ${counts.competitions} ${counts.competitions === 1 ? "competition" : "competitions"}` : ""}
+                            </span>
+                          ) : (
+                            <Pill tone="warning">No sessions yet – add workshops, competitions, nights</Pill>
+                          )
+                        ) : counts.competitions ? (
+                          <span className="text-slate-700">
+                            {counts.competitions} {counts.competitions === 1 ? "competition" : "competitions"}
+                          </span>
+                        ) : (
+                          <Pill tone="warning">Competition not set up yet</Pill>
+                        )}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     {pending ? <Pill tone="info">{pending} to review</Pill> : null}
                     <span className="tabular-nums text-slate-700">
-                      {e.format === "festival" ? `${sold} tickets` : `${sold}/${e.capacity} tickets`}
+                      {festival ? `${sold} tickets` : `${sold}/${e.capacity} tickets`}
                     </span>
                     <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
                   </div>
@@ -111,11 +144,11 @@ export default async function OrgDashboardPage({
       ) : (
         <EmptyState
           icon={CalendarPlus}
-          title="No events yet"
-          description="Create your first event, add ticket types, then submit it for approval."
+          title="No events or festivals yet"
+          description="Create a single event, a festival with many sessions, or a competition, then submit it for approval."
           action={
             <Button asChild variant="brand">
-              <Link href={`/org/${org.slug}/events/new`}>Create an event</Link>
+              <Link href={`/org/${org.slug}/events/new`}>Create one</Link>
             </Button>
           }
         />

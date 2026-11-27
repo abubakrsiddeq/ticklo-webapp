@@ -796,3 +796,10 @@ registered – the same thing the existing "already registered" error already di
   none); the organizer schedule marks them "Poster missing".
 - Shown on the public festival schedule (thumbnail per session), on the competition register
   page, and in the organizer schedule list. `event_schedule` returns it.
+
+## D-067 Dashboard shows festivals as festivals (owner request, 2026-11-27)
+- The organizer dashboard lists "Events & festivals" ("New event / festival"). Each item shows
+  🎪 Festival or 🏆 Competition, a festival's full date range and its number of sessions (and
+  competitions in it), a competition event's number of competitions, and a warning while a
+  festival has no sessions or a competition event no competition. The event pages show the
+  same badge.
