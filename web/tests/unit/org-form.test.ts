@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkOrgFile, orgSchema, socialLinksFrom } from "@/lib/validation/org";
+import { checkOrgFile, orgCreateSchema, orgSchema, socialLinksFrom } from "@/lib/validation/org";
 import { matchUniversities, universityLabel } from "@/lib/university-label";
 
 const valid = {
@@ -58,6 +58,25 @@ describe("register society form (ORG-01)", () => {
     expect(checkOrgFile(file("image/png", 6 * 1024 * 1024), { label: "Logo" })).toMatch(/5 MB/);
     expect(checkOrgFile(file("application/pdf", 10), { label: "Logo" })).toMatch(/JPG/);
     expect(checkOrgFile(file("application/pdf", 10), { label: "Proof", allowPdf: true })).toBeNull();
+  });
+});
+
+describe("society head (D-060)", () => {
+  const head = { head_role: "other", head_name: "Ali Raza", head_phone: "0300 1234567", head_email: "ali@uni.edu.pk" };
+  const createErrors = (input: Record<string, unknown>) => {
+    const r = orgCreateSchema.safeParse(input);
+    return r.success ? {} : Object.fromEntries(r.error.issues.map((i) => [i.path.join("."), i.message]));
+  };
+
+  it("needs a choice and all three details when registering", () => {
+    expect(orgCreateSchema.safeParse({ ...valid, ...head }).success).toBe(true);
+    expect(createErrors(valid).head_role).toBeDefined();
+    const e = createErrors({ ...valid, head_role: "self", head_name: "", head_phone: "12", head_email: "x" });
+    expect(Object.keys(e).sort()).toEqual(["head_email", "head_name", "head_phone"]);
+  });
+
+  it("is not asked when editing a society", () => {
+    expect(orgSchema.safeParse(valid).success).toBe(true);
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,8 @@ import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { UniversityPicker, type UniversityChoice } from "@/components/university-picker";
-import { checkOrgFile, orgSchema, type OrgInput } from "@/lib/validation/org";
+import { checkOrgFile, orgCreateSchema, orgSchema, type OrgInput } from "@/lib/validation/org";
+import { HeadFields, type HeadAccount } from "./head-fields";
 import type { ActionResult } from "@/lib/errors";
 
 export function OrgForm({
@@ -19,6 +20,7 @@ export function OrgForm({
   action,
   mode,
   hasLogo = false,
+  account,
 }: {
   defaults: OrgInput;
   universities: UniversityChoice[];
@@ -26,11 +28,16 @@ export function OrgForm({
   mode: "create" | "edit";
   /** Edit mode: the society already has a logo, so a new one is optional. */
   hasLogo?: boolean;
+  /** Create mode: the signed-in person, for "I am the society head". */
+  account?: HeadAccount;
 }) {
   const logoRequired = mode === "create" || !hasLogo;
   const [pending, start] = useTransition();
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
-  const form = useForm<OrgInput>({ resolver: zodResolver(orgSchema), defaultValues: defaults });
+  const form = useForm<OrgInput>({
+    resolver: zodResolver(mode === "create" ? orgCreateSchema : orgSchema) as Resolver<OrgInput>,
+    defaultValues: defaults,
+  });
   const { errors } = form.formState;
   const universityId = useWatch({ control: form.control, name: "university_id" });
   const typedUniversity = useWatch({ control: form.control, name: "new_university_name" });
@@ -142,6 +149,7 @@ export function OrgForm({
           <Input id="proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="pt-2" aria-invalid={fileErrors.proof ? true : undefined} onChange={(e) => onFileChange(e, "Proof document", true)} />
         </FormField>
       </div>
+      {mode === "create" && account ? <HeadFields form={form} account={account} /> : null}
       {mode === "create" ? (
         <FormField id="referral_code" label="TickLO ambassador code (optional)" hint="Did a TickLO campus ambassador tell you about us? Enter their code." error={fileErrors.referral_code || undefined}>
           <Input id="referral_code" name="referral_code" maxLength={16} pattern="[A-Za-z0-9]*" autoComplete="off" autoCapitalize="characters" className="font-mono uppercase sm:max-w-xs" />

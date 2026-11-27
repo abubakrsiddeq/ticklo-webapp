@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signedUrls } from "@/lib/storage";
 import { formatEventRange, formatPKR, formatShortDateTime } from "@/lib/format";
+import { formatPhone } from "@/lib/phone";
 import { reviewEvent, reviewOrganization } from "../actions";
 import { ReviewButtons } from "../review-buttons";
 
@@ -35,6 +36,12 @@ export default async function ApprovalsPage() {
     ? await supabase.from("profiles").select("id, full_name, email, phone").in("id", creatorIds)
     : { data: [] };
   const creatorMap = new Map((creators ?? []).map((c) => [c.id, c]));
+  // D-060: society head (president / chairperson / lead) for verification
+  const orgIds = (orgs ?? []).map((o) => o.id);
+  const { data: heads } = orgIds.length
+    ? await supabase.from("organization_heads").select("org_id, is_submitter, name, phone, email").in("org_id", orgIds)
+    : { data: [] };
+  const headMap = new Map((heads ?? []).map((h) => [h.org_id, h]));
   const proofs = await signedUrls("org-proofs", (orgs ?? []).map((o) => o.proof_path), 900);
 
   return (
@@ -45,6 +52,7 @@ export default async function ApprovalsPage() {
           <ul className="grid gap-4">
             {orgs.map((o) => {
               const c = creatorMap.get(o.created_by);
+              const head = headMap.get(o.id);
               const proofUrl = o.proof_path ? proofs.get(o.proof_path) : null;
               const links = Object.entries((o.social_links ?? {}) as Record<string, string>);
               return (
@@ -60,6 +68,24 @@ export default async function ApprovalsPage() {
                     <dt className="text-muted-foreground">Registered by</dt>
                     <dd>
                       {c?.full_name ?? "–"} · {c?.email} · {c?.phone ?? "no phone"}
+                    </dd>
+                    <dt className="text-muted-foreground">Society head</dt>
+                    <dd>
+                      {head ? (
+                        <>
+                          {head.name} ·{" "}
+                          <a href={`tel:${head.phone}`} className="text-brand-strong underline">
+                            {formatPhone(head.phone)}
+                          </a>{" "}
+                          ·{" "}
+                          <a href={`mailto:${head.email}`} className="text-brand-strong underline">
+                            {head.email}
+                          </a>
+                          <span className="text-muted-foreground">{head.is_submitter ? " (the person who registered)" : " (someone else, verify with them)"}</span>
+                        </>
+                      ) : (
+                        "Not given"
+                      )}
                     </dd>
                     <dt className="text-muted-foreground">Links</dt>
                     <dd className="flex flex-wrap gap-3">

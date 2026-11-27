@@ -817,6 +817,44 @@ export type Database = {
           },
         ];
       };
+      organization_heads: {
+        Row: {
+          created_at: string;
+          email: string;
+          is_submitter: boolean;
+          name: string;
+          org_id: string;
+          phone: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          email: string;
+          is_submitter: boolean;
+          name: string;
+          org_id: string;
+          phone: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          email?: string;
+          is_submitter?: boolean;
+          name?: string;
+          org_id?: string;
+          phone?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "organization_heads_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: true;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       organization_members: {
         Row: {
           created_at: string;
@@ -2442,6 +2480,10 @@ export type Database = {
           p_logo_url: string | null;
           p_social_links: Json | null;
           p_proof_path: string | null;
+          p_head_is_submitter?: boolean | null;
+          p_head_name?: string | null;
+          p_head_phone?: string | null;
+          p_head_email?: string | null;
         };
         Returns: string;
       };

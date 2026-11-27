@@ -9,7 +9,8 @@ import type { TablesUpdate } from "@/lib/database.types";
 import { readUpload, uploadPrivate, uploadPublicImage } from "@/lib/storage";
 import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
-import { orgSchema, socialLinksFrom } from "@/lib/validation/org";
+import { orgCreateSchema, orgSchema, socialLinksFrom } from "@/lib/validation/org";
+import { normalizePhone } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeCode } from "@/lib/referrals";
 import { resolveUniversityId } from "@/lib/universities";
@@ -24,7 +25,7 @@ async function campusCodeExists(code: string): Promise<boolean> {
 export async function createOrganization(form: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in again." };
-  const parsed = orgSchema.safeParse(formToObject(form));
+  const parsed = orgCreateSchema.safeParse(formToObject(form));
   if (!parsed.success) return { ok: false, error: "Please check the form.", fieldErrors: fieldErrors(parsed.error) };
 
   const logo = await readUpload(form.get("logo"), { label: "Logo", required: true });
@@ -59,6 +60,11 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
       p_logo_url: logoUrl,
       p_social_links: socialLinksFrom(parsed.data),
       p_proof_path: proofPath,
+      // D-060: for "self" the database takes name and email from the account itself
+      p_head_is_submitter: parsed.data.head_role === "self",
+      p_head_name: parsed.data.head_name ?? "",
+      p_head_phone: normalizePhone(parsed.data.head_phone ?? "") ?? "",
+      p_head_email: parsed.data.head_role === "self" ? user.email : (parsed.data.head_email ?? ""),
     });
     if (!error) {
       if (referral) {

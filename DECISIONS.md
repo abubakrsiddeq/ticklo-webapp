@@ -672,3 +672,21 @@ registered – the same thing the existing "already registered" error already di
   form.
 - `FormField` packs its rows at the top (`content-start`), which fixes side-by-side fields
   sliding down when the neighbour has a hint (City next to University name, Proof next to Logo).
+
+## D-060 Society head details when registering (owner request, 2026-11-27)
+- Registering a society asks who leads it (president / chairperson / lead / head) so TickLO can
+  call or email them to verify. Two choices, one required:
+  - **I am the head**: name and email are filled from the account and locked; phone is filled
+    from the profile and can be changed. The database takes name and email from the account
+    itself (`profiles`, falling back to `auth.users.email`), so a changed form cannot put
+    someone else's details there. If the account has no name yet, the name box is open.
+  - **Someone else leads it**: name, mobile and email are typed.
+  All three are required (zod on both sides + checks in `create_organization`; phone stored as
+  `+92…` via `normalizePhone`, email lower-cased).
+- Stored in a separate private table `organization_heads` (one row per society). RLS: TickLO
+  admins and the society's owners can read; nobody writes directly; it is filled only by
+  `create_organization`, in the same transaction as the society.
+- `create_organization` gets 4 new parameters that default to null, so the build that is live
+  while the migration runs keeps working (it just stores no head). The app always sends them.
+- Admin → Approvals shows the head with call and email links, and whether it is the person who
+  registered or someone else. Editing the head later is not built yet.

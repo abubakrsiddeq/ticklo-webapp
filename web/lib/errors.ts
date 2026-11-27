@@ -50,6 +50,7 @@ const FRIENDLY: Record<string, string> = {
   ACCESS_LOCKED: "Tickets are already sold – you can give more access, not less.",
   ALREADY_REGISTERED: "You have already registered a team for this competition.",
   INVALID_UNIVERSITY: "Enter your university's full name and city.",
+  INVALID_HEAD: "Check the society head's name, phone and email.",
 };
 
 interface ErrorLike {

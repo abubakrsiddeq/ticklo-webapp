@@ -317,6 +317,15 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-27: register society form (D-059, D-060)
+- LinkedIn link required (Facebook removed), logo required, stricter link/name checks,
+  university suggestions under "Other", no repeated city in university lists.
+- Society head (president / chairperson / lead): "I am the head" (name + email from the
+  account, locked; phone editable) or "Someone else" (all three typed). All required. Stored
+  in `organization_heads` (admins + society owners only). Shown on Admin → Approvals.
+- Migration `20261127001800_org_heads.sql` (**not applied to TICkLO yet**). The live build keeps
+  working after it (head params default to null). DB tests: 5 new (`org-heads.test.ts`), 109 pass.
+
 ## Change 2026-11-27: "Other" university with admin review (D-057)
 - Profile and society forms: "Other – my university is not listed" → name + city. Saved as a
   pending university (hidden publicly), reused when the name already exists or someone else
@@ -406,6 +415,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
   (all already in `env.txt`), then redeploy. Also enter the same mailbox in Supabase →
   Auth → SMTP (sender name `TickLO`) so signup/reset emails use it. Local `.env.local` is set
   and the SMTP login was verified on 2026-11-27.
+- **Apply migration `20261127001800_org_heads.sql` to TICkLO** (Mumbai) before deploying the
+  build with the society head fields – the new build calls `create_organization` with them.
 - **Deploy the new web build on Hostinger** to switch on festivals (migration `…001500` is
   already applied to TICkLO; no new env vars – session scans use the existing
   `QR_SIGNING_SECRET` – and no Edge Function redeploy). Then try checks #18–20.
