@@ -28,6 +28,7 @@ export function CompetitionCard({
   now,
   eventOpen,
   notOpenText,
+  title,
 }: {
   competitions: CardCompetition[];
   registerBase: string;
@@ -35,11 +36,13 @@ export function CompetitionCard({
   eventOpen: boolean;
   /** Why registration is not open (preview, cancelled, ended). */
   notOpenText: string;
+  /** D-070: e.g. "🏆 Compete" inside a festival */
+  title?: string;
 }) {
   return (
-    <section aria-labelledby="register-heading" className="rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
+    <section id="register" aria-labelledby="register-heading" className="scroll-mt-28 rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
       <h2 id="register-heading" className="mb-4 flex items-center gap-2 font-heading text-xl font-bold text-navy">
-        <Trophy className="size-5 text-brand-strong" aria-hidden /> {competitions.length > 1 ? "Competitions" : "Register"}
+        <Trophy className="size-5 text-brand-strong" aria-hidden /> {title ?? (competitions.length > 1 ? "Competitions" : "Register")}
       </h2>
       <ul className="grid gap-3">
         {competitions.map((s) => {

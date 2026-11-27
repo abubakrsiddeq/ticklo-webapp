@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarPlus, Clock, MapPin, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDateTime, formatTime } from "@/lib/format";
+import { formatDateTime, formatPKR, formatTime } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { competitionCta, competitionState, feeLabel, groupByDay, kindEmoji, kindLabel, seatsLabel, SESSION_KINDS, teamSizeLabel } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ export interface PublicSession {
   registration_ends_at: string | null;
   registration_type_id?: string | null;
   poster_url?: string | null;
+  slug?: string;
   results: { place: number; label: string; name: string }[];
 }
 
@@ -40,7 +41,11 @@ export function PublicSchedule(props: {
   open: boolean; // event live (not cancelled/ended)
   now: number;
   /** D-064: session id → a ticket type on sale that opens it ("Get ticket") */
-  sessionTickets?: Record<string, string>;
+  sessionTickets?: Record<string, { id: string; price: number }>;
+  /** D-070: a pass is on sale (sessions in passes say "Included in pass") */
+  hasPass?: boolean;
+  /** D-070: /e/<society>/<event>/s – each session's own page */
+  sessionBase?: string;
 }) {
   const days = useMemo(() => groupByDay(props.sessions), [props.sessions]);
   const [day, setDay] = useState(days[0]?.day ?? "");
@@ -101,7 +106,7 @@ export function PublicSchedule(props: {
           const regClosed = competition && s.registration_ends_at ? props.now >= new Date(s.registration_ends_at).getTime() : false;
           // D-064: one rule with the sidebar card and the register page
           const state = competition ? competitionState(s, props.now, props.open) : null;
-          const ticketId = !competition && props.open ? props.sessionTickets?.[s.id] : undefined;
+          const ticket = !competition && props.open ? props.sessionTickets?.[s.id] : undefined;
           return (
             <li key={s.id} className="grid gap-2 rounded-2xl border border-navy/10 p-4 sm:grid-cols-[88px_1fr_auto] sm:items-start">
               <div className="text-sm font-semibold text-navy tabular-nums">
@@ -115,9 +120,16 @@ export function PublicSchedule(props: {
                 ) : null}
                 <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-2 font-semibold text-navy">
-                  <span aria-hidden>{kindEmoji(s.kind)}</span> {s.name}
+                  <span aria-hidden>{kindEmoji(s.kind)}</span>{" "}
+                  {props.sessionBase && s.slug ? (
+                    <Link href={`${props.sessionBase}/${s.slug}`} className="hover:underline">
+                      {s.name}
+                    </Link>
+                  ) : (
+                    s.name
+                  )}
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-slate-600">{kindLabel(s.kind)}</span>
-                  {s.pass_access ? <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">Included in passes</span> : null}
+                  {s.pass_access && !competition && props.hasPass !== false ? <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">✓ Included in pass</span> : null}
                 </p>
                 <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -156,9 +168,9 @@ export function PublicSchedule(props: {
                 ) : state === "full" || state === "closed" ? (
                   <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-slate-600">{state === "full" ? "Full" : "Registration closed"}</span>
                 ) : null}
-                {ticketId && !full ? (
+                {ticket && !full ? (
                   <Button asChild size="sm" variant="outline">
-                    <a href={`?ticket=${ticketId}#tickets`}>Get ticket</a>
+                    <a href={`?ticket=${ticket.id}#tickets`}>Get ticket · {formatPKR(ticket.price, { freeLabel: "Free" })}</a>
                   </Button>
                 ) : null}
                 {props.open ? (

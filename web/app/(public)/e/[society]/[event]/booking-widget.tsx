@@ -138,7 +138,7 @@ export function BookingWidget(props: {
   const opens = (t: WidgetTicketType) =>
     t.all_sessions
       ? sessions.filter((x) => x.pass_access).length
-        ? `Pass: ${sessions.filter((x) => x.pass_access).map((x) => x.name).join(", ")}`
+        ? `Includes: ${sessions.filter((x) => x.pass_access && x.kind !== "competition").map((x) => x.name).join(", ")}`
         : null
       : t.session_ids.map((id) => sessionById.get(id)).filter(Boolean).map((x) => `${kindEmoji(x!.kind)} ${x!.name} · ${formatDateTime(x!.starts_at)}`).join(" | ");
 
@@ -222,22 +222,7 @@ export function BookingWidget(props: {
     });
   }
 
-  return (
-    <section id="tickets" aria-labelledby="tickets-heading" className="scroll-mt-28 rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
-      <h2 id="tickets-heading" className="mb-4 font-heading text-xl font-bold text-navy">
-        Tickets
-      </h2>
-      {ambassador && !applied ? (
-        <p className="mb-4 flex items-start gap-2 rounded-2xl bg-brand-soft p-3 text-sm text-navy">
-          <Gift className="mt-0.5 size-4 shrink-0 text-brand-strong" aria-hidden />
-          <span>
-            {ambassador.name ? <strong>{ambassador.name}</strong> : "A friend"} invited you
-            {discountLabel(ambassador.discountType, ambassador.discountValue) ? ` · ${discountLabel(ambassador.discountType, ambassador.discountValue)}` : ""}
-          </span>
-        </p>
-      ) : null}
-      <ul className="grid gap-3">
-        {props.types.map((t) => {
+  const renderType = (t: WidgetTicketType) => {
           const n = qty[t.id] ?? 0;
           const soldOut = t.remaining <= 0;
           const canBuy = props.onSale && t.saleState === "on" && !soldOut;
@@ -289,8 +274,56 @@ export function BookingWidget(props: {
               </div>
             </li>
           );
-        })}
-      </ul>
+  };
+
+  // D-070: a festival's sidebar in parts – passes, tickets for one event, other entry
+  const festival = props.format === "festival";
+  const firstStart = (t: WidgetTicketType) =>
+    t.session_ids.map((id) => sessionById.get(id)?.starts_at ?? "").filter(Boolean).sort()[0] ?? "";
+  const groups = [
+    { key: "passes", title: "🎟 Festival passes", types: props.types.filter((t) => t.all_sessions) },
+    {
+      key: "single",
+      title: "🎫 Tickets for one event",
+      types: props.types.filter((t) => !t.all_sessions && t.session_ids.length).sort((a, b) => firstStart(a).localeCompare(firstStart(b))),
+    },
+    { key: "entry", title: "🚪 Entry tickets", types: props.types.filter((t) => !t.all_sessions && !t.session_ids.length) },
+  ];
+  const onSaleTypes = props.types.filter((t) => t.saleState === "on" && t.remaining > 0);
+  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => t.price_paisa)) : null;
+
+  return (
+    <section id="tickets" aria-labelledby="tickets-heading" className="scroll-mt-28 rounded-3xl bg-white p-5 shadow-lift ring-1 ring-navy/[0.06] sm:p-6">
+      <h2 id="tickets-heading" className="font-heading text-xl font-bold text-navy">
+        {festival ? "Get in" : "Tickets"}
+      </h2>
+      {fromPrice !== null && props.types.length > 1 ? (
+        <p className="mt-0.5 text-sm text-muted-foreground">From {formatPKR(fromPrice, { freeLabel: "Free" })}</p>
+      ) : null}
+      <div className="mb-4" />
+      {ambassador && !applied ? (
+        <p className="mb-4 flex items-start gap-2 rounded-2xl bg-brand-soft p-3 text-sm text-navy">
+          <Gift className="mt-0.5 size-4 shrink-0 text-brand-strong" aria-hidden />
+          <span>
+            {ambassador.name ? <strong>{ambassador.name}</strong> : "A friend"} invited you
+            {discountLabel(ambassador.discountType, ambassador.discountValue) ? ` · ${discountLabel(ambassador.discountType, ambassador.discountValue)}` : ""}
+          </span>
+        </p>
+      ) : null}
+      {festival ? (
+        <div className="grid gap-5">
+          {groups.map((g) =>
+            g.types.length ? (
+              <div key={g.key} className="grid gap-2">
+                <p className="text-sm font-semibold text-navy">{g.title}</p>
+                <ul className="grid gap-3">{g.types.map(renderType)}</ul>
+              </div>
+            ) : null,
+          )}
+        </div>
+      ) : (
+        <ul className="grid gap-3">{props.types.map(renderType)}</ul>
+      )}
 
       {!props.onSale ? (
         <p className="mt-4 rounded-lg bg-secondary p-3 text-sm font-medium text-navy">{props.closedReason ?? "Ticket sale is closed."}</p>

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Poster } from "@/components/poster";
 import { getEventPage } from "@/lib/queries/public";
 import { getCurrentUser } from "@/lib/auth";
-import { formatDate, formatEventRange, formatTime } from "@/lib/format";
+import { formatDate, formatEventRange, formatPKR, formatTime } from "@/lib/format";
 import { absoluteUrl, eventPath, orgPath } from "@/lib/site";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { serverNow } from "@/lib/time";
@@ -132,14 +132,19 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   const pagePath = eventPath(org.slug, event.slug);
   const eventOpen = !cancelled && !ended && event.status === "published";
   // D-064: a session's "Get ticket" button picks a ticket on sale that opens it by name
-  const sessionTickets: Record<string, string> = {};
+  const sessionTickets: Record<string, { id: string; price: number }> = {};
   for (const s of sessions) {
     if (s.kind === "competition") continue;
     const t = types.find((x) => !x.all_sessions && x.session_ids.includes(s.id) && x.saleState === "on" && x.remaining > 0);
-    if (t) sessionTickets[s.id] = t.id;
+    if (t) sessionTickets[s.id] = { id: t.id, price: t.price_paisa };
   }
+  const hasPass = types.some((t) => t.all_sessions && t.saleState === "on" && t.remaining > 0);
   const competitions = sessions.filter((s) => s.kind === "competition");
   const showCompetitionCard = competitions.length > 0 && (event.format === "competition" || !types.length);
+  // D-070: a festival also shows its competitions in the sidebar, after the tickets
+  const showCompeteBelow = competitions.length > 0 && !showCompetitionCard && event.format === "festival";
+  const onSaleTypes = types.filter((t) => t.saleState === "on" && t.remaining > 0);
+  const fromPrice = onSaleTypes.length ? Math.min(...onSaleTypes.map((t) => t.price_paisa)) : null;
   const preselect = typeof sp.ticket === "string" ? sp.ticket : null;
   const needs =
     user && (!user.profile.full_name || !user.profile.phone)
@@ -151,7 +156,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
   const showAmbassador = Boolean(info && !cancelled && !ended && (info.applications_open || info.my_status === "ambassador" || info.my_status === "pending"));
 
   return (
-    <article className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+    <article className="mx-auto max-w-6xl px-4 pt-6 pb-28 sm:pt-10 lg:pb-10">
       {fromUrl && referral ? <RefCapture eventId={event.id} code={referral.code} /> : null}
       {cancelled ? (
         <Alert variant="destructive" className="mb-6">
@@ -243,6 +248,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               open={eventOpen}
               now={now}
               sessionTickets={sessionTickets}
+              hasPass={hasPass}
+              sessionBase={`${pagePath}/s`}
             />
           ) : null}
         </div>
@@ -277,6 +284,16 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions, attendee_names: x.attendee_names, attendee_university: x.attendee_university, form: x.form }))}
           />
           ) : null}
+          {showCompeteBelow ? (
+            <CompetitionCard
+              competitions={competitions}
+              registerBase={`${pagePath}/register`}
+              now={now}
+              eventOpen={eventOpen}
+              title="🏆 Compete"
+              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : "Registration opens after TickLO approves this event."}
+            />
+          ) : null}
           <p className="mt-3 text-center text-xs text-muted-foreground">
             You pay {org.name} directly by bank transfer or wallet. TickLO charges no fees.
           </p>
@@ -291,6 +308,22 @@ export default async function EventPage({ params, searchParams }: { params: Prom
           ) : null}
         </aside>
       </div>
+      {/* D-070: on phones the sidebar is far below – a bar to jump to it */}
+      {eventOpen && (onSaleTypes.length || competitions.length) ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-white/95 px-4 py-3 shadow-lift backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <p className="min-w-0 text-sm">
+              <span className="block truncate font-semibold text-navy">{event.name}</span>
+              <span className="text-muted-foreground">
+                {fromPrice !== null ? `From ${formatPKR(fromPrice, { freeLabel: "Free" })}` : `${competitions.length} competition${competitions.length === 1 ? "" : "s"}`}
+              </span>
+            </p>
+            <Button asChild variant="brand" className="shrink-0 rounded-full">
+              <a href={onSaleTypes.length ? "#tickets" : "#register"}>{onSaleTypes.length ? "Get tickets" : "Register"}</a>
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }
