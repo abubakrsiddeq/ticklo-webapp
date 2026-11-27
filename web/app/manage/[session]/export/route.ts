@@ -3,8 +3,8 @@ import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { csvResponse, toCsv } from "@/lib/csv";
 import { formatDateTime } from "@/lib/format";
-import { answerText, asQuestions, type TeamMember } from "@/lib/sessions";
-import { answerLabel, asForm } from "@/lib/registration-form";
+import type { TeamMember } from "@/lib/sessions";
+import { answerLabel, asForm, ticketFieldsOf } from "@/lib/registration-form";
 
 // FES-12: session attendees (with answers) or competition teams (with members) as CSV
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ session: string }> }) {
@@ -14,9 +14,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("can_manage_session", { p_session_id: sessionId, p_user_id: user.id });
   if (!allowed) return new Response("Not allowed", { status: 403 });
-  const { data: s } = await supabase.from("event_sessions").select("name, kind, questions, form, member_required").eq("id", sessionId).maybeSingle();
+  const { data: s } = await supabase.from("event_sessions").select("name, kind, questions, form, member_required, attendee_names, attendee_university").eq("id", sessionId).maybeSingle();
   if (!s) return new Response("Not found", { status: 404 });
-  const questions = asQuestions(s.questions);
+  // D-069: the session's ticket form (custom fields) as columns
+  const questions = ticketFieldsOf(s.form, { names: s.attendee_names, university: s.attendee_university, questions: s.questions }).filter((f) => !f.builtin);
   const slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40) || "session";
 
   if (s.kind === "competition") {
@@ -68,7 +69,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ses
       a.buyer_phone ?? "",
       a.buyer_email ?? "",
       a.order_ref ?? "",
-      ...questions.map((q) => answerText(q, ans[q.id])),
+      ...questions.map((q) => answerLabel(q, ans[q.id])),
       a.session_checked_in_at ? formatDateTime(a.session_checked_in_at) : "",
     ];
   });

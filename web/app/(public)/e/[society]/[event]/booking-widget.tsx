@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { AlertTriangle, DoorOpen, Gift, IdCard, Minus, Plus, Tag, X } from "lucide-react";
-import { NativeSelect } from "@/components/native-select";
-import { Textarea } from "@/components/ui/textarea";
-import { checkAnswers, clashes, kindEmoji, type Question } from "@/lib/sessions";
+import { clashes, kindEmoji, type Question } from "@/lib/sessions";
+import { FormRenderer } from "@/components/sessions/form-renderer";
+import {
+  checkAnswers as checkFormAnswers,
+  mergeBuiltins,
+  teamPayload,
+  ticketFieldsOf,
+  type Answers,
+  type FormField as FormFieldDef,
+} from "@/lib/registration-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +46,8 @@ export interface WidgetTicketType {
 export type AttendeeSetting = "off" | "optional" | "required";
 
 interface Holder {
-  name: string;
-  university: string;
-  answers: Record<string, Record<string, string>>;
+  base: Answers;
+  answers: Record<string, Answers>;
 }
 
 export interface WidgetSession {
@@ -54,6 +60,7 @@ export interface WidgetSession {
   questions: Question[];
   attendee_names?: string;
   attendee_university?: string;
+  form?: unknown;
 }
 
 export function BookingWidget(props: {
@@ -75,10 +82,10 @@ export function BookingWidget(props: {
   preselect?: string | null;
   /** D-065: festivals ask holder details per session */
   format?: string;
+  /** D-069: the event's ticket form (single / competition events) */
+  eventFields?: FormFieldDef[];
 }) {
   const sessions = props.sessions ?? [];
-  const attendeeNames = props.attendeeNames ?? "off";
-  const attendeeUniversity = props.attendeeUniversity ?? "off";
   const [qty, setQty] = useState<Record<string, number>>(() => {
     const t = props.types.find((x) => x.id === props.preselect);
     return t && props.onSale && t.saleState === "on" && t.remaining > 0 ? { [t.id]: 1 } : {};
@@ -105,26 +112,27 @@ export function BookingWidget(props: {
   const chosenSessions = sessions.filter((x) => chosenSessionIds.has(x.id));
   const clashing = clashes(chosenSessions);
 
-  // D-064: one entry per ticket – holder name / university (when asked) and session questions per seat
-  // D-065: in a festival a ticket asks what the strictest of its sessions asks
-  const levelsFor = (t: WidgetTicketType): { names: AttendeeSetting; uni: AttendeeSetting } => {
-    if (props.format !== "festival") return { names: attendeeNames, uni: attendeeUniversity };
-    const opened = sessions.filter((x) => x.kind !== "competition" && (t.all_sessions ? x.pass_access : t.session_ids.includes(x.id)));
-    const strictest = (k: "attendee_names" | "attendee_university"): AttendeeSetting =>
-      opened.some((x) => x[k] === "required") ? "required" : opened.some((x) => x[k] === "optional") ? "optional" : "off";
-    return { names: strictest("attendee_names"), uni: strictest("attendee_university") };
+  // D-064 / D-069: one entry per ticket – the event's ticket form (not festivals) and the forms of the sessions
+  // the ticket opens (passes: only built-in details). Built-ins are asked once, custom fields per form.
+  const sessionFields = (x: WidgetSession) => ticketFieldsOf(x.form, { names: x.attendee_names, university: x.attendee_university, questions: x.questions });
+  const formsFor = (t: WidgetTicketType) => {
+    const list: { key: string; name: string; kind: string | null; fields: FormFieldDef[] }[] = [];
+    if (props.format !== "festival" && props.eventFields) list.push({ key: "event", name: "Ticket", kind: null, fields: props.eventFields });
+    for (const x of sessions) {
+      if (x.kind === "competition" || !(t.all_sessions ? x.pass_access : t.session_ids.includes(x.id))) continue;
+      const f = sessionFields(x);
+      list.push({ key: x.id, name: x.name, kind: x.kind, fields: t.all_sessions ? f.filter((y) => y.builtin) : f });
+    }
+    return list;
   };
-  const slots = props.types.flatMap((t) =>
-    Array.from({ length: qty[t.id] ?? 0 }, (_, i) => ({
-      key: `${t.id}:${i}`,
-      type: t,
-      index: i,
-      ...levelsFor(t),
-      asking: t.all_sessions ? [] : sessions.filter((x) => x.kind !== "competition" && x.questions.length && t.session_ids.includes(x.id)),
-    })),
-  );
-  const showSlots = slots.some((x) => x.names !== "off" || x.uni !== "off" || x.asking.length);
-  const holderOf = (key: string, first: boolean): Holder => holders[key] ?? { name: first ? (props.buyerName ?? "") : "", university: "", answers: {} };
+  const slots = props.types.flatMap((t) => {
+    const forms = (qty[t.id] ?? 0) > 0 ? formsFor(t) : [];
+    const builtins = mergeBuiltins(forms.map((f) => f.fields));
+    const customs = forms.map((f) => ({ ...f, fields: f.fields.filter((y) => !y.builtin && !y.hidden) })).filter((f) => f.fields.length);
+    return Array.from({ length: qty[t.id] ?? 0 }, (_, i) => ({ key: `${t.id}:${i}`, type: t, index: i, builtins, customs }));
+  });
+  const showSlots = slots.some((x) => x.builtins.length || x.customs.length);
+  const holderOf = (key: string, first: boolean): Holder => holders[key] ?? { base: first && props.buyerName ? { name: props.buyerName } : {}, answers: {} };
   const setHolder = (key: string, first: boolean, change: (h: Holder) => Holder) => setHolders((all) => ({ ...all, [key]: change(all[key] ?? holderOf(key, first)) }));
   const sessionById = new Map(sessions.map((x) => [x.id, x]));
   const opens = (t: WidgetTicketType) =>
@@ -184,11 +192,9 @@ export function BookingWidget(props: {
     const errs: Record<string, string> = {};
     slots.forEach((slot, n) => {
       const h = holderOf(slot.key, n === 0);
-      if (slot.names === "required" && h.name.trim().length < 2) errs[`${slot.key}:name`] = "Name required";
-      if (slot.names !== "off" && h.name.trim() && (h.name.trim().length < 2 || h.name.trim().length > 80)) errs[`${slot.key}:name`] = "2 to 80 characters";
-      if (slot.uni === "required" && h.university.trim().length < 2) errs[`${slot.key}:university`] = "University required";
-      for (const x of slot.asking) {
-        for (const [qid, msg] of Object.entries(checkAnswers(x.questions, h.answers[x.id] ?? {}))) errs[`${slot.key}:${x.id}:${qid}`] = msg;
+      for (const [k, v] of Object.entries(checkFormAnswers(slot.builtins, h.base))) errs[`${slot.key}:b:${k}`] = v;
+      for (const c of slot.customs) {
+        for (const [k, v] of Object.entries(checkFormAnswers(c.fields, h.answers[c.key] ?? {}))) errs[`${slot.key}:${c.key}:${k}`] = v;
       }
     });
     setHolderErrors(errs);
@@ -199,11 +205,11 @@ export function BookingWidget(props: {
     const attendees = showSlots
       ? slots.map((slot, n) => {
           const h = holderOf(slot.key, n === 0);
+          const base = teamPayload(slot.builtins, h.base);
           return {
             ticket_type_id: slot.type.id,
-            name: slot.names === "off" ? "" : h.name.trim(),
-            university: slot.uni === "off" ? "" : h.university.trim(),
-            answers: Object.fromEntries(slot.asking.map((x) => [x.id, h.answers[x.id] ?? {}])),
+            ...base,
+            answers: Object.fromEntries(slot.customs.map((c) => [c.key, teamPayload(c.fields, h.answers[c.key] ?? {})])),
           };
         })
       : null;
@@ -316,70 +322,36 @@ export function BookingWidget(props: {
           {showSlots
             ? slots.map((slot, n) => {
                 const h = holderOf(slot.key, n === 0);
-                const err = (k: string) => holderErrors[`${slot.key}:${k}`];
+                const errsOf = (prefix: string) =>
+                  Object.fromEntries(Object.entries(holderErrors).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]));
                 return (
                   <fieldset key={slot.key} className="grid gap-3 rounded-lg bg-secondary/60 p-3">
                     <legend className="text-sm font-medium text-navy">
                       Ticket {n + 1} · {slot.type.name}
                     </legend>
-                    {slot.names !== "off" ? (
-                      <FormField id={`h-${slot.key}-name`} label="Name of the person" required={slot.names === "required"} error={err("name")}>
-                        <Input
-                          id={`h-${slot.key}-name`}
-                          value={h.name}
-                          maxLength={80}
-                          autoComplete={n === 0 ? "name" : "off"}
-                          placeholder={slot.names === "optional" ? "Empty = your name" : undefined}
-                          onChange={(e) => setHolder(slot.key, n === 0, (x) => ({ ...x, name: e.target.value }))}
-                        />
-                      </FormField>
+                    {slot.builtins.length ? (
+                      <FormRenderer
+                        fields={slot.builtins}
+                        answers={h.base}
+                        errors={errsOf(`${slot.key}:b:`)}
+                        prefix={`h-${slot.key}`}
+                        onChange={(id, v) => setHolder(slot.key, n === 0, (x) => ({ ...x, base: { ...x.base, [id]: v } }))}
+                      />
                     ) : null}
-                    {slot.uni !== "off" ? (
-                      <FormField id={`h-${slot.key}-uni`} label="University" required={slot.uni === "required"} error={err("university")}>
-                        <Input
-                          id={`h-${slot.key}-uni`}
-                          value={h.university}
-                          maxLength={120}
-                          placeholder="e.g. NUST"
-                          onChange={(e) => setHolder(slot.key, n === 0, (x) => ({ ...x, university: e.target.value }))}
+                    {slot.customs.map((c) => (
+                      <div key={c.key} className="grid gap-2">
+                        {c.kind ? (
+                          <p className="text-xs font-semibold text-navy">
+                            {kindEmoji(c.kind)} {c.name}
+                          </p>
+                        ) : null}
+                        <FormRenderer
+                          fields={c.fields}
+                          answers={h.answers[c.key] ?? {}}
+                          errors={errsOf(`${slot.key}:${c.key}:`)}
+                          prefix={`a-${slot.key}-${c.key}`}
+                          onChange={(id, v) => setHolder(slot.key, n === 0, (x) => ({ ...x, answers: { ...x.answers, [c.key]: { ...(x.answers[c.key] ?? {}), [id]: v } } }))}
                         />
-                      </FormField>
-                    ) : null}
-                    {slot.asking.map((x) => (
-                      <div key={x.id} className="grid gap-3">
-                        <p className="text-xs font-semibold text-navy">
-                          {kindEmoji(x.kind)} {x.name}
-                        </p>
-                        {x.questions.map((q) => {
-                          const id = `ans-${slot.key}-${x.id}-${q.id}`;
-                          const value = h.answers[x.id]?.[q.id] ?? "";
-                          const set = (v: string) =>
-                            setHolder(slot.key, n === 0, (cur) => ({ ...cur, answers: { ...cur.answers, [x.id]: { ...(cur.answers[x.id] ?? {}), [q.id]: v } } }));
-                          return (
-                            <FormField key={q.id} id={id} label={q.label} required={q.required} error={err(`${x.id}:${q.id}`)}>
-                              {q.type === "select" ? (
-                                <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
-                                  <option value="">Choose…</option>
-                                  {q.options.map((o) => (
-                                    <option key={o} value={o}>
-                                      {o}
-                                    </option>
-                                  ))}
-                                </NativeSelect>
-                              ) : q.type === "yes_no" ? (
-                                <NativeSelect id={id} value={value} onChange={(e) => set(e.target.value)}>
-                                  <option value="">Choose…</option>
-                                  <option value="yes">Yes</option>
-                                  <option value="no">No</option>
-                                </NativeSelect>
-                              ) : q.type === "long_text" ? (
-                                <Textarea id={id} value={value} onChange={(e) => set(e.target.value)} maxLength={1000} rows={3} />
-                              ) : (
-                                <Input id={id} value={value} onChange={(e) => set(e.target.value)} inputMode={q.type === "number" ? "decimal" : undefined} maxLength={200} />
-                              )}
-                            </FormField>
-                          );
-                        })}
                       </div>
                     ))}
                   </fieldset>

@@ -25,7 +25,11 @@ const attendeesSchema = z
       ticket_type_id: z.string().uuid(),
       name: z.string().trim().max(80).optional(),
       university: z.string().trim().max(120).optional(),
-      answers: z.record(z.string(), z.record(z.string(), z.string().max(1000))).optional(),
+      phone: z.string().trim().max(20).optional(),
+      email: z.string().trim().max(120).optional(),
+      roll_no: z.string().trim().max(40).optional(),
+      // D-069: {session id | "event": {field: value}}
+      answers: z.record(z.string(), z.record(z.string(), z.union([z.string().max(2000), z.array(z.string().max(100)).max(20)]))).optional(),
     }),
   )
   .max(20);
@@ -47,6 +51,11 @@ export async function bookTickets(
   if (!parsedItems.success) return { ok: false, error: "Choose at least one ticket." };
   const parsedAttendees = attendees === null ? null : attendeesSchema.safeParse(attendees);
   if (parsedAttendees && !parsedAttendees.success) return { ok: false, error: "Please check the details for every ticket." };
+  // files in answers must be ones this person uploaded (their own folder)
+  const fileValues = (parsedAttendees?.data ?? []).flatMap((a) => Object.values(a.answers ?? {}).flatMap((x) => Object.values(x)));
+  if (!fileValues.every((v) => typeof v !== "string" || !/^[0-9a-f-]{36}\//.test(v) || v.startsWith(`${user.id}/`))) {
+    return { ok: false, error: "Please upload the files again." };
+  }
 
   let buyerName: string | null = null;
   let buyerPhone: string | null = null;

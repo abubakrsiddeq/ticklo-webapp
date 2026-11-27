@@ -10,7 +10,7 @@ export async function listAttendees(eventId: string) {
     supabase
     .from("tickets")
     .select(
-      `id, code, holder_name, holder_university, holder_phone, status, checked_in_at, checkin_method, created_at, checked_in_by, source, serial_no,
+      `id, code, holder_name, holder_university, holder_phone, answers, status, checked_in_at, checkin_method, created_at, checked_in_by, source, serial_no,
        ticket_types!inner ( name, requires_student_card ),
        orders ( ref_code, buyer_phone, buyer_email, created_at ),
        print_batches ( prefix )`,

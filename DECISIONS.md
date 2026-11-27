@@ -834,3 +834,26 @@ registered – the same thing the existing "already registered" error already di
 - The manager page and the teams CSV show every answer under its label (files as links on the
   page). The team lead can change the team's answers too ("Change members").
 - Not in this step: the same builder for workshop / event tickets (they keep D-064 / D-065).
+
+## D-069 The form builder for every ticket, not only competitions (owner request, 2026-11-27)
+- Every session (workshop, concert, talk, qawwali night…) and every single / competition event
+  has a **ticket form**: the D-068 builder in "ticket" mode – one part, "asked for every ticket
+  holder". Built-in details (name, university, mobile, email, roll no) start hidden (the buyer's
+  name goes on the ticket, as D-033); the organizer turns them on and adds own fields (same 11
+  types, conditions, limits). Ticket templates: buyer's name only, name on every ticket,
+  students (name + university + roll no), workshop. Unlike competitions the name may stay hidden.
+- Replaces the D-064 / D-065 off-optional-required selects and the session questions editor.
+  Older settings become the form automatically (`ticket_fields_of_session`, `..._of_event`,
+  mirrored by `ticketFieldsOf`), so nothing saved before changes behaviour.
+- **What a ticket asks:** single / competition events: the event's form, plus the forms of any
+  sessions the ticket opens; festivals: only the forms of the sessions it opens. A session
+  ticket asks its session's whole form; a **pass asks only the built-in details** of the
+  sessions in passes (not every session's own questions). Built-ins are asked once per ticket,
+  as strictly as the strictest form.
+- Stored per ticket: `holder_name`, `holder_university`, `holder_phone`; everything else in
+  `tickets.answers` under the session id or `"event"`. Files go to the private
+  registration-files bucket (uploader's own folder).
+- **Locked once tickets are booked** (session: seats taken; event: an active booking): fields are
+  hidden instead of removed, types stay, nothing becomes required (`set_ticket_form`).
+- Festivals keep no event-level form (D-065). Session manager pages and CSV exports, and the
+  event attendee export, show the answers under their labels (files as links on the page).

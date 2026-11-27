@@ -20,6 +20,7 @@ import { normalizeCode, refCookieName, rewardLabel, REF_PARAM, type DiscountType
 import { BookingWidget, type AttendeeSetting, type WidgetReferral, type WidgetTicketType } from "./booking-widget";
 import { CompetitionCard } from "@/components/sessions/competition-card";
 import { ticketSaleEnd } from "@/lib/sessions";
+import { ticketFieldsOf } from "@/lib/registration-form";
 import { RefCapture } from "./ref-capture";
 import { AmbassadorCta } from "./ambassador-cta";
 import { PublicSchedule } from "@/components/sessions/public-schedule";
@@ -272,7 +273,8 @@ export default async function EventPage({ params, searchParams }: { params: Prom
             buyerName={user?.profile.full_name ?? ""}
             preselect={preselect}
             format={event.format}
-            sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions, attendee_names: x.attendee_names, attendee_university: x.attendee_university }))}
+            eventFields={event.format === "festival" ? undefined : ticketFieldsOf({ member: event.ticket_form }, { names: event.attendee_names, university: event.attendee_university })}
+            sessions={sessions.map((x) => ({ id: x.id, name: x.name, kind: x.kind, starts_at: x.starts_at, ends_at: x.ends_at, pass_access: x.pass_access, questions: x.questions, attendee_names: x.attendee_names, attendee_university: x.attendee_university, form: x.form }))}
           />
           ) : null}
           <p className="mt-3 text-center text-xs text-muted-foreground">

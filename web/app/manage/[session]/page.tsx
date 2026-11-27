@@ -9,10 +9,10 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatEventRange, formatPKR, formatShortDateTime, formatTime } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { answerText, asQuestions, feeLabel, kindEmoji, kindLabel, teamSizeLabel, type TeamMember } from "@/lib/sessions";
+import { feeLabel, kindEmoji, kindLabel, teamSizeLabel, type TeamMember } from "@/lib/sessions";
 import { serverNow } from "@/lib/time";
 import { signedUrls } from "@/lib/storage";
-import { answerLabel, asForm, type FormField } from "@/lib/registration-form";
+import { answerLabel, asForm, ticketFieldsOf, type FormField } from "@/lib/registration-form";
 import { ResultsEditor, SessionCheckInButton, TeamDecision } from "@/components/sessions/manage-forms";
 
 export const metadata: Metadata = { title: "Session" };
@@ -32,7 +32,10 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
     .maybeSingle();
   if (!s) notFound();
   const competition = s.kind === "competition";
-  const questions = asQuestions(s.questions);
+  // D-069: what this session asks every ticket holder (its ticket form, or older settings)
+  const questions = ticketFieldsOf(s.form, { names: s.attendee_names, university: s.attendee_university, questions: s.questions }).filter(
+    (f) => !f.builtin && !f.hidden,
+  );
   const [{ data: attendees }, { data: regs }, { data: counts }, { data: fee }] = await Promise.all([
     supabase.rpc("session_attendees", { p_session_id: sessionId }),
     competition ? supabase.rpc("session_registrations", { p_session_id: sessionId }) : Promise.resolve({ data: [] as never[] }),
@@ -46,13 +49,16 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
   const registrations = regs ?? [];
   // D-068: answers follow the competition's registration form; files open through short signed links
   const regForm = asForm(s.form);
-  const fileIds = new Set([...regForm.member, ...regForm.team].filter((f) => f.type === "file").map((f) => f.id));
+  const fileIds = new Set([...regForm.member, ...regForm.team, ...questions].filter((f) => f.type === "file").map((f) => f.id));
   const filePaths = registrations.flatMap((r) => {
     const team = Object.entries((r.answers ?? {}) as Record<string, unknown>);
     const mem = ((Array.isArray(r.members) ? r.members : []) as { answers?: Record<string, unknown> }[]).flatMap((m) => Object.entries(m.answers ?? {}));
     return [...team, ...mem].filter(([k, v]) => fileIds.has(k) && typeof v === "string").map(([, v]) => v as string);
   });
-  const fileUrls = competition ? await signedUrls("registration-files", filePaths, 900) : new Map<string, string>();
+  const ticketFiles = (attendees ?? []).flatMap((a) =>
+    Object.entries((a.answers ?? {}) as Record<string, unknown>).filter(([k, v]) => fileIds.has(k) && typeof v === "string").map(([, v]) => v as string),
+  );
+  const fileUrls = await signedUrls("registration-files", [...filePaths, ...ticketFiles], 900);
   const show = (f: FormField, v: unknown) =>
     f.type === "file" && typeof v === "string" ? (
       fileUrls.get(v) ? (
@@ -242,7 +248,7 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                 </thead>
                 <tbody className="divide-y">
                   {attendees.map((a) => {
-                    const ans = (a.answers ?? {}) as Record<string, string>;
+                    const ans = (a.answers ?? {}) as Record<string, unknown>;
                     return (
                       <tr key={a.ticket_id}>
                         <td className="px-3 py-2 font-medium text-navy">
@@ -256,7 +262,7 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
                         <td className="px-3 py-2 text-xs">{a.buyer_phone ? formatPhone(a.buyer_phone) : "-"}</td>
                         {questions.map((q) => (
                           <td key={q.id} className="px-3 py-2 text-xs">
-                            {answerText(q, ans[q.id]) || "-"}
+                            {show(q, ans[q.id])}
                           </td>
                         ))}
                         <td className="px-3 py-2">
