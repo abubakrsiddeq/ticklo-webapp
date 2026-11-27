@@ -98,14 +98,65 @@ export async function notifyOrderConfirmed(orderId: string) {
         eventDate: formatEventRange(order.events.starts_at, order.events.ends_at),
         venue: order.events.venue,
         refCode: order.ref_code,
-        ticketCount: order.ticket_count,
+        ticketCount: qrTickets.length || order.ticket_count,
         ticketsUrl: absoluteUrl("/me/tickets"),
         requiresCard: order.requires_student_card,
         tickets: qrTickets,
       }),
     });
+    await notifyTeamMembers(order.id, order.buyer_email, {
+      eventName: order.events.name,
+      eventDate: formatEventRange(order.events.starts_at, order.events.ends_at),
+      venue: order.events.venue,
+      refCode: order.ref_code,
+    });
   } catch (e) {
     console.error("notifyOrderConfirmed failed", e);
+  }
+}
+
+/**
+ * D-064: team entries – every member with an email (other than the lead) gets
+ * their own ticket QR, so the lead does not have to forward each one.
+ */
+async function notifyTeamMembers(
+  orderId: string,
+  leadEmail: string,
+  ev: { eventName: string; eventDate: string; venue: string; refCode: string },
+) {
+  const admin = createAdminClient();
+  const { data: reg } = await admin.from("team_registrations").select("members").eq("order_id", orderId).maybeSingle();
+  const members = (Array.isArray(reg?.members) ? reg.members : []) as { name?: string; email?: string }[];
+  if (!members.some((m) => m.email)) return;
+  const { data: tickets } = await admin
+    .from("tickets")
+    .select("id, code, team_member_index, ticket_types!inner ( name )")
+    .eq("order_id", orderId)
+    .not("team_member_index", "is", null);
+  for (const t of tickets ?? []) {
+    const m = members[t.team_member_index ?? -1];
+    const to = m?.email?.trim().toLowerCase();
+    if (!to || to === leadEmail.trim().toLowerCase()) continue;
+    const png = await ticketQrPng(t.id, 480);
+    const cid = `qr-${t.code.toLowerCase()}`;
+    await sendEmail({
+      attachments: png ? [{ filename: `ticklo-ticket-${t.code}.png`, content: png, contentType: "image/png", contentId: cid }] : [],
+      to,
+      subject: `Your ticket for ${ev.eventName}`,
+      template: "order-confirmed",
+      related: { type: "order", id: orderId },
+      react: OrderConfirmedEmail({
+        name: firstName(m.name ?? ""),
+        eventName: ev.eventName,
+        eventDate: ev.eventDate,
+        venue: ev.venue,
+        refCode: ev.refCode,
+        ticketCount: 1,
+        ticketsUrl: absoluteUrl("/"),
+        requiresCard: false,
+        tickets: [{ code: t.code, type: t.ticket_types.name, cid: png ? cid : null }],
+      }),
+    });
   }
 }
 

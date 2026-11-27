@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { ActionButton } from "@/components/action-button";
 import { formatDateTime, formatPKR } from "@/lib/format";
-import { payTeam, withdrawTeam } from "@/app/me/tickets/team-actions";
+import { withdrawTeam } from "@/app/me/tickets/team-actions";
+import { EditTeamButton, PayTeamButton } from "@/components/sessions/my-team-actions";
+import type { TeamMember } from "@/lib/sessions";
 
 export interface MyTeam {
   id: string;
@@ -20,10 +22,18 @@ export interface MyTeam {
   hold_expires_at: string | null;
   fee_paisa: number | null;
   fee_mode: string;
+  // D-064
+  event_id: string;
+  members: unknown;
+  pay_by: string | null;
+  team_min: number;
+  team_max: number;
+  member_required: string[];
 }
 
 function view(t: MyTeam, now: number): { text: string; tone: string; pay: boolean; withdraw: boolean; orderHref: string | null } {
-  if (t.status === "pending") return { text: "Waiting for the organizer to accept your team", tone: "text-warning", pay: false, withdraw: true, orderHref: null };
+  const solo = t.team_max <= 1;
+  if (t.status === "pending") return { text: `Waiting for the organizer to accept your ${solo ? "application" : "team"}`, tone: "text-warning", pay: false, withdraw: true, orderHref: null };
   if (t.status === "rejected") return { text: `Not accepted${t.reject_reason ? `: ${t.reject_reason}` : ""}`, tone: "text-destructive", pay: false, withdraw: false, orderHref: null };
   if (t.status === "withdrawn") return { text: "Withdrawn", tone: "text-muted-foreground", pay: false, withdraw: false, orderHref: null };
   const holding = t.order_status === "awaiting_payment" && t.hold_expires_at && new Date(t.hold_expires_at).getTime() > now;
@@ -31,6 +41,13 @@ function view(t: MyTeam, now: number): { text: string; tone: string; pay: boolea
   if (t.order_status === "under_review") return { text: "Payment sent – being checked", tone: "text-navy", pay: false, withdraw: false, orderHref: `/checkout/${t.order_id}/status` };
   if (t.order_status === "rejected") return { text: "Payment not approved – upload again", tone: "text-destructive", pay: false, withdraw: false, orderHref: `/checkout/${t.order_id}/status` };
   if (holding) return { text: "Accepted – pay to confirm your place", tone: "text-brand-strong", pay: false, withdraw: true, orderHref: `/checkout/${t.order_id}` };
+  // D-064: accepted entries have 48 hours to pay; after that the place is only theirs if one is still free
+  if (t.pay_by && new Date(t.pay_by).getTime() > now) {
+    return { text: `Accepted – pay by ${formatDateTime(t.pay_by)} to keep your place`, tone: "text-brand-strong", pay: true, withdraw: true, orderHref: null };
+  }
+  if (t.pay_by) {
+    return { text: "Accepted – your 48 hours to pay have passed. Pay now if a place is still free.", tone: "text-warning", pay: true, withdraw: true, orderHref: null };
+  }
   return { text: "Accepted – pay to confirm your place", tone: "text-brand-strong", pay: true, withdraw: true, orderHref: null };
 }
 
@@ -61,10 +78,17 @@ export function MyTeams({ teams, now }: { teams: MyTeam[]; now: number }) {
                 <p className={`text-sm font-medium ${v.tone}`}>{v.text}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {v.pay ? (
-                  <ActionButton variant="brand" size="sm" action={payTeam.bind(null, t.id)}>
-                    {fee ? "Pay now" : "Confirm place"}
-                  </ActionButton>
+                {v.pay ? <PayTeamButton registrationId={t.id} eventId={t.event_id} label={fee ? "Pay now" : "Confirm place"} withCode={fee > 0} /> : null}
+                {(t.status === "pending" || t.status === "approved") && new Date(t.session_starts_at).getTime() > now ? (
+                  <EditTeamButton
+                    registrationId={t.id}
+                    teamName={t.team_name}
+                    members={(Array.isArray(t.members) ? t.members : []) as TeamMember[]}
+                    teamMin={t.team_min}
+                    teamMax={t.team_max}
+                    memberRequired={t.member_required ?? []}
+                    fixedCount={t.order_status === "approved" || t.order_status === "under_review"}
+                  />
                 ) : null}
                 {v.orderHref ? (
                   <Link href={v.orderHref} className="inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium text-navy hover:bg-secondary">

@@ -11,10 +11,10 @@ import { formatDateTime, formatEventRange } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
-import { feeLabel, seatsLabel, teamSizeLabel } from "@/lib/sessions";
+import { competitionState, feeLabel, participationOf, seatsLabel, teamSizeLabel } from "@/lib/sessions";
 import { TeamForm } from "./team-form";
 
-export const metadata: Metadata = { title: "Register your team", robots: { index: false } };
+export const metadata: Metadata = { title: "Register", robots: { index: false } };
 
 type Params = { society: string; event: string; session: string };
 
@@ -32,8 +32,11 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
   const { data: mine } = await supabase.from("team_registrations").select("id, team_name, status").eq("session_id", s.id).eq("user_id", user.id).in("status", ["pending", "approved"]).maybeSingle();
   const now = serverNow();
   const closesAt = s.registration_ends_at ? new Date(s.registration_ends_at).getTime() : new Date(s.starts_at).getTime();
-  const full = s.capacity !== null && s.remaining !== null && s.remaining <= 0 && !s.needs_approval;
-  const closed = event.status !== "published" || now >= closesAt || !s.registration_type_id;
+  // D-064: same rule as the schedule and the sidebar card
+  const state = competitionState(s, now, event.status === "published");
+  const full = state === "full";
+  const closed = state === "closed" || state === "not_open";
+  const solo = participationOf(s.team_max) === "individual";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -65,9 +68,11 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
       <div className="mt-6">
         {mine ? (
           <Alert>
-            <AlertTitle>You already registered “{mine.team_name}”</AlertTitle>
+            <AlertTitle>{solo ? "You are already registered" : `You already registered “${mine.team_name}”`}</AlertTitle>
             <AlertDescription>
-              {mine.status === "pending" ? "Waiting for the organizer to accept your team." : "See it and pay (if needed) in My tickets."}{" "}
+              {mine.status === "pending"
+                ? `Waiting for the organizer to accept your ${solo ? "application" : "team"}.`
+                : `See it, change ${solo ? "your details" : "members"} or pay (if needed) in My tickets.`}{" "}
               <Link href="/me/tickets#teams" className="font-medium underline">
                 Open My tickets
               </Link>
@@ -92,6 +97,8 @@ export default async function RegisterTeamPage({ params }: { params: Promise<Par
             feeMode={s.fee_mode}
             needsApproval={s.needs_approval}
             questions={s.questions}
+            memberRequired={s.member_required ?? []}
+            profileIncomplete={!user.profile.full_name || !user.profile.phone}
             leader={{ name: user.profile.full_name ?? "", phone: formatPhone(user.profile.phone), email: user.email }}
           />
         )}

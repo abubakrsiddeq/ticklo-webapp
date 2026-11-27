@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,18 @@ export async function submitPaymentProof(orderId: string, form: FormData): Promi
   revalidatePath(`/checkout/${orderId}`);
   revalidatePath("/me/tickets");
   return { ok: true, data: { possibleDuplicate: result.possibleDuplicate } };
+}
+
+/** D-064: the buyer cancels an unpaid booking (no payment sent) to book something else. */
+export async function cancelBooking(orderId: string, backTo: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Please log in again." };
+  if (!z.string().uuid().safeParse(orderId).success) return { ok: false, error: "Order not found." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_my_order", { p_order_id: orderId });
+  if (error) return fail(error);
+  revalidatePath("/me/tickets");
+  redirect(backTo.startsWith("/e/") ? backTo : "/me/tickets");
 }
 
 /** ADM-04: "paise bheje magar approve nahi hua" – student opens a dispute for TickLO admins. */

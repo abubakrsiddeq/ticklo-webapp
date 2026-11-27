@@ -10,11 +10,12 @@ import { normalizePhone } from "@/lib/phone";
 import { normalizeCode, refCookieName } from "@/lib/referrals";
 import { notifyOrderConfirmed, notifyPaymentInstructions } from "@/lib/emails/notify";
 import type { TeamMember } from "@/lib/sessions";
+import { buyerDetailsSchema } from "@/lib/validation/profile";
 
 const memberSchema = z.object({
   name: z.string().trim().min(2, "Name").max(80),
   phone: z.string().trim().max(20).optional(),
-  email: z.string().trim().max(120).optional(),
+  email: z.union([z.literal(""), z.string().trim().toLowerCase().email("Check the email").max(120)]).optional(),
   roll_no: z.string().trim().max(40).optional(),
   university: z.string().trim().max(120).optional(),
 });
@@ -27,16 +28,29 @@ export async function registerTeam(input: {
   members: TeamMember[];
   answers: Record<string, string>;
   code: string | null;
+  /** D-064: the lead's own name and phone when the account has none yet */
+  leaderProfile?: { full_name: string; phone: string } | null;
 }): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Please log in to register." };
   if (!z.string().uuid().safeParse(input.eventId).success || !z.string().uuid().safeParse(input.sessionId).success) return { ok: false, error: "Competition not found." };
   const parsed = z.array(memberSchema).min(1).max(20).safeParse(input.members);
-  if (!parsed.success) return { ok: false, error: "Every team member needs a name." };
-  const members = parsed.data.map((m) => ({ ...m, phone: m.phone ? (normalizePhone(m.phone) ?? m.phone) : undefined }));
+  if (!parsed.success) return { ok: false, error: "Every member needs a name, and emails must be valid." };
+  const badPhone = parsed.data.find((m) => m.phone && !normalizePhone(m.phone));
+  if (badPhone) return { ok: false, error: `Check the mobile number of ${badPhone.name}.` };
+  const members = parsed.data.map((m) => ({ ...m, phone: m.phone ? normalizePhone(m.phone)! : undefined, email: m.email || undefined }));
   const typed = normalizeCode(input.code);
   const remembered = normalizeCode((await cookies()).get(refCookieName(input.eventId))?.value);
   const supabase = await createClient();
+  if (input.leaderProfile) {
+    const lp = buyerDetailsSchema.safeParse(input.leaderProfile);
+    if (!lp.success) return { ok: false, error: "Please add your full name and mobile number." };
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ full_name: lp.data.full_name, phone: normalizePhone(lp.data.phone) })
+      .eq("id", user.id);
+    if (profileError) return fail(profileError);
+  }
   const { data, error } = await supabase.rpc("register_team", {
     p_session_id: input.sessionId,
     p_team_name: input.teamName,

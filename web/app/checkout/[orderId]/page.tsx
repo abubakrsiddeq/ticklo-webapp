@@ -14,6 +14,8 @@ import { eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
 import { HoldTimer } from "./hold-timer";
 import { ProofForm } from "./proof-form";
+import { ActionButton } from "@/components/action-button";
+import { cancelBooking } from "../actions";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -71,7 +73,9 @@ export default async function CheckoutPage({
       {sp.existing ? (
         <Alert>
           <AlertTitle>You already have a booking in progress</AlertTitle>
-          <AlertDescription>Finish paying for this order first. If you don&apos;t pay, it expires and you can book again.</AlertDescription>
+          <AlertDescription>
+            Finish paying for this order first, or cancel it below to book something else. If you don&apos;t pay, it expires by itself.
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -175,6 +179,20 @@ export default async function CheckoutPage({
             </CardContent>
           </Card>
         </>
+      ) : null}
+
+      {/* D-064: cancel an unpaid booking (no payment sent) to book something else */}
+      {status === "awaiting_payment" && !data.proofs.length ? (
+        <div className="flex justify-center">
+          <ActionButton
+            variant="ghost"
+            size="sm"
+            action={cancelBooking.bind(null, order.id, eventPath(ev.organizations.slug, ev.slug))}
+            confirm={{ title: "Cancel this booking?", description: "The tickets go back on sale. You can book again right away.", confirmLabel: "Cancel booking" }}
+          >
+            Cancel this booking
+          </ActionButton>
+        </div>
       ) : null}
 
       {status === "rejected" && !retry ? (
