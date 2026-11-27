@@ -9,7 +9,7 @@ import type { TablesUpdate } from "@/lib/database.types";
 import { readUpload, uploadPrivate, uploadPublicImage } from "@/lib/storage";
 import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
-import { orgCreateSchema, orgSchema, socialLinksFrom } from "@/lib/validation/org";
+import { orgCreateSchema, orgHeadSchema, orgSchema, socialLinksFrom } from "@/lib/validation/org";
 import { normalizePhone } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeCode } from "@/lib/referrals";
@@ -117,6 +117,28 @@ export async function updateOrganization(orgSlug: string, form: FormData): Promi
   revalidatePath(`/org/${orgSlug}`, "layout");
   revalidatePath(`/s/${orgSlug}`);
   return { ok: true, message: "Society details saved." };
+}
+
+/** D-061: the owner changes (or adds) the society head. */
+export async function updateOrgHead(orgSlug: string, form: FormData): Promise<ActionResult> {
+  const access = await getOrgAccess(orgSlug);
+  if (!access?.user || access.role !== "owner") return { ok: false, error: "Only the society owner can change this." };
+  const parsed = orgHeadSchema.safeParse(formToObject(form));
+  if (!parsed.success) return { ok: false, error: "Please check the form.", fieldErrors: fieldErrors(parsed.error) };
+  const self = parsed.data.head_role === "self";
+  const supabase = await createClient();
+  // For "self" the database takes name and email from the account itself.
+  const { error } = await supabase.rpc("set_organization_head", {
+    p_org_id: access.org.id,
+    p_is_submitter: self,
+    p_name: parsed.data.head_name ?? "",
+    p_phone: normalizePhone(parsed.data.head_phone ?? "") ?? "",
+    p_email: self ? access.user.email : (parsed.data.head_email ?? ""),
+  });
+  if (error) return fail(error);
+  revalidatePath(`/org/${orgSlug}/settings`);
+  revalidatePath("/admin/approvals");
+  return { ok: true, message: "Society head saved." };
 }
 
 export async function resubmitOrganization(orgSlug: string): Promise<ActionResult> {

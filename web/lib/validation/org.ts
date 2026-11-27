@@ -61,6 +61,10 @@ export const orgCreateSchema = orgFields.extend(headFields).superRefine((v, ctx)
 
 export type OrgInput = z.input<typeof orgCreateSchema>;
 
+/** D-061: changing the society head from Settings (owners). */
+export const orgHeadSchema = z.object(headFields).superRefine(checkHead);
+export type HeadInput = z.input<typeof orgHeadSchema>;
+
 export function socialLinksFrom(input: Pick<z.output<typeof orgSchema>, "instagram" | "linkedin" | "website">) {
   const links: Record<string, string> = {};
   if (input.instagram) links.instagram = input.instagram;

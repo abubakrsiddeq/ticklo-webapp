@@ -65,3 +65,42 @@ describe("society head details (D-060)", () => {
     ).rejects.toThrow(/permission denied/);
   });
 });
+
+describe("changing the society head from Settings (D-061)", () => {
+  const H = ["uuid", "boolean", "text", "text", "text"];
+  const setHead = (userId: string, orgId: string, args: [boolean | null, string, string, string]) =>
+    asUser(c, userId, () => rpc(c, "set_organization_head", [orgId, ...args], H));
+
+  it("the owner can change it; 'self' still uses the account's name and email", async () => {
+    const owner = await createUser(c, "Hamza Tariq");
+    const orgId = await create(owner.id, [false, "Old Head", "+923001234567", "old@uni.pk"]);
+    await setHead(owner.id, orgId, [false, "New Head", "+923111234567", "New@Uni.pk"]);
+    expect(await headOf(orgId)).toEqual({ is_submitter: false, name: "New Head", phone: "+923111234567", email: "new@uni.pk" });
+    await setHead(owner.id, orgId, [true, "Fake Name", "+923121234567", "fake@evil.pk"]);
+    expect(await headOf(orgId)).toEqual({ is_submitter: true, name: "Hamza Tariq", phone: "+923121234567", email: owner.email });
+    const log = await c.query("select count(*)::int n from public.audit_log where action = 'organization.head_change' and target_id = $1", [orgId]);
+    expect(log.rows[0].n).toBe(2);
+  });
+
+  it("adds it for a society that has none", async () => {
+    const owner = await createUser(c);
+    const orgId = await create(owner.id, [null, null, null, null]);
+    await setHead(owner.id, orgId, [false, "Zara Malik", "+923331112222", "zara@uni.pk"]);
+    expect((await headOf(orgId)).name).toBe("Zara Malik");
+  });
+
+  it("members, other users and logged-out visitors cannot change it; bad input is refused", async () => {
+    const owner = await createUser(c);
+    const orgId = await create(owner.id, [false, "Real Head", "+923001234567", "real@uni.pk"]);
+    const member = await createUser(c);
+    await c.query("insert into public.organization_members (org_id, user_id, role) values ($1, $2, 'member')", [orgId, member.id]);
+    await expectTL(setHead(member.id, orgId, [false, "Hijack", "+923001234567", "x@y.pk"]), "FORBIDDEN");
+    await expectTL(setHead((await createUser(c)).id, orgId, [false, "Hijack", "+923001234567", "x@y.pk"]), "FORBIDDEN");
+    await expect(asAnon(c, () => rpc(c, "set_organization_head", [orgId, false, "Hijack", "+923001234567", "x@y.pk"], H))).rejects.toThrow(
+      /permission denied/,
+    );
+    await expectTL(setHead(owner.id, orgId, [null, "Real Head", "+923001234567", "real@uni.pk"]), "INVALID_HEAD");
+    await expectTL(setHead(owner.id, orgId, [false, "Real Head", "03001234567", "real@uni.pk"]), "INVALID_HEAD");
+    expect((await headOf(orgId)).name).toBe("Real Head");
+  });
+});

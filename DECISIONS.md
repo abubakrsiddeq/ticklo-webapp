@@ -688,5 +688,16 @@ registered – the same thing the existing "already registered" error already di
   `create_organization`, in the same transaction as the society.
 - `create_organization` gets 4 new parameters that default to null, so the build that is live
   while the migration runs keeps working (it just stores no head). The app always sends them.
-- Admin → Approvals shows the head with call and email links, and whether it is the person who
-  registered or someone else. Editing the head later is not built yet.
+- Admin → Approvals shows the head with call and email links, and whether it was entered by the
+  head from their own account or by someone else. Editing it later: D-061.
+
+## D-061 Society owners change the society head from Settings (owner request, 2026-11-27)
+- Settings has a "Who leads the society?" card, **for owners only** (members cannot read the head
+  details, D-060 RLS). Same two choices and checks as registering; "I am the head" means the
+  owner who is saving, and the database takes their account name and email.
+- Societies registered without a head (old build) can add one here; the card says so.
+- `set_organization_head` (owner check inside, upsert, audit `organization.head_change`). Members,
+  other users and logged-out visitors are refused. Changing the head does not send an approved
+  society back for review; admins can see the change in the audit log.
+- If the saved head is "someone else" (or "self" by a different owner), the form opens on
+  "Someone else" with the saved details, and switching back to it restores them.

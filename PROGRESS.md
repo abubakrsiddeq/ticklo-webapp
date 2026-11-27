@@ -323,6 +323,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - Society head (president / chairperson / lead): "I am the head" (name + email from the
   account, locked; phone editable) or "Someone else" (all three typed). All required. Stored
   in `organization_heads` (admins + society owners only). Shown on Admin → Approvals.
+- Owners change or add the society head in Settings (D-061). Migration
+  `20261127001900_org_head_edit.sql` (**not applied to TICkLO yet**; only adds a function, the live
+  build is not affected). DB tests: 3 more, 112 pass.
 - Migration `20261127001800_org_heads.sql` applied to TICkLO (2026-11-27) in one transaction
   (D-034 method, recorded in the migration history) and checked: RLS on, read policy only,
   anon has no access, no direct insert. The live build keeps working (head params default to null). DB tests: 5 new (`org-heads.test.ts`), 109 pass.

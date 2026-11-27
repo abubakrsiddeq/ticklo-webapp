@@ -2487,6 +2487,16 @@ export type Database = {
         };
         Returns: string;
       };
+      set_organization_head: {
+        Args: {
+          p_org_id: string;
+          p_is_submitter: boolean;
+          p_name: string;
+          p_phone: string;
+          p_email: string;
+        };
+        Returns: undefined;
+      };
       create_print_batch: {
         Args: {
           p_event_id: string | null;

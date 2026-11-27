@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, fieldAria } from "@/components/form-field";
 import { formatPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
-import type { OrgInput } from "@/lib/validation/org";
+import type { HeadInput } from "@/lib/validation/org";
 
 export interface HeadAccount {
   name: string;
@@ -24,7 +24,18 @@ const OPTIONS = [
  * D-060: who leads the society, so TickLO can call or email them to verify it.
  * "self" fills name and email from the account (locked) and the phone (editable).
  */
-export function HeadFields({ form, account }: { form: UseFormReturn<OrgInput>; account: HeadAccount }) {
+export function HeadFields<T extends HeadInput>({
+  form: anyForm,
+  account,
+  otherDefaults,
+}: {
+  form: UseFormReturn<T>;
+  account: HeadAccount;
+  /** Settings: the saved "someone else" details, restored when switching back to that option. */
+  otherDefaults?: { name: string; phone: string; email: string };
+}) {
+  // Only the head_* fields are used here, so treat the form as a head form.
+  const form = anyForm as unknown as UseFormReturn<HeadInput>;
   const role = useWatch({ control: form.control, name: "head_role" });
   const { errors } = form.formState;
   const isSelf = role === "self";
@@ -39,9 +50,9 @@ export function HeadFields({ form, account }: { form: UseFormReturn<OrgInput>; a
       form.setValue("head_email", account.email, opts);
       form.setValue("head_phone", formatPhone(account.phone), opts);
     } else {
-      form.setValue("head_name", "", opts);
-      form.setValue("head_email", "", opts);
-      form.setValue("head_phone", "", opts);
+      form.setValue("head_name", otherDefaults?.name ?? "", opts);
+      form.setValue("head_email", otherDefaults?.email ?? "", opts);
+      form.setValue("head_phone", otherDefaults?.phone ?? "", opts);
     }
   }
 

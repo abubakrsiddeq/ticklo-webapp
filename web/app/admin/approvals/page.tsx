@@ -81,7 +81,7 @@ export default async function ApprovalsPage() {
                           <a href={`mailto:${head.email}`} className="text-brand-strong underline">
                             {head.email}
                           </a>
-                          <span className="text-muted-foreground">{head.is_submitter ? " (the person who registered)" : " (someone else, verify with them)"}</span>
+                          <span className="text-muted-foreground">{head.is_submitter ? " (entered by themselves from their account)" : " (entered by someone else, verify with them)"}</span>
                         </>
                       ) : (
                         "Not given"
