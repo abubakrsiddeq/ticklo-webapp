@@ -25,7 +25,7 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
   return (
     <nav
       aria-label="Main"
-      className="hidden h-14 items-center gap-0.5 rounded-full bg-white/75 px-2 shadow-pill ring-1 ring-white backdrop-blur-xl md:flex"
+      className="hidden h-14 items-center gap-1 rounded-full bg-white/75 px-1.5 shadow-pill ring-1 ring-white backdrop-blur-xl md:flex"
     >
       {items.map((i) => {
         const active = isActive(pathname, i.href);
@@ -35,12 +35,13 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
             href={i.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative inline-flex h-10 items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap transition-colors lg:px-4 lg:text-[15px]",
-              active ? "text-brand-strong" : "text-navy/75 hover:bg-secondary/70 hover:text-navy",
+              "inline-flex h-11 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap transition-colors lg:px-5 lg:text-[15px]",
+              active
+                ? "bg-brand-strong text-white shadow-[0_6px_16px_-6px_rgb(11_125_71/0.6)]"
+                : "text-navy/70 hover:bg-secondary/80 hover:text-navy",
             )}
           >
             {i.label}
-            {active ? <span className="absolute inset-x-2 -bottom-2 h-[3px] rounded-full bg-brand-strong" aria-hidden /> : null}
           </Link>
         );
       })}

@@ -515,10 +515,14 @@ and guide the rest from that.
 
 ## D-048 Light hero and floating header (owner request, 2026-11-27)
 - Header: logo on its own, the links in a glass pill (active link green with a green underline
-  bar) and the account in a second glass pill (avatar, name, chevron; or Log in / Get started).
+  bar – replaced by D-049) and the account in a second glass pill (avatar, name, chevron; or Log in / Get started).
   A blurred band behind it fades out downwards so content scrolling under it stays readable.
   Same header on every page (public, dashboard, admin, checkout) and in the loading skeleton.
 - Home hero is light instead of the navy card: soft mint blobs that run behind the header, a large
   "Campus events, tickets you can trust." heading, the search bar with an arrow button, three stats
   with icons, and a tilted ticket over layered cards with "Available" and "Entry OK" stickers
   (desktop only). The ticket's QR is a drawn pattern, not a real code.
+
+## D-049 Active header link is a filled pill (owner request, 2026-11-27)
+- The active link in the header pill is a solid brand-green pill with white text (owner's
+  reference was blue; green keeps the brand). Replaces the green underline from D-048.
