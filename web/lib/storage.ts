@@ -7,7 +7,7 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB (PAY-04, ORG-04)
 export type UploadKind = "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 
 export const PUBLIC_BUCKETS = ["posters", "logos", "avatars"] as const;
-export const PRIVATE_BUCKETS = ["payment-proofs", "student-cards", "org-proofs"] as const;
+export const PRIVATE_BUCKETS = ["payment-proofs", "student-cards", "org-proofs", "registration-files"] as const;
 type Bucket = (typeof PUBLIC_BUCKETS)[number] | (typeof PRIVATE_BUCKETS)[number];
 
 const EXT: Record<UploadKind, string> = {

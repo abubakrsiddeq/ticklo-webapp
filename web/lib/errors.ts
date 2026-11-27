@@ -53,6 +53,8 @@ const FRIENDLY: Record<string, string> = {
   INVALID_HEAD: "Check the society head's name, phone and email.",
   ATTENDEE_REQUIRED: "Fill in the details for every ticket.",
   MEMBER_TAKEN: "One of these people is already in another team for this competition.",
+  INVALID_FORM: "The registration form is not valid.",
+  FORM_LOCKED: "People have registered, so this change is not allowed.",
   NO_SESSIONS: "Add the sessions or the competition before sending the event for review.",
 };
 

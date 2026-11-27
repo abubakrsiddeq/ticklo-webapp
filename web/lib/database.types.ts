@@ -354,6 +354,7 @@ export type Database = {
       };
       event_sessions: {
         Row: {
+          form: Json;
           poster_url: string | null;
           attendee_names: string;
           attendee_university: string;
@@ -381,6 +382,7 @@ export type Database = {
           venue: string | null;
         };
         Insert: {
+          form?: Json;
           poster_url?: string | null;
           attendee_names?: string;
           attendee_university?: string;
@@ -408,6 +410,7 @@ export type Database = {
           venue?: string | null;
         };
         Update: {
+          form?: Json;
           poster_url?: string | null;
           attendee_names?: string;
           attendee_university?: string;
@@ -2482,6 +2485,14 @@ export type Database = {
           p_registration_id: string;
           p_team_name: string;
           p_members: Json;
+          p_answers?: Json | null;
+        };
+        Returns: undefined;
+      };
+      set_session_form: {
+        Args: {
+          p_session_id: string;
+          p_form: Json;
         };
         Returns: undefined;
       };
@@ -2704,6 +2715,7 @@ export type Database = {
           attendee_names: string;
           attendee_university: string;
           poster_url: string | null;
+          form: Json;
         }[];
       };
       event_stats: {
@@ -2964,6 +2976,8 @@ export type Database = {
           team_min: number;
           team_max: number;
           member_required: string[];
+          answers: Json;
+          form: Json;
         }[];
       };
       normalize_code: {

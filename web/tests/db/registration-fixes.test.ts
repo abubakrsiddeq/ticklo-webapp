@@ -95,7 +95,7 @@ describe("team entries", () => {
 
     const lead = await buyer();
     const ok = { university: "NUST" };
-    await expectTL(register(lead.id, comp, "T1", [{ name: "A One", phone: "+923001110001" }, { name: "B Two", phone: "+923001110002" }]), "INVALID_ITEMS");
+    await expectTL(register(lead.id, comp, "T1", [{ name: "A One", phone: "+923001110001" }, { name: "B Two", phone: "+923001110002" }]), "ANSWERS_REQUIRED");
     await expectTL(register(lead.id, comp, "T1", [{ name: "A One", phone: "0300", ...ok }, { name: "B Two", phone: "+923001110002", ...ok }]), "INVALID_ITEMS");
     await expectTL(register(lead.id, comp, "T1", [{ name: "A One", phone: "+923001110001", ...ok }, { name: "B Two", phone: "+923001110001", ...ok }]), "INVALID_ITEMS");
     await register(lead.id, comp, "T1", [{ name: "A One", phone: "+923001110001", ...ok }, { name: "B Two", phone: "+923001110002", ...ok }]);
@@ -235,5 +235,50 @@ describe("session posters (D-066)", () => {
     await org(() => rpc(c, "set_session_poster", [ws, url], ["uuid", "text"]));
     const row = await c.query("select poster_url from public.event_schedule($1) where id = $2", [eventId, ws]);
     expect(row.rows[0].poster_url).toBe(url);
+  });
+});
+
+describe("registration form builder (D-068)", () => {
+  const form = (member: unknown[], team: unknown[]) => JSON.stringify({ member, team });
+  const name = { id: "name", type: "short_text", label: "Full name", required: true, hidden: false, builtin: true };
+  const uni = { id: "university", type: "short_text", label: "University", required: true, hidden: false, builtin: true };
+  const setForm = (userId: string, sessionId: string, f: string) =>
+    asUser(c, userId, () => rpc(c, "set_session_form", [sessionId, f], ["uuid", "jsonb"]));
+
+  it("organizers build the form; answers follow types, required, hidden and conditions", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    const comp = await session(eventId, { name: "MUN", kind: "competition", capacity: 20, team_min: 1, team_max: 1, fee_paisa: 0 });
+    const committee = { id: "committee", type: "select", label: "Committee", required: true, hidden: false, options: ["UNSC", "UNGA"] };
+    const exp = { id: "experienced", type: "yes_no", label: "Done MUN before?", required: true, hidden: false };
+    const howMany = { id: "how_many", type: "number", label: "How many?", required: true, hidden: false, min: 1, max: 50, show_if: { field: "experienced", equals: "yes" } };
+    const github = { id: "link", type: "url", label: "Portfolio", required: false, hidden: false };
+    const secret = { id: "secret", type: "short_text", label: "Old field", required: true, hidden: true };
+    await expectTL(setForm((await buyer()).id, comp, form([name], [])), "FORBIDDEN");
+    await expectTL(setForm(SEED.organizer, comp, form([uni], [])), "INVALID_FORM"); // no name
+    await expectTL(setForm(SEED.organizer, comp, form([name, { ...uni, type: "number" }], [])), "INVALID_FORM"); // built-in type
+    await expectTL(setForm(SEED.organizer, comp, form([name, howMany, exp], [])), "INVALID_FORM"); // condition on a later field
+    await setForm(SEED.organizer, comp, form([name, uni, committee, exp, howMany, secret], [github]));
+
+    const lead = await buyer();
+    const m = (answers: Record<string, unknown>) => [{ name: "Zara Khan", university: "LUMS", answers }];
+    await expectTL(register(lead.id, comp, "", m({ committee: "WHO", experienced: "no" })), "ANSWERS_REQUIRED");
+    await expectTL(register(lead.id, comp, "", m({ committee: "UNSC", experienced: "yes" })), "ANSWERS_REQUIRED");
+    await expectTL(register(lead.id, comp, "", m({ committee: "UNSC", experienced: "yes", how_many: "99" })), "ANSWERS_REQUIRED");
+    const r = await register(lead.id, comp, "", m({ committee: "UNSC", experienced: "no", how_many: "5", secret: "x" }));
+    const row = (await c.query("select members from public.team_registrations where id = $1", [r.registration_id])).rows[0];
+    expect(row.members[0]).toEqual({ name: "Zara Khan", university: "LUMS", answers: { committee: "UNSC", experienced: "no" } });
+  });
+
+  it("once people registered: no removing, no type change, no new required field", async () => {
+    const { eventId } = await createEvent(c, [{ price: 100000 }]);
+    const comp = await session(eventId, { name: "Quiz", kind: "competition", capacity: 20, team_min: 1, team_max: 1, fee_paisa: 0 });
+    const shirt = { id: "shirt", type: "select", label: "T-shirt", required: false, hidden: false, options: ["S", "M", "L"] };
+    await setForm(SEED.organizer, comp, form([name, uni, shirt], []));
+    await register((await buyer()).id, comp, "", [{ name: "Ali Raza", university: "NUST" }]);
+    await expectTL(setForm(SEED.organizer, comp, form([name, uni], [])), "FORM_LOCKED");
+    await expectTL(setForm(SEED.organizer, comp, form([name, uni, { ...shirt, type: "short_text" }], [])), "FORM_LOCKED");
+    await expectTL(setForm(SEED.organizer, comp, form([name, uni, { ...shirt, required: true }], [])), "FORM_LOCKED");
+    await expectTL(setForm(SEED.organizer, comp, form([name, uni, shirt, { id: "cnic", type: "short_text", label: "CNIC", required: true, hidden: false }], [])), "FORM_LOCKED");
+    await setForm(SEED.organizer, comp, form([name, uni, { ...shirt, hidden: true, label: "Shirt size" }, { id: "diet", type: "short_text", label: "Diet", required: false, hidden: false }], []));
   });
 });
