@@ -39,6 +39,8 @@ export interface SessionFormValues {
   member_required?: string[];
   /** D-068: the competition's registration form */
   form?: unknown;
+  /** D-069: every other session – the form asked for every ticket holder */
+  ticket_fields?: unknown;
   /** D-065: festival sessions – holder details on each ticket (off / optional / required) */
   attendee_names?: string;
   attendee_university?: string;
@@ -137,6 +139,9 @@ export async function saveSession(
           p_required: (v.member_required ?? []).filter((f) => ["phone", "email", "roll_no", "university"].includes(f)),
         });
     if (formError) return fail(formError, { form: "Check the registration form" });
+  } else if (v.ticket_fields) {
+    const { error: formError } = await supabase.rpc("set_ticket_form", { p_event_id: eventId, p_session_id: String(id), p_fields: v.ticket_fields as Json });
+    if (formError) return fail(formError, { form: "Check the ticket details" });
   } else {
     const level = (v2: string | undefined) => (v2 === "optional" || v2 === "required" ? v2 : "off");
     const { error: holderError } = await supabase.rpc("set_session_attendee_fields", {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
-import { QUESTION_TYPES, SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
+import { SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 import { FormBuilder, type FormSource } from "@/components/sessions/form-builder";
-import { DEFAULT_FORM, asForm, checkForm, type RegistrationForm } from "@/lib/registration-form";
+import { DEFAULT_FORM, DEFAULT_TICKET_FIELDS, asForm, checkForm, ticketFieldsOf, type RegistrationForm } from "@/lib/registration-form";
 import type { ActionResult } from "@/lib/errors";
 import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
 
@@ -58,13 +58,6 @@ export interface SessionValue {
   registration_ends_at: string | null;
 }
 
-interface QuestionDraft {
-  label: string;
-  type: string;
-  options: string;
-  required: boolean;
-}
-
 /** FES-01/FES-08/FES-09/FES-10: add or edit a session (workshop, competition, night…). */
 export function SessionDialog({
   orgSlug,
@@ -102,12 +95,12 @@ export function SessionDialog({
   const solo = participation === "individual";
   // D-064: member details the organizer requires (new competitions: mobile + university)
   // D-065: festivals ask ticket-holder details per session (not for competitions – they have member details)
-  const [holderNames, setHolderNames] = useState(session?.attendee_names ?? "off");
-  const [holderUniversity, setHolderUniversity] = useState(session?.attendee_university ?? "off");
+  // D-069: every other session has a ticket form (asked for every ticket holder)
+  const savedTicketForm: RegistrationForm | null = session
+    ? { member: ticketFieldsOf(session.form, { names: session.attendee_names, university: session.attendee_university, questions: session.questions }), team: [] }
+    : null;
+  const [ticketForm, setTicketForm] = useState<RegistrationForm>(() => savedTicketForm ?? { member: DEFAULT_TICKET_FIELDS.map((f) => ({ ...f })), team: [] });
 
-  const [questions, setQuestions] = useState<QuestionDraft[]>(
-    (session?.questions ?? []).map((q) => ({ label: q.label, type: q.type, options: q.options.join(", "), required: q.required })),
-  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { pending, run } = useAction();
   const competition = kind === "competition";
@@ -140,11 +133,10 @@ export function SessionDialog({
                 ends_at: String(fd.get("ends_at") ?? ""),
                 capacity: String(fd.get("capacity") ?? ""),
                 pass_access: passAccess,
-                questions: competition ? [] : questions.map((q) => ({ label: q.label, type: q.type, options: q.options.split(","), required: q.required })),
+                questions: [],
                 participation,
                 form: competition ? regForm : undefined,
-                attendee_names: holderNames,
-                attendee_university: holderUniversity,
+                ticket_fields: competition ? undefined : ticketForm.member,
                 team_min: String(fd.get("team_min") ?? "1"),
                 team_max: String(fd.get("team_max") ?? "1"),
                 fee_mode: String(fd.get("fee_mode") ?? "per_team"),
@@ -153,7 +145,7 @@ export function SessionDialog({
                 registration_ends_at: String(fd.get("registration_ends_at") ?? ""),
               };
               // D-068: the registration form must make sense before it is sent
-              const formProblem = competition ? checkForm(regForm) : null;
+              const formProblem = competition ? checkForm(regForm) : checkForm(ticketForm, "ticket");
               if (formProblem) {
                 toast.error(formProblem);
                 return;
@@ -338,28 +330,7 @@ export function SessionDialog({
               </fieldset>
             ) : (
               <>
-              <fieldset className="grid gap-3 rounded-xl border border-navy/10 p-3">
-                <legend className="px-1 text-sm font-semibold text-navy">Details on each ticket for this session</legend>
-                <p className="-mt-1 text-xs text-muted-foreground">
-                  Off: tickets carry the buyer&apos;s name. A pass asks what its strictest session asks.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <FormField id={`${p}-hname`} label="Name of the person">
-                    <NativeSelect id={`${p}-hname`} value={holderNames} onChange={(e) => setHolderNames(e.target.value)}>
-                      <option value="off">Off</option>
-                      <option value="optional">Optional</option>
-                      <option value="required">Required</option>
-                    </NativeSelect>
-                  </FormField>
-                  <FormField id={`${p}-huni`} label="University">
-                    <NativeSelect id={`${p}-huni`} value={holderUniversity} onChange={(e) => setHolderUniversity(e.target.value)}>
-                      <option value="off">Off</option>
-                      <option value="optional">Optional</option>
-                      <option value="required">Required</option>
-                    </NativeSelect>
-                  </FormField>
-                </div>
-              </fieldset>
+              <FormBuilder value={ticketForm} onChange={setTicketForm} solo sources={[]} locked={formLocked} saved={savedTicketForm} mode="ticket" />
               <label className="flex items-start gap-3 rounded-xl border border-navy/10 p-3 text-sm">
                 <Checkbox checked={passAccess} onCheckedChange={(v) => setPassAccess(v === true)} className="mt-0.5" />
                 <span>
@@ -370,66 +341,6 @@ export function SessionDialog({
                 </span>
               </label>
               </>
-            )}
-
-            {/* D-068: competitions ask through their registration form */}
-            {competition ? null : (
-            <div className="grid gap-2">
-              <p className="text-sm font-medium text-navy">Questions (optional)</p>
-              <p className="-mt-1 text-xs text-muted-foreground">
-                {competition ? (solo ? "Asked when someone registers." : "Asked when a team registers.") : "Asked when someone books a ticket for this session (not pass holders)."} e.g. T-shirt size,
-                laptop?, GitHub link.
-              </p>
-              {questions.map((q, i) => (
-                <div key={i} className="grid gap-2 rounded-xl bg-secondary/50 p-2 sm:grid-cols-[1fr_150px_auto_auto] sm:items-center">
-                  <Input
-                    aria-label={`Question ${i + 1}`}
-                    value={q.label}
-                    maxLength={200}
-                    placeholder="Question"
-                    onChange={(e) => setQuestions((all) => all.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-                  />
-                  <NativeSelect
-                    aria-label={`Question ${i + 1} type`}
-                    value={q.type}
-                    onChange={(e) => setQuestions((all) => all.map((x, j) => (j === i ? { ...x, type: e.target.value } : x)))}
-                  >
-                    {QUESTION_TYPES.map((t) => (
-                      <option key={t.key} value={t.key}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  <label className="flex items-center gap-2 text-xs">
-                    <Checkbox checked={q.required} onCheckedChange={(v) => setQuestions((all) => all.map((x, j) => (j === i ? { ...x, required: v === true } : x)))} />
-                    Required
-                  </label>
-                  <Button type="button" size="icon-sm" variant="ghost" aria-label="Remove question" onClick={() => setQuestions((all) => all.filter((_, j) => j !== i))}>
-                    <X />
-                  </Button>
-                  {q.type === "select" ? (
-                    <Input
-                      aria-label={`Question ${i + 1} choices`}
-                      className="sm:col-span-4"
-                      value={q.options}
-                      placeholder="Choices, separated by commas: S, M, L, XL"
-                      onChange={(e) => setQuestions((all) => all.map((x, j) => (j === i ? { ...x, options: e.target.value } : x)))}
-                    />
-                  ) : null}
-                </div>
-              ))}
-              {questions.length < 10 ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="justify-self-start"
-                  onClick={() => setQuestions((all) => [...all, { label: "", type: "text", options: "", required: false }])}
-                >
-                  <Plus /> Add question
-                </Button>
-              ) : null}
-            </div>
             )}
 
             <DialogFooter>

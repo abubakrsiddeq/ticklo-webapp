@@ -202,7 +202,7 @@ export function answerLabel(f: FormField, v: unknown): string {
 }
 
 /** Problems with the form itself (shown in the builder before saving). */
-export function checkForm(form: RegistrationForm): string | null {
+export function checkForm(form: RegistrationForm, mode: "competition" | "ticket" = "competition"): string | null {
   const all = [...form.member, ...form.team];
   if (all.length > MAX_FIELDS) return `A form can have at most ${MAX_FIELDS} fields.`;
   const ids = new Set<string>();
@@ -220,6 +220,88 @@ export function checkForm(form: RegistrationForm): string | null {
       seen.push(f);
     }
   }
-  if (!form.member.some((f) => f.id === "name" && f.required && !f.hidden)) return "Full name is always asked.";
+  if (mode === "competition" && !form.member.some((f) => f.id === "name" && f.required && !f.hidden)) return "Full name is always asked.";
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// D-069: ticket forms (every session and single / competition events)
+// ---------------------------------------------------------------------------
+type Level = string | null | undefined;
+const builtin = (id: string, type: FieldType, label: string, level: Level): FormField => ({
+  id,
+  type,
+  label,
+  builtin: true,
+  required: level === "required",
+  hidden: !level || level === "off",
+});
+
+/** Default ticket form: nothing asked (the buyer's name goes on the ticket). */
+export const DEFAULT_TICKET_FIELDS: FormField[] = [
+  builtin("name", "short_text", "Name of the person", "off"),
+  builtin("university", "short_text", "University", "off"),
+  builtin("phone", "phone", "Mobile number", "off"),
+  builtin("email", "email", "Email", "off"),
+  builtin("roll_no", "short_text", "Roll / student ID", "off"),
+];
+
+/** Older settings (D-064 / D-065 name / university, session questions) as a form – mirrors Postgres. */
+export function legacyTicketFields(names: Level, university: Level, questions: unknown = []): FormField[] {
+  const qs = Array.isArray(questions) ? (questions as { id: string; label: string; type: string; options?: string[]; required?: boolean }[]) : [];
+  return [
+    builtin("name", "short_text", "Name of the person", names),
+    builtin("university", "short_text", "University", university),
+    builtin("phone", "phone", "Mobile number", "off"),
+    builtin("email", "email", "Email", "off"),
+    builtin("roll_no", "short_text", "Roll / student ID", "off"),
+    ...qs.map((q) => ({
+      id: q.id,
+      type: (q.type === "text" ? "short_text" : q.type) as FieldType,
+      label: q.label,
+      required: Boolean(q.required),
+      hidden: false,
+      options: q.type === "select" ? q.options : undefined,
+    })),
+  ];
+}
+
+/** A session's ticket form (event_schedule returns {member: fields}). */
+export function ticketFieldsOf(form: unknown, fallback: { names?: Level; university?: Level; questions?: unknown }): FormField[] {
+  const member = (form as { member?: FormField[] } | null)?.member;
+  return Array.isArray(member) && member.length ? member : legacyTicketFields(fallback.names, fallback.university, fallback.questions);
+}
+
+export const TICKET_TEMPLATES: { key: string; label: string; build: () => FormField[] }[] = [
+  { key: "none", label: "🎟 Buyer's name only", build: () => DEFAULT_TICKET_FIELDS.map((f) => ({ ...f })) },
+  {
+    key: "named",
+    label: "🪪 Name on every ticket",
+    build: () => DEFAULT_TICKET_FIELDS.map((f) => (f.id === "name" ? { ...f, hidden: false, required: true } : { ...f })),
+  },
+  {
+    key: "students",
+    label: "🎓 Students (name, university, roll no)",
+    build: () => DEFAULT_TICKET_FIELDS.map((f) => (["name", "university", "roll_no"].includes(f.id) ? { ...f, hidden: false, required: true } : { ...f })),
+  },
+  {
+    key: "workshop",
+    label: "🛠 Workshop",
+    build: () => [
+      ...DEFAULT_TICKET_FIELDS.map((f) => (["name", "university"].includes(f.id) ? { ...f, hidden: false, required: true } : f.id === "phone" ? { ...f, hidden: false } : { ...f })),
+      { id: newFieldId(), type: "yes_no", label: "Will you bring a laptop?", required: true, hidden: false },
+      { id: newFieldId(), type: "select", label: "Your level", required: false, hidden: false, options: ["Beginner", "Intermediate", "Advanced"] },
+    ],
+  },
+];
+
+const rank = (f?: FormField) => (!f || f.hidden ? 0 : f.required ? 2 : 1);
+
+/** Built-in details asked once per ticket: the strictest across the forms a ticket asks. */
+export function mergeBuiltins(lists: FormField[][]): FormField[] {
+  return BUILTIN_MEMBER_IDS.map((id) => {
+    const all = lists.map((l) => l.find((f) => f.id === id)).filter((f): f is FormField => Boolean(f));
+    const best = all.reduce<FormField | undefined>((a, f) => (rank(f) > rank(a) ? f : a), undefined);
+    return best ?? { ...DEFAULT_TICKET_FIELDS.find((f) => f.id === id)! };
+  }).filter((f) => !f.hidden);
 }

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField, fieldAria } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
+import { FormBuilder } from "@/components/sessions/form-builder";
+import { DEFAULT_TICKET_FIELDS, checkForm, type FormField as FormFieldDef, type RegistrationForm } from "@/lib/registration-form";
 import { SubmitButton } from "@/components/submit-button";
 import { eventSchema, type EventInput } from "@/lib/validation/event";
 import { EVENT_FORMATS } from "@/lib/sessions";
@@ -21,12 +23,20 @@ export function EventForm({
   action,
   mode,
   posterUrl,
+  ticketFields,
+  ticketFormLocked = false,
 }: {
   defaults: EventInput;
   action: (fd: FormData) => Promise<ActionResult>;
   mode: "create" | "edit";
   posterUrl?: string | null;
+  /** D-069: the form asked for every ticket holder (single / competition events) */
+  ticketFields?: FormFieldDef[];
+  /** tickets are sold: fields can be hidden, not removed */
+  ticketFormLocked?: boolean;
 }) {
+  const savedTicketForm: RegistrationForm | null = ticketFields ? { member: ticketFields, team: [] } : null;
+  const [ticketForm, setTicketForm] = useState<RegistrationForm>(() => savedTicketForm ?? { member: DEFAULT_TICKET_FIELDS.map((f) => ({ ...f })), team: [] });
   const [pending, start] = useTransition();
   const [posterError, setPosterError] = useState<string | undefined>();
   const [preview, setPreview] = useState<string | null>(posterUrl ?? null);
@@ -40,6 +50,13 @@ export function EventForm({
     if (poster instanceof File && poster.size > 5 * 1024 * 1024) {
       e.preventDefault();
       setPosterError("Poster must be 5 MB or smaller.");
+      return;
+    }
+    // D-069: the ticket form must make sense before it is sent
+    const ticketProblem = format === "festival" ? null : checkForm(ticketForm, "ticket");
+    if (ticketProblem) {
+      e.preventDefault();
+      toast.error(ticketProblem);
       return;
     }
     void form.handleSubmit(() =>
@@ -158,31 +175,12 @@ export function EventForm({
           </FormField>
         </div>
       )}
-      {/* D-065: a festival asks this per session (Schedule tab), not for the whole event */}
+      {/* D-065 / D-069: a festival asks this per session (Schedule tab); other events have one ticket form */}
       {format === "festival" ? null : (
-      <fieldset className="grid gap-3 rounded-2xl border border-navy/10 p-4">
-        <legend className="px-1 text-sm font-semibold text-navy">Details on each ticket</legend>
-        <p className="-mt-1 text-xs text-muted-foreground">
-          Off: every ticket carries the buyer&apos;s name. Turn these on when friends buy for each other and the gate should
-          check who holds each ticket (for example with student cards).
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormField id="attendee_names" label="Name of the person on each ticket">
-            <NativeSelect {...fieldAria("attendee_names", errors.attendee_names?.message)} {...form.register("attendee_names", { shouldUnregister: true })}>
-              <option value="off">Off – buyer&apos;s name on all tickets</option>
-              <option value="optional">Optional – buyer may add a name per ticket</option>
-              <option value="required">Required – a name for every ticket</option>
-            </NativeSelect>
-          </FormField>
-          <FormField id="attendee_university" label="University of the person on each ticket">
-            <NativeSelect {...fieldAria("attendee_university", errors.attendee_university?.message)} {...form.register("attendee_university", { shouldUnregister: true })}>
-              <option value="off">Off – not asked</option>
-              <option value="optional">Optional</option>
-              <option value="required">Required for every ticket</option>
-            </NativeSelect>
-          </FormField>
-        </div>
-      </fieldset>
+        <>
+          <input type="hidden" name="ticket_form" value={JSON.stringify(ticketForm.member)} />
+          <FormBuilder value={ticketForm} onChange={setTicketForm} solo sources={[]} locked={ticketFormLocked} saved={savedTicketForm} mode="ticket" />
+        </>
       )}
       <FormField id="poster" label="Poster" hint="JPG, PNG or WebP, up to 5 MB. Portrait (4:5) looks best." error={posterError}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

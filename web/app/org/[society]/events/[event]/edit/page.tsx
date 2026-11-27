@@ -3,6 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionButton } from "@/components/action-button";
 import { requireOrgEvent } from "@/lib/auth";
+import { ticketFieldsOf } from "@/lib/registration-form";
 import { createClient } from "@/lib/supabase/server";
 import { toPKTInputValue } from "@/lib/format";
 import { accountLabel } from "@/lib/payments/accounts";
@@ -27,6 +28,12 @@ export default async function EditEventPage({
   const sp = await searchParams;
   const { org, event, isOwner } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/edit`);
   const supabase = await createClient();
+  // D-069: the ticket form is locked once tickets were booked (not team entries)
+  const { count: bookedOrders } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", event.id)
+    .in("status", ["approved", "under_review", "awaiting_payment"]);
 
   const [{ data: types }, { data: availability }, { data: accounts }, { data: links }, { data: sessions }, { data: access }] = await Promise.all([
     supabase.from("ticket_types").select("*").eq("event_id", event.id).order("sort_order").order("created_at"),
@@ -159,6 +166,8 @@ export default async function EditEventPage({
               mode="edit"
               action={updateEvent.bind(null, org.slug, event.id)}
               posterUrl={event.poster_url}
+              ticketFields={ticketFieldsOf({ member: event.ticket_form }, { names: event.attendee_names, university: event.attendee_university })}
+              ticketFormLocked={(bookedOrders ?? 0) > 0}
               defaults={{
                 name: event.name,
                 description: event.description ?? "",

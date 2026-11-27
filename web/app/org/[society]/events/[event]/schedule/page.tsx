@@ -124,7 +124,7 @@ export default async function SchedulePage({
                   attendee_names: s.attendee_names,
                   attendee_university: s.attendee_university,
                   poster_url: s.poster_url,
-                  form: competition ? s.form : undefined,
+                  form: s.form,
                   fee_mode: s.fee_mode,
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
@@ -205,7 +205,7 @@ export default async function SchedulePage({
                             defaultStart={defaultStart}
                             eventVenue={event.venue}
                             formSources={formSourcesFor(s.id)}
-                            formLocked={registeredSessions.has(s.id)}
+                            formLocked={competition ? registeredSessions.has(s.id) : (statOf.get(s.id)?.taken ?? 0) > 0}
                           />
                           <DeleteSessionButton orgSlug={org.slug} sessionId={s.id} name={s.name} />
                         </div>

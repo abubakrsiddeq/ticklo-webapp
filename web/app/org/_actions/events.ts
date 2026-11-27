@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fail, friendlyError, type ActionResult } from "@/lib/errors";
 import type { TablesUpdate } from "@/lib/database.types";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
+import type { Json } from "@/lib/database.types";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
@@ -35,6 +36,18 @@ function revalidateEvent(orgSlug: string, eventSlug: string) {
   revalidatePath(`/e/${orgSlug}/${eventSlug}`);
   revalidatePath("/");
   revalidatePath("/events");
+}
+
+/** D-069: the ticket form sent by the event form (JSON). Postgres checks it again. */
+function ticketFormFrom(form: FormData): Json | null {
+  const raw = form.get("ticket_form");
+  if (typeof raw !== "string" || raw.length > 60000) return null;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? (v as Json) : null;
+  } catch {
+    return null;
+  }
 }
 
 function eventFields(data: z.infer<typeof eventSchema>) {
@@ -81,6 +94,11 @@ export async function createEvent(orgSlug: string, form: FormData): Promise<Acti
       .select("id, slug")
       .single();
     if (!error && data) {
+      const ticketForm = parsed.data.format === "festival" ? null : ticketFormFrom(form);
+      if (ticketForm) {
+        const { error: formError } = await supabase.rpc("set_ticket_form", { p_event_id: data.id, p_session_id: null, p_fields: ticketForm });
+        if (formError) console.error("ticket form not saved", formError.message);
+      }
       // Show all active accounts by default (ORG-02 – organizer can change it)
       const { data: accounts } = await supabase.from("payment_accounts").select("id").eq("org_id", access.org.id).eq("is_active", true);
       if (accounts?.length) {
@@ -130,6 +148,11 @@ export async function updateEvent(orgSlug: string, eventId: string, form: FormDa
 
   const { error } = await supabase.from("events").update(update).eq("id", event.id);
   if (error) return fail(error);
+  const ticketForm = parsed.data.format === "festival" ? null : ticketFormFrom(form);
+  if (ticketForm) {
+    const { error: formError } = await supabase.rpc("set_ticket_form", { p_event_id: event.id, p_session_id: null, p_fields: ticketForm });
+    if (formError) return fail(formError, { ticket_form: "Check the details on each ticket" });
+  }
   revalidateEvent(orgSlug, event.slug);
   return { ok: true, message: "Event saved." };
 }

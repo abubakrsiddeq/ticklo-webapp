@@ -12,6 +12,7 @@ import {
   FIELD_TYPES,
   FORM_TEMPLATES,
   MAX_FIELDS,
+  TICKET_TEMPLATES,
   asForm,
   looksSensitive,
   newFieldId,
@@ -37,6 +38,7 @@ export function FormBuilder({
   sources,
   locked,
   saved,
+  mode = "competition",
 }: {
   value: RegistrationForm;
   onChange: (f: RegistrationForm) => void;
@@ -47,7 +49,10 @@ export function FormBuilder({
   locked: boolean;
   /** the form as saved (to know which fields people already answered) */
   saved?: RegistrationForm | null;
+  /** D-069: "ticket" = asked for every ticket holder of a session or event (one part, name optional) */
+  mode?: "competition" | "ticket";
 }) {
+  const ticket = mode === "ticket";
   const [open, setOpen] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [previewAnswers, setPreviewAnswers] = useState<{ member: Answers; team: Answers }>({ member: {}, team: {} });
@@ -77,10 +82,14 @@ export function FormBuilder({
       value[scope].filter((f) => f.id !== id).map((f) => (f.show_if?.field === id ? { ...f, show_if: null } : f)),
     );
   const applyTemplate = (key: string) => {
-    const t = FORM_TEMPLATES.find((x) => x.key === key);
-    if (!t) return;
     if (locked) return;
-    onChange(t.build());
+    if (ticket) {
+      const t = TICKET_TEMPLATES.find((x) => x.key === key);
+      if (t) onChange({ member: t.build(), team: [] });
+      return;
+    }
+    const t = FORM_TEMPLATES.find((x) => x.key === key);
+    if (t) onChange(t.build());
   };
   const copyFrom = (id: string) => {
     const src = sources.find((s) => s.id === id);
@@ -113,6 +122,7 @@ export function FormBuilder({
           earlier={value[scope].slice(0, i)}
           open={open === f.id}
           savedField={locked ? ([...(saved?.member ?? []), ...(saved?.team ?? [])].find((x) => x.id === f.id) ?? null) : undefined}
+          nameLocked={!ticket}
           onToggle={() => setOpen(open === f.id ? null : f.id)}
           onChange={(c) => update(scope, f.id, c)}
           onUp={() => move(scope, i, -1)}
@@ -128,16 +138,16 @@ export function FormBuilder({
 
   return (
     <fieldset className="grid gap-4 rounded-xl border border-navy/10 p-3">
-      <legend className="px-1 text-sm font-semibold text-navy">📝 Registration form</legend>
+      <legend className="px-1 text-sm font-semibold text-navy">{ticket ? "📝 Details on each ticket" : "📝 Registration form"}</legend>
       {locked ? (
         <p className="flex items-start gap-2 rounded-lg bg-warning-soft p-2 text-xs text-navy">
           <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          People have registered: you can add optional fields, rename and hide fields, but not remove fields, change their type or make them required.
+          {ticket ? "Tickets are sold" : "People have registered"}: you can add optional fields, rename and hide fields, but not remove fields, change their type or make them required.
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Start from:</span>
-          {FORM_TEMPLATES.map((t) => (
+          {(ticket ? TICKET_TEMPLATES : FORM_TEMPLATES).map((t) => (
             <Button key={t.key} type="button" variant="outline" size="sm" onClick={() => applyTemplate(t.key)}>
               {t.label}
             </Button>
@@ -155,8 +165,10 @@ export function FormBuilder({
         </div>
       )}
 
-      {section("member", solo ? "Asked from the participant" : "Asked for every participant", "Name is always asked. Mobile, university, email and roll no come built in – rename, hide or make them optional.")}
-      {section("team", solo ? "Extra questions (asked once)" : "Asked once per team", solo ? "e.g. how they heard about it." : "e.g. project idea, GitHub link, coach's name.")}
+      {ticket
+        ? section("member", "Asked for every ticket holder", "Built-in details are hidden until you turn them on (then the buyer fills them for each ticket). Add your own questions too.")
+        : section("member", solo ? "Asked from the participant" : "Asked for every participant", "Name is always asked. Mobile, university, email and roll no come built in – rename, hide or make them optional.")}
+      {ticket ? null : section("team", solo ? "Extra questions (asked once)" : "Asked once per team", solo ? "e.g. how they heard about it." : "e.g. project idea, GitHub link, coach's name.")}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
@@ -170,10 +182,10 @@ export function FormBuilder({
         <div className="grid gap-3 rounded-xl bg-secondary/50 p-3">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">What participants see</p>
           <div className="grid gap-2 rounded-xl bg-white p-3">
-            <p className="text-sm font-medium text-navy">{solo ? "Participant" : "Member 1"}</p>
+            <p className="text-sm font-medium text-navy">{ticket ? "Ticket 1" : solo ? "Participant" : "Member 1"}</p>
             <FormRenderer fields={value.member} answers={previewAnswers.member} errors={{}} prefix="pv-m" preview onChange={(id, v) => setPreviewAnswers((a) => ({ ...a, member: { ...a.member, [id]: v } }))} />
           </div>
-          {value.team.some((f) => !f.hidden) ? (
+          {!ticket && value.team.some((f) => !f.hidden) ? (
             <div className="grid gap-2 rounded-xl bg-white p-3">
               <p className="text-sm font-medium text-navy">{solo ? "A few more details" : "About your team"}</p>
               <FormRenderer fields={value.team} answers={previewAnswers.team} errors={{}} prefix="pv-t" preview onChange={(id, v) => setPreviewAnswers((a) => ({ ...a, team: { ...a.team, [id]: v } }))} />
@@ -190,6 +202,7 @@ function FieldRow({
   earlier,
   open,
   savedField,
+  nameLocked,
   onToggle,
   onChange,
   onUp,
@@ -201,13 +214,15 @@ function FieldRow({
   open: boolean;
   /** undefined: nobody registered yet; null: a new field; else the saved version of this field */
   savedField?: FormField | null;
+  /** competitions always ask the name; tickets may hide it (buyer's name) */
+  nameLocked: boolean;
   onToggle: () => void;
   onChange: (c: Partial<FormField>) => void;
   onUp: () => void;
   onDown: () => void;
   onRemove: () => void;
 }) {
-  const isName = f.id === "name";
+  const isName = f.id === "name" && nameLocked;
   const existing = Boolean(savedField);
   // once people registered, a field may only be required if it already was
   const canRequire = savedField === undefined || Boolean(savedField && savedField.required && !savedField.hidden);
