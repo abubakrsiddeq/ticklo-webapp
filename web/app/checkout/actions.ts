@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { runWaitlist } from "@/lib/waitlist";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
@@ -10,6 +11,7 @@ import { getPaymentProvider } from "@/lib/payments";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { fail, type ActionResult } from "@/lib/errors";
 import { disputeSchema } from "@/lib/validation/payments";
+import { notifyAdminsDispute } from "@/lib/emails/admin-alerts";
 
 /** PAY-04/PAY-05/PAY-08: student uploads payment proof (+ student card). */
 export async function submitPaymentProof(orderId: string, form: FormData): Promise<ActionResult<{ possibleDuplicate: boolean }>> {
@@ -55,6 +57,7 @@ export async function openDispute(orderId: string, input: unknown): Promise<Acti
     if (error.code === "23505") return { ok: false, error: "You already reported this order. TickLO will get back to you." };
     return fail(error);
   }
+  after(() => notifyAdminsDispute(orderId)); // D-088
   revalidatePath(`/checkout/${orderId}/status`);
   return { ok: true, message: "Thanks – TickLO will look into it and contact the organizer." };
 }

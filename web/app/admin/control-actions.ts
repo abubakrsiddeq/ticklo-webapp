@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +19,7 @@ import {
   notifyTeamDecision,
 } from "@/lib/emails/notify";
 import { runWaitlist } from "@/lib/waitlist";
+import { notifyAdminsIfRepeatRejections } from "@/lib/emails/admin-alerts";
 
 // D-084: everything an admin can do beyond reviews – societies, events, orders,
 // accounts and site settings. Every database function checks is_admin() again
@@ -226,7 +228,10 @@ export async function adminRejectOrder(orderId: string, why: string): Promise<Ac
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("reject_order", { p_order_id: orderId, p_reason: why.trim().slice(0, 500) });
   if (error) return fail(error);
-  if (!(data as { already_rejected: boolean }).already_rejected) await notifyPaymentRejected(orderId);
+  if (!(data as { already_rejected: boolean }).already_rejected) {
+    await notifyPaymentRejected(orderId);
+    after(() => notifyAdminsIfRepeatRejections(orderId)); // D-088
+  }
   await runWaitlist();
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Rejected. The student was emailed." };

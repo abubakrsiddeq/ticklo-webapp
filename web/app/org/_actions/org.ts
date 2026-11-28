@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getCurrentUser, getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { errorCode, fail, type ActionResult } from "@/lib/errors";
@@ -14,6 +15,7 @@ import { normalizePhone } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeCode } from "@/lib/referrals";
 import { resolveUniversityId } from "@/lib/universities";
+import { notifyAdminsSocietyToReview } from "@/lib/emails/admin-alerts";
 
 /** AMB-14: is this an active TickLO campus ambassador code? (checked before the society is created) */
 async function campusCodeExists(code: string): Promise<boolean> {
@@ -67,6 +69,8 @@ export async function createOrganization(form: FormData): Promise<ActionResult> 
       p_head_email: parsed.data.head_role === "self" ? user.email : (parsed.data.head_email ?? ""),
     });
     if (!error) {
+      const created = slug;
+      after(() => notifyAdminsSocietyToReview(created, false)); // D-088
       if (referral) {
         const { data: created } = await supabase.from("organizations").select("id").eq("slug", slug).maybeSingle();
         if (created) {
@@ -147,6 +151,7 @@ export async function resubmitOrganization(orgSlug: string): Promise<ActionResul
   const supabase = await createClient();
   const { error } = await supabase.rpc("resubmit_organization", { p_org_id: access.org.id });
   if (error) return fail(error);
+  after(() => notifyAdminsSocietyToReview(orgSlug, true)); // D-088
   revalidatePath(`/org/${orgSlug}`, "layout");
   return { ok: true, message: "Sent to TickLO for review again." };
 }

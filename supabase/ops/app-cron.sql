@@ -30,3 +30,5 @@ revoke all on function public.call_app_cron(text) from public, anon, authenticat
 select cron.schedule('ticklo-waitlist', '*/5 * * * *', $$select public.call_app_cron('/api/cron/waitlist')$$);
 -- EML-04 event reminders 24 h before – every 15 minutes
 select cron.schedule('ticklo-reminders', '*/15 * * * *', $$select public.call_app_cron('/api/cron/reminders')$$);
+-- D-088 admin digest – daily at 04:00 UTC = 9:00 PKT (sent once a day, only when something waits)
+select cron.schedule('ticklo-admin-digest', '0 4 * * *', $$select public.call_app_cron('/api/cron/admin-digest')$$);

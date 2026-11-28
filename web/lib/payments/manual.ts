@@ -4,7 +4,9 @@ import { friendlyError } from "@/lib/errors";
 import { readUpload, uploadPrivate, removeFiles } from "@/lib/storage";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { paymentProofSchema } from "@/lib/validation/payments";
+import { after } from "next/server";
 import { notifyNewProof } from "@/lib/emails/notify";
+import { notifyAdminsDuplicateProof } from "@/lib/emails/admin-alerts";
 import type { PaymentProvider, ProofResult, ProofSubmission } from "./types";
 
 /**
@@ -78,6 +80,7 @@ async function submitProof({ userId, orderId, form }: ProofSubmission): Promise<
     const result = data as { is_possible_duplicate?: boolean } | null;
     const possibleDuplicate = Boolean(result?.is_possible_duplicate);
     await notifyNewProof(order.id, possibleDuplicate); // EML-08 (never throws)
+    if (possibleDuplicate) after(() => notifyAdminsDuplicateProof(order.id)); // D-088
     return { ok: true, possibleDuplicate };
   } catch (e) {
     // Do not leave orphaned private files behind when the database refused.

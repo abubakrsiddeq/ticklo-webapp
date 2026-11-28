@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +16,7 @@ import { avoidReserved, slugify, withSuffix } from "@/lib/slug";
 import { fieldErrors, formToObject } from "@/lib/validation/common";
 import { cancelEventSchema, eventSchema, ticketTypeSchema } from "@/lib/validation/event";
 import { notifyEventCancelled } from "@/lib/emails/notify";
+import { notifyAdminsEventToReview } from "@/lib/emails/admin-alerts";
 import { FESTIVAL_CAPACITY, FESTIVAL_MAX_PER_ORDER } from "@/lib/sessions";
 
 const uuid = z.string().uuid();
@@ -259,6 +261,7 @@ export async function submitEvent(orgSlug: string, eventId: string): Promise<Act
   const supabase = await createClient();
   const { error } = await supabase.rpc("submit_event", { p_event_id: event.id });
   if (error) return fail(error);
+  after(() => notifyAdminsEventToReview(event.id)); // D-088
   revalidateEvent(orgSlug, event.slug);
   return { ok: true, message: "Submitted! TickLO will review your event soon." };
 }
