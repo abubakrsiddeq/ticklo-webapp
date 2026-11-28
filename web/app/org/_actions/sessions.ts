@@ -8,6 +8,7 @@ import { fail, ok, type ActionResult } from "@/lib/errors";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
 import { parseTeamSize } from "@/lib/sessions";
+import { stylesForKind } from "@/lib/print/category";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { runWaitlist } from "@/lib/waitlist";
 import { hasControlChars } from "@/lib/validation/common";
@@ -43,6 +44,8 @@ export interface SessionFormValues {
   form?: unknown;
   /** D-070: show on the Events page */
   listed?: boolean;
+  /** D-081: what kind of night / event (Concert and Other sessions), "" = not sure */
+  style?: string;
   /** D-069: every other session – the form asked for every ticket holder */
   ticket_fields?: unknown;
   /** D-065: festival sessions – holder details on each ticket (off / optional / required) */
@@ -77,6 +80,8 @@ export async function saveSession(
   else if (name.length > 120) errs.name = "At most 120 characters";
   else if (hasControlChars(name) || /[<>{}]/.test(name)) errs.name = "No < > { } or special characters";
   if (!["workshop", "competition", "concert", "talk", "other"].includes(v.kind)) errs.kind = "Choose what kind of session this is";
+  const style = String(v.style ?? "").trim();
+  if (style && !stylesForKind(v.kind).some((x) => x.key === style)) errs.style = "Choose one of the options";
   if (String(v.description ?? "").trim().length > 2000) errs.description = "At most 2000 characters";
   if (String(v.venue ?? "").trim().length > 200) errs.venue = "At most 200 characters";
   if (!starts) errs.starts_at = "Choose the start";
@@ -148,6 +153,10 @@ export async function saveSession(
   if (typeof v.listed === "boolean") {
     const { error: listError } = await supabase.rpc("set_session_listing", { p_session_id: String(id), p_listed: v.listed });
     if (listError) return fail(listError);
+  }
+  if (typeof v.style === "string") {
+    const { error: styleError } = await supabase.rpc("set_session_style", { p_session_id: String(id), p_style: stylesForKind(v.kind).length ? style : "" });
+    if (styleError) return fail(styleError, { style: "Choose one of the options" });
   }
   if (competition) {
     // D-072: the early-bird fee lives on the competition's entry ticket

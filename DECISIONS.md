@@ -1075,3 +1075,25 @@ registered – the same thing the existing "already registered" error already di
 - With a single ticket type there is nothing to pick: the wizard starts at Design (3 steps).
 - The serial prefix is suggested from the headline (Qawwali Night → QN) and follows the picked
   ticket until the organizer types their own; the quantity likewise.
+
+## D-081 "What kind of night?" and suggested designs (owner request, 2026-11-28)
+- Session kinds stay five (Workshop, Competition, Concert / night, Talk / panel, Other), but
+  "Concert / night" covers qawwali, DJ nights, mushairas and galas, so printing could not know
+  which designs fit. The session dialog now asks, only for those two kinds:
+  - Concert / night → **What kind of night?** Qawwali / Sufi night, Mushaira / Poetry,
+    Concert / live music, DJ night / party, Gala / Dinner, Theatre / Comedy, Convocation / Farewell.
+  - Other → **What kind of event?** Sports / match, Exhibition / Expo, Trip / Tour, Auto show,
+    Mela / Fun fair, Theatre / Comedy, Gala / Dinner, Something else.
+  - "Not sure" is allowed (optional). It starts from a guess from the name while typing
+    ("Qawwali Night" → Qawwali, "Futsal match" → Sports), so most organizers only check it.
+- Stored in `event_sessions.style` (migration `20261128000600_session_style.sql`: nullable,
+  check constraint on the printed-ticket category keys) through `set_session_style`
+  (organizers only; only Concert / Other sessions keep a style, other kinds are cleared).
+  `event_schedule` is unchanged; the organizer schedule reads the style separately.
+- **Suggested designs:** step 2 shows only the six designs of the ticket's category ("Designs
+  for Qawwali"), already filled in, plus the society's own templates, with "See all 96
+  designs" / "Not quite right? See designs for other kinds of events" for the full gallery.
+  Category = the session's style, else a guess from its name, else its kind (workshop →
+  Workshop, competition → Competition, talk → Conference / Seminar, concert → Concert);
+  festival passes and entry tickets → Festival / Mela; competition events → Competition;
+  single events → a guess from the event name. When nothing fits, the full gallery opens as before.

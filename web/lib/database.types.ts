@@ -378,6 +378,7 @@ export type Database = {
           results_published: boolean;
           sort_order: number;
           starts_at: string;
+          style: string | null;
           team_max: number;
           team_min: number;
           updated_at: string;
@@ -408,6 +409,7 @@ export type Database = {
           results_published?: boolean;
           sort_order?: number;
           starts_at: string;
+          style?: string | null;
           team_max?: number;
           team_min?: number;
           updated_at?: string;
@@ -438,6 +440,7 @@ export type Database = {
           results_published?: boolean;
           sort_order?: number;
           starts_at?: string;
+          style?: string | null;
           team_max?: number;
           team_min?: number;
           updated_at?: string;
@@ -2580,6 +2583,10 @@ export type Database = {
       waitlist_process: {
         Args: never;
         Returns: string[];
+      };
+      set_session_style: {
+        Args: { p_session_id: string; p_style: string };
+        Returns: undefined;
       };
       set_session_listing: {
         Args: {

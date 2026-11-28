@@ -8,7 +8,7 @@ import { fetchAll } from "./fetch-all";
 export async function getPrintSessions(eventId: string): Promise<{ sessions: PrintSession[]; access: Map<string, { all_sessions: boolean; session_ids: string[] }> }> {
   const supabase = await createClient();
   const [{ data: sessions }, { data: types }] = await Promise.all([
-    supabase.from("event_sessions").select("id, name, kind, starts_at, ends_at, venue, poster_url, pass_access").eq("event_id", eventId).order("starts_at"),
+    supabase.from("event_sessions").select("id, name, kind, style, starts_at, ends_at, venue, poster_url, pass_access").eq("event_id", eventId).order("starts_at"),
     supabase.from("ticket_types").select("id, all_sessions, ticket_type_sessions ( session_id )").eq("event_id", eventId),
   ]);
   return {

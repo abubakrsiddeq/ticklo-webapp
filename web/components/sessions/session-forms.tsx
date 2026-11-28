@@ -13,6 +13,7 @@ import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
 import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
 import { SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
+import { guessStyle, stylesForKind } from "@/lib/print/category";
 import { cn } from "@/lib/utils";
 import { FormBuilder, type FormSource } from "@/components/sessions/form-builder";
 import { DEFAULT_FORM, DEFAULT_TICKET_FIELDS, asForm, checkForm, ticketFieldsOf, type RegistrationForm } from "@/lib/registration-form";
@@ -54,6 +55,8 @@ export interface SessionValue {
   poster_url?: string | null;
   form?: unknown;
   listed?: boolean;
+  /** D-081: what kind of night / event */
+  style?: string | null;
   early_fee_paisa?: number | null;
   early_until?: string | null;
   fee_mode: string;
@@ -92,6 +95,16 @@ export function SessionDialog({
   const savedForm = session?.form ? asForm(session.form) : null;
   const [regForm, setRegForm] = useState<RegistrationForm>(() => savedForm ?? { member: DEFAULT_FORM.member.map((f) => ({ ...f })), team: [] });
   const [kind, setKind] = useState(session?.kind ?? defaultKind);
+  // D-081: "What kind of night?" starts from the saved choice, else a guess from the name
+  const [nameDraft, setNameDraft] = useState(session?.name ?? "");
+  const [style, setStyle] = useState<string | null>(null);
+  const styleChoices = stylesForKind(kind);
+  const styleNow = style ?? session?.style ?? guessStyle(kind, nameDraft) ?? "";
+  const openDialog = () => {
+    setNameDraft(session?.name ?? "");
+    setStyle(null);
+    setOpen(true);
+  };
   const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
   // D-070: on the Events page – on by default for competitions, workshops and concerts
@@ -116,11 +129,11 @@ export function SessionDialog({
   return (
     <>
       {session ? (
-        <Button size="icon-sm" variant="ghost" aria-label={`Edit ${session.name}`} onClick={() => setOpen(true)}>
+        <Button size="icon-sm" variant="ghost" aria-label={`Edit ${session.name}`} onClick={openDialog}>
           <Pencil />
         </Button>
       ) : (
-        <Button variant="brand" onClick={() => setOpen(true)}>
+        <Button variant="brand" onClick={openDialog}>
           <Plus /> {addLabel}
         </Button>
       )}
@@ -143,6 +156,7 @@ export function SessionDialog({
                 questions: [],
                 participation,
                 listed: listedNow,
+                style: styleChoices.some((x) => x.key === styleNow) ? styleNow : "",
                 form: competition ? regForm : undefined,
                 ticket_fields: competition ? undefined : ticketForm.member,
                 team_min: String(fd.get("team_min") ?? "1"),
@@ -188,7 +202,15 @@ export function SessionDialog({
 
             <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
               <FormField id={`${p}-name`} label="Name" error={errors.name} required>
-                <Input id={`${p}-name`} name="name" defaultValue={session?.name} maxLength={120} placeholder="e.g. AI Workshop, Qawwali Night" required />
+                <Input
+                  id={`${p}-name`}
+                  name="name"
+                  defaultValue={session?.name}
+                  maxLength={120}
+                  placeholder="e.g. AI Workshop, Qawwali Night"
+                  required
+                  onChange={(e) => setNameDraft(e.target.value)}
+                />
               </FormField>
               <FormField id={`${p}-kind`} label="Kind">
                 <NativeSelect
@@ -207,6 +229,23 @@ export function SessionDialog({
                 </NativeSelect>
               </FormField>
             </div>
+            {styleChoices.length ? (
+              <FormField
+                id={`${p}-style`}
+                label={kind === "concert" ? "What kind of night?" : "What kind of event?"}
+                hint="Used to suggest the right printed ticket designs."
+                error={errors.style}
+              >
+                <NativeSelect id={`${p}-style`} value={styleChoices.some((x) => x.key === styleNow) ? styleNow : ""} onChange={(e) => setStyle(e.target.value)}>
+                  <option value="">Not sure</option>
+                  {styleChoices.map((x) => (
+                    <option key={x.key} value={x.key}>
+                      {x.label}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </FormField>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField id={`${p}-start`} label="Starts (PKT)" error={errors.starts_at} required>
                 <Input id={`${p}-start`} name="starts_at" type="datetime-local" defaultValue={session ? toPKTInputValue(session.starts_at) : defaultStart} required />

@@ -450,3 +450,40 @@ describe("early-bird prices (D-072)", () => {
     expect((await payTeam(late.id, r2.registration_id)).total_paisa).toBe(300000);
   });
 });
+
+describe("what kind of night a session is (D-081)", () => {
+  const setStyle = (userId: string, sessionId: string, style: string | null) => asUser(c, userId, () => rpc(c, "set_session_style", [sessionId, style], ["uuid", "text"]));
+  const styleOf = async (id: string) => (await c.query("select style from public.event_sessions where id = $1", [id])).rows[0].style;
+
+  it("organizers set it for nights and other sessions only, from the allowed list", async () => {
+    const { eventId } = await createEvent(c, [{ price: 0 }]);
+    const night = await session(eventId, { name: "Qawwali Night", kind: "concert" });
+    const workshop = await session(eventId, { name: "AI Workshop", kind: "workshop" });
+    const other = await session(eventId, { name: "Futsal", kind: "other" });
+
+    await expectTL(setStyle((await buyer()).id, night, "qawwali"), "FORBIDDEN");
+    await setStyle(SEED.organizer, night, "qawwali");
+    expect(await styleOf(night)).toBe("qawwali");
+    await expectTL(setStyle(SEED.organizer, night, "sports"), "INVALID_ITEMS");
+    await setStyle(SEED.organizer, other, "sports");
+    expect(await styleOf(other)).toBe("sports");
+    await expectTL(setStyle(SEED.organizer, other, "dj-night"), "INVALID_ITEMS");
+
+    // a workshop has no style; "" or null clears it
+    await setStyle(SEED.organizer, workshop, "qawwali");
+    expect(await styleOf(workshop)).toBeNull();
+    await setStyle(SEED.organizer, night, "");
+    expect(await styleOf(night)).toBeNull();
+    await expectTL(asUser(c, SEED.organizer, () => rpc(c, "set_session_style", [randomUUIDLike(), "qawwali"], ["uuid", "text"])), "NOT_FOUND");
+  });
+
+  it("the column refuses unknown styles", async () => {
+    const { eventId } = await createEvent(c, [{ price: 0 }]);
+    const night = await session(eventId, { name: "Night", kind: "concert" });
+    await expect(c.query("update public.event_sessions set style = 'opera' where id = $1", [night])).rejects.toThrow(/event_sessions_style_check/);
+  });
+});
+
+function randomUUIDLike() {
+  return "00000000-0000-4000-8000-000000000081";
+}

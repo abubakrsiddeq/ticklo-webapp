@@ -27,7 +27,7 @@ export default async function SchedulePage({
   const sp = await searchParams;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/schedule`);
   const supabase = await createClient();
-  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }, { data: evTypes }, { data: evAccess }] = await Promise.all([
+  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }, { data: evTypes }, { data: evAccess }, { data: styles }] = await Promise.all([
     supabase.rpc("event_schedule", { p_event_id: event.id }),
     supabase.rpc("session_stats", { p_event_id: event.id }),
     supabase.from("session_managers").select("session_id, user_id, event_sessions!inner ( event_id )").eq("event_sessions.event_id", event.id),
@@ -44,7 +44,10 @@ export default async function SchedulePage({
     // D-070: how people get into each session (own ticket or a pass)
     supabase.from("ticket_types").select("id, name, all_sessions, registration_session_id").eq("event_id", event.id),
     supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, ticket_types!inner ( event_id )").eq("ticket_types.event_id", event.id),
+    // D-081: what kind of night / event each session is
+    supabase.from("event_sessions").select("id, style").eq("event_id", event.id),
   ]);
+  const styleOf = new Map((styles ?? []).map((x) => [x.id, x.style]));
   // D-071: people waiting for full competitions (a sign to add places)
   const { data: waitCounts } = await supabase.rpc("event_waitlist_counts", { p_event_id: event.id });
   const waitingFor = new Map((waitCounts ?? []).filter((w) => w.session_id).map((w) => [w.session_id as string, w.waiting + w.offered]));
@@ -147,6 +150,7 @@ export default async function SchedulePage({
                   poster_url: s.poster_url,
                   form: s.form,
                   listed: s.listed,
+                  style: styleOf.get(s.id) ?? null,
                   early_fee_paisa: s.early_fee_paisa,
                   early_until: s.early_until,
                   fee_mode: s.fee_mode,

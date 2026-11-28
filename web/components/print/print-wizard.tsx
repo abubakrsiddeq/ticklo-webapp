@@ -178,6 +178,8 @@ export function PrintWizard({
             </p>
           ) : null}
           <TemplateGallery
+            key={type?.category ?? "all"}
+            suggested={type?.category ?? null}
             values={values}
             saved={saved}
             orgSlug={orgSlug}
