@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ChevronDown, History, LayoutDashboard, LogOut, ScanLine, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
+import { CalendarDays, DoorOpen, ChevronDown, History, LayoutDashboard, LogOut, Shield, Ticket, User, Plus, Megaphone, ClipboardList, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -82,17 +82,10 @@ export function UserMenu(props: {
             <User /> Profile
           </Link>
         </DropdownMenuItem>
-        {props.canScan ? (
+        {props.canScan || props.canSell ? (
           <DropdownMenuItem asChild>
-            <Link href="/scan" className="min-h-11">
-              <ScanLine /> Scan tickets
-            </Link>
-          </DropdownMenuItem>
-        ) : null}
-        {props.canSell ? (
-          <DropdownMenuItem asChild>
-            <Link href="/sell" className="min-h-11">
-              <Ticket /> Sell tickets
+            <Link href="/event-day" className="min-h-11">
+              <DoorOpen /> Event day
             </Link>
           </DropdownMenuItem>
         ) : null}

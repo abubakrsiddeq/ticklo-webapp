@@ -49,7 +49,7 @@ interface Stats {
 export default async function PromotePage({ params }: { params: Promise<{ event: string }> }) {
   const { event: eventId } = await params;
   await requireUser(`/sell/${eventId}/promote`);
-  if (!/^[0-9a-f-]{36}$/i.test(eventId)) redirect("/sell");
+  if (!/^[0-9a-f-]{36}$/i.test(eventId)) redirect("/event-day");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("my_ambassador_stats", { p_event_id: eventId });
   if (error) {

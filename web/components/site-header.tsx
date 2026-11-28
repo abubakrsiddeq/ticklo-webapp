@@ -21,7 +21,7 @@ async function loadMenuData(userId: string) {
   const orgs: UserMenuOrg[] = (memberships ?? [])
     .filter((m) => m.role !== "scanner")
     .map((m) => ({ slug: m.organizations.slug, name: m.organizations.name, role: m.role }));
-  // Sellers of printed tickets get a "Sell" link (D-042)
+  // Gate volunteers and sellers of printed tickets get "Event day" (D-042, D-086)
   // D-043: ambassadors (event or TickLO campus) get "My ambassador page"
   const isAmbassador = Boolean(campus) || (sellEvents ?? []).some((e) => e.ref_code);
   // D-044: session managers get "My sessions"
@@ -100,8 +100,8 @@ async function SiteHeaderContent() {
     menu?.orgs.length
       ? { href: menu.orgs.length === 1 ? `/org/${menu.orgs[0].slug}` : "/org", label: "Dashboard" }
       : { href: "/org/new", label: "Register society" },
-    ...(menu?.canScan ? [{ href: "/scan", label: "Scan" }] : []),
-    ...(menu?.canSell ? [{ href: "/sell", label: "Sell" }] : []),
+    // D-086: one "Event day" link instead of "Scan" and "Sell"
+    ...(menu?.canScan || menu?.canSell ? [{ href: "/event-day", label: "Event day" }] : []),
   ];
 
   return (

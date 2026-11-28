@@ -6,7 +6,7 @@ export default function SellLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-full flex-1 flex-col bg-navy text-white">
       <header className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Logo variant="dark" href="/sell" height={26} />
+          <Logo variant="dark" href="/event-day" height={26} />
           <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-brand-light uppercase">Seller</span>
         </div>
         <Link href="/" className="text-sm text-slate-300 hover:text-white">

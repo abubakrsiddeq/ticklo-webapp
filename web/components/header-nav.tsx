@@ -5,14 +5,13 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import {
   CalendarDays,
+  DoorOpen,
   ChevronRight,
   Compass,
   LayoutDashboard,
   LogOut,
   Menu,
-  ScanLine,
   Sparkles,
-  Store,
   Ticket,
   UserRound,
   Users,
@@ -71,8 +70,7 @@ function iconFor(href: string): LucideIcon {
   if (href.startsWith("/me/tickets")) return Ticket;
   if (href === "/org/new") return Sparkles;
   if (href.startsWith("/org")) return LayoutDashboard;
-  if (href.startsWith("/scan")) return ScanLine;
-  if (href.startsWith("/sell")) return Store;
+  if (href.startsWith("/event-day")) return DoorOpen;
   return Compass;
 }
 

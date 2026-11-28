@@ -19,7 +19,7 @@ const COLUMNS = [
     links: [
       { href: "/org/new", label: "Register a society" },
       { href: "/org", label: "Organizer dashboard" },
-      { href: "/scan", label: "Gate scanner" },
+      { href: "/event-day", label: "Event day" },
     ],
   },
   {
