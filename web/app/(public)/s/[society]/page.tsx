@@ -6,6 +6,7 @@ import { EventGrid } from "@/components/event-card";
 import { EmptyState } from "@/components/empty-state";
 import { getSocietyPage } from "@/lib/queries/public";
 import { absoluteUrl, orgPath } from "@/lib/site";
+import { universityLabel } from "@/lib/university-label";
 
 type Params = { society: string };
 
@@ -44,7 +45,7 @@ export default async function SocietyPage({ params }: { params: Promise<Params> 
           <h1 className="text-3xl font-bold tracking-tight text-navy sm:text-4xl">{org.name}</h1>
           <p className="text-muted-foreground">
             {org.type === "department" ? "Department" : "Society"}
-            {org.universities ? ` · ${org.universities.name}` : ""}
+            {org.universities ? ` · ${universityLabel(org.universities)}` : ""}
           </p>
           {links.length ? (
             <div className="mt-3 flex flex-wrap gap-2">

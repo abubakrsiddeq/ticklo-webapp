@@ -667,6 +667,7 @@ registered – the same thing the existing "already registered" error already di
   server still checks the real file bytes (`readUpload`).
 - University lists show "Name (City)" only when the name does not already contain the city
   (`universityLabel`), so "Bahria University (Karachi)" is not followed by "(Karachi)" again.
+  Replaced by D-089.
 - Typing in the "Other" university name box suggests matching approved universities (name,
   short name, city); a click selects it, so people do not file duplicates. Same in the profile
   form.
@@ -1343,3 +1344,18 @@ suggestion ("1 and 2 kar do bss"); the weekly report and 48-hour reminder were n
   - **Not sent on quiet days** (nothing waiting, nothing needing attention), so it is never noise.
   - At most once per Pakistan day, checked in the email log, so a double cron call does not repeat it.
 - Not emailed to admins: single orders, proofs, tickets, other admins' decisions (Decisions page).
+
+## D-089 University names always shown as "Name (City)" (owner request, 2026-11-28)
+Owner: "universities ka naam then bracket ma city", and a city already in the name should be taken
+out, e.g. "Bahria University Islamabad" shows as "Bahria University (Islamabad)". Replaces the
+D-059 rule that skipped the city whenever the name contained it.
+- `universityLabel` takes a city off the end of the name (plain, after a comma or dash, or in
+  brackets) and then adds "(City)". An all-lowercase city is capitalised ("islamabad" → "Islamabad").
+- A city that is part of the real name stays and no bracket is added: it sits at the start
+  ("Lahore University of Management Sciences") or follows "of", "the", "at", "in", "for", "and"
+  ("University of Karachi").
+- Display only; stored names are not changed, so the admin Universities page still shows and edits
+  the name as saved.
+- Now used everywhere a full university name is listed: pickers, admin society/user pages,
+  Approvals, Campus ambassador campus list, the public society page, the event filter dropdown and
+  the admin alert and digest emails. Cards that show the short name (LUMS, NUST) are unchanged.

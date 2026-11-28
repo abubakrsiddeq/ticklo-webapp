@@ -14,7 +14,7 @@ export default async function AdminAmbassadorsPage() {
   const supabase = await createClient();
   const [{ data: rows }, { data: unis }, { data: list }] = await Promise.all([
     supabase.rpc("campus_ambassador_stats", { p_user_id: null }),
-    supabase.from("universities").select("id, name").order("name"),
+    supabase.from("universities").select("id, name, city").order("name"),
     supabase.from("campus_ambassadors").select("user_id, university_id"),
   ]);
   const uniOf = new Map((list ?? []).map((r) => [r.user_id, r.university_id]));

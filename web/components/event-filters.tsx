@@ -1,6 +1,7 @@
 import { ArrowRight, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { universityLabel } from "@/lib/university-label";
 
 /** EVT-02: filter by university + search by name (plain GET form, works without JS). */
 export function EventFilters({
@@ -13,7 +14,7 @@ export function EventFilters({
   placeholder = "Search events…",
   hidden,
 }: {
-  universities: { id: string; name: string; short_name: string | null }[];
+  universities: { id: string; name: string; short_name: string | null; city?: string | null }[];
   q?: string;
   uni?: string;
   past?: boolean;
@@ -59,7 +60,7 @@ export function EventFilters({
           <option value="">All universities</option>
           {universities.map((u) => (
             <option key={u.id} value={u.id}>
-              {u.short_name ? `${u.short_name} – ${u.name}` : u.name}
+              {u.short_name ? `${u.short_name} – ${universityLabel(u)}` : universityLabel(u)}
             </option>
           ))}
         </select>

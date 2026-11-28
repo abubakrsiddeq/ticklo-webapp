@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-digest";
 import AdminAlertEmail, { type AdminAlertProps } from "@/emails/admin-alert";
 import AdminDigestEmail, { type DigestGroup, type DigestItem } from "@/emails/admin-digest";
+import { universityLabel } from "@/lib/university-label";
 
 // D-088: emails to TickLO admins. Instant ones only when an admin has to act;
 // everything else waits for the 9:00 digest. Every function here never throws.
@@ -72,7 +73,7 @@ export async function notifyAdminsSocietyToReview(orgSlug: string, resubmitted: 
       admin.from("organization_heads").select("name, phone, email").eq("org_id", org.id).maybeSingle(),
       admin.from("profiles").select("full_name, email").eq("id", org.created_by).maybeSingle(),
     ]);
-    const uni = org.universities ? `${org.universities.name}, ${org.universities.city}` : "Not given";
+    const uni = org.universities ? universityLabel(org.universities) : "Not given";
     await sendToAdmins({
       subject: resubmitted ? `Society resubmitted: ${org.name}` : `New society to review: ${org.name}`,
       template: "admin-society-review",
@@ -297,7 +298,7 @@ export async function sendAdminDigest(now = new Date()): Promise<DigestResult> {
   const [orgsRes, eventsRes, unisRes, disputesRes, dupRes, deletionRes, failedRes, soonRes, signups, orders, tickets] = await Promise.all([
     admin
       .from("organizations")
-      .select("id, name, created_at, universities ( name )")
+      .select("id, name, created_at, universities ( name, city )")
       .eq("status", "pending")
       .is("deleted_at", null)
       .order("created_at"),
@@ -374,7 +375,7 @@ export async function sendAdminDigest(now = new Date()): Promise<DigestResult> {
       title: "Societies",
       count: orgs.length,
       url: absoluteUrl("/admin/approvals"),
-      items: orgs.map((o) => item(o.name, o.universities?.name ?? null, since.get(o.id) ?? o.created_at)),
+      items: orgs.map((o) => item(o.name, o.universities ? universityLabel(o.universities) : null, since.get(o.id) ?? o.created_at)),
     });
   }
   const events = eventsRes.data ?? [];

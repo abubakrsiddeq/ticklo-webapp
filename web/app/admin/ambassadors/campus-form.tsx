@@ -11,9 +11,10 @@ import { NativeSelect } from "@/components/native-select";
 import { SubmitButton } from "@/components/submit-button";
 import { saveCampusAmbassador } from "../actions";
 import { useActionTransition } from "@/lib/use-action-transition";
+import { universityLabel } from "@/lib/university-label";
 
 /** AMB-14: add a TickLO campus ambassador by email. */
-export function CampusAmbassadorForm({ universities }: { universities: { id: string; name: string }[] }) {
+export function CampusAmbassadorForm({ universities }: { universities: { id: string; name: string; city: string | null }[] }) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, start] = useActionTransition();
@@ -51,7 +52,7 @@ export function CampusAmbassadorForm({ universities }: { universities: { id: str
           <option value="">None</option>
           {universities.map((u) => (
             <option key={u.id} value={u.id}>
-              {u.name}
+              {universityLabel(u)}
             </option>
           ))}
         </NativeSelect>

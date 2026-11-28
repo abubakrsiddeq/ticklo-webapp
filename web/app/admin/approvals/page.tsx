@@ -11,6 +11,7 @@ import { reviewEvent, reviewOrganization } from "../actions";
 import { ReviewButtons } from "../review-buttons";
 import { DecisionTimeline } from "../decision-timeline";
 import { DECISION_ACTIONS, decisionActions } from "@/lib/decisions";
+import { universityLabel } from "@/lib/university-label";
 
 export const metadata: Metadata = { title: "Approvals" };
 
@@ -21,7 +22,7 @@ export default async function ApprovalsPage() {
   const [{ data: orgs }, { data: events }] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, slug, name, type, about, logo_url, social_links, proof_path, created_at, created_by, universities ( name, status )")
+      .select("id, slug, name, type, about, logo_url, social_links, proof_path, created_at, created_by, universities ( name, city, status )")
       .eq("status", "pending")
       .is("deleted_at", null)
       .order("created_at"),
@@ -88,7 +89,7 @@ export default async function ApprovalsPage() {
                   <div>
                     <p className="text-lg font-semibold text-navy">{o.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {o.type} · {o.universities ? `${o.universities.name}${o.universities.status === "pending" ? " (new university – check in Universities)" : ""}` : "University not listed"} · registered {formatShortDateTime(o.created_at)}
+                      {o.type} · {o.universities ? `${universityLabel(o.universities)}${o.universities.status === "pending" ? " (new university – check in Universities)" : ""}` : "University not listed"} · registered {formatShortDateTime(o.created_at)}
                     </p>
                   </div>
                   {o.about ? <p className="whitespace-pre-line text-sm">{o.about}</p> : null}

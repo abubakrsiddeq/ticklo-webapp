@@ -81,9 +81,21 @@ describe("society head (D-060)", () => {
 });
 
 describe("university list", () => {
-  it("does not repeat the city", () => {
+  it("shows Name (City), taking a city off the end of the name", () => {
     expect(universityLabel({ name: "Bahria University (Karachi)", city: "Karachi" })).toBe("Bahria University (Karachi)");
+    expect(universityLabel({ name: "Bahria University Islamabad", city: "islamabad" })).toBe("Bahria University (Islamabad)");
+    expect(universityLabel({ name: "COMSATS University Islamabad", city: "Islamabad" })).toBe("COMSATS University (Islamabad)");
+    expect(universityLabel({ name: "Bahria University, Lahore", city: "Lahore" })).toBe("Bahria University (Lahore)");
     expect(universityLabel({ name: "Air University", city: "Islamabad" })).toBe("Air University (Islamabad)");
+    expect(universityLabel({ name: "Air University", city: "dera ismail khan" })).toBe("Air University (Dera Ismail Khan)");
+    expect(universityLabel({ name: "Air University", city: null })).toBe("Air University");
+  });
+
+  it("leaves a city that is part of the real name alone", () => {
+    expect(universityLabel({ name: "University of Karachi", city: "Karachi" })).toBe("University of Karachi");
+    expect(universityLabel({ name: "Lahore University of Management Sciences", city: "Lahore" })).toBe("Lahore University of Management Sciences");
+    expect(universityLabel({ name: "Karachi", city: "Karachi" })).toBe("Karachi");
+    expect(universityLabel({ name: "Wahcantt Institute", city: "Wah" })).toBe("Wahcantt Institute (Wah)");
   });
 
   it("suggests approved universities that match what was typed", () => {
