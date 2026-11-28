@@ -644,10 +644,11 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Admin emails (D-088):** deploy the new web build, then in the Supabase SQL editor run
-  `select cron.schedule('ticklo-admin-digest', '0 4 * * *', $$select public.call_app_cron('/api/cron/admin-digest')$$);`
-  (also in `supabase/ops/app-cron.sql`). Make sure your admin account has the right email. To test
-  the digest now: `curl -H "Authorization: Bearer <CRON_SECRET>" https://ticklo.bkrtechsolutions.com/api/cron/admin-digest`.
+- **Admin emails (D-088):** deploy the new web build. The cron job `ticklo-admin-digest`
+  (`0 4 * * *` = 9:00 PKT) is already scheduled on TickLO Production (2026-11-28); until the
+  build is deployed its call just gets a 404. Make sure your admin account has the right email.
+  To test the digest after deploy:
+  `curl -H "Authorization: Bearer <CRON_SECRET>" https://ticklo.bkrtechsolutions.com/api/cron/admin-digest`.
 - **Deploy the new web build on Hostinger (D-087):** no migration or env vars. Then try check #22
   (session ticket in the session form) and the new Details / Passes & tickets tabs.
 - **Deploy the new web build on Hostinger (D-086):** no migration or env vars. Then open Event day
