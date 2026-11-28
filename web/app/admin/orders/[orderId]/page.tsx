@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/status-badge";
+import { Pill, StatusBadge } from "@/components/status-badge";
 import { ZoomableImage } from "@/components/zoomable-image";
 import { ActionButton } from "@/components/action-button";
 import { requireAdmin } from "@/lib/auth";
@@ -13,6 +13,8 @@ import { formatDateTime, formatPKR, formatShortDateTime } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { accountLabel } from "@/lib/payments/accounts";
 import { setUserSuspended } from "../../actions";
+import { adminApproveOrder, resendTickets } from "../../control-actions";
+import { CancelTicketButton, EditBuyerButton, RefundOrderButton, RejectOrderButton } from "../../control-buttons";
 import { ResolveDispute } from "../../resolve-dispute";
 
 export const metadata: Metadata = { title: "Order history" };
@@ -68,6 +70,37 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ ord
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="font-mono text-2xl font-bold text-navy">{order.ref_code}</h1>
         <StatusBadge status={order.status} />
+        {order.refunded_at ? <Pill tone="warning">Refunded {formatShortDateTime(order.refunded_at)}</Pill> : null}
+      </div>
+      {order.refund_note ? <p className="-mt-4 text-sm text-muted-foreground">Refund: {order.refund_note}</p> : null}
+
+      {/* D-084: the admin can decide or fix any order */}
+      <div className="flex flex-wrap gap-2 rounded-2xl bg-white p-3 shadow-card ring-1 ring-navy/[0.06]">
+        {order.status === "under_review" ? (
+          <>
+            <ActionButton
+              size="sm"
+              variant="brand"
+              action={adminApproveOrder.bind(null, order.id)}
+              confirm={{ title: "Approve this payment?", description: "Tickets are created and emailed to the buyer.", confirmLabel: "Approve" }}
+            >
+              Approve payment
+            </ActionButton>
+            <RejectOrderButton orderId={order.id} />
+          </>
+        ) : null}
+        {order.status === "approved" ? (
+          <ActionButton size="sm" variant="outline" action={resendTickets.bind(null, order.id)}>
+            Send tickets again
+          </ActionButton>
+        ) : null}
+        <EditBuyerButton
+          orderId={order.id}
+          initial={{ name: order.buyer_name ?? "", email: order.buyer_email ?? "", phone: formatPhone(order.buyer_phone) }}
+        />
+        {(order.status === "approved" || order.status === "under_review") && !order.refunded_at && order.total_paisa > 0 ? (
+          <RefundOrderButton orderId={order.id} refCode={order.ref_code} />
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -228,7 +261,10 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ ord
                   <span>
                     {t.ticket_types.name} · <span className="font-mono">{t.code}</span>
                   </span>
-                  <StatusBadge status={t.status} />
+                  <span className="flex items-center gap-2">
+                    <StatusBadge status={t.status} />
+                    {t.status === "valid" ? <CancelTicketButton ticketId={t.id} code={t.code} /> : null}
+                  </span>
                 </div>
                 <ul className="mt-1 text-xs text-muted-foreground">
                   {(scans ?? [])

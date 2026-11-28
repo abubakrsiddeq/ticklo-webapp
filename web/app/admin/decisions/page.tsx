@@ -140,7 +140,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
       case "societies": {
         const o = orgs.get(id);
         const name = o?.name ?? s(d.name) ?? "Deleted society";
-        return { subject: o?.status === "approved" ? link(`/s/${o.slug}`, name) : name, reason: decisionReason(d) };
+        return { subject: o ? link(`/admin/societies/${id}`, name) : name, reason: decisionReason(d) };
       }
       case "events":
         return { subject: eventLink, context: ev?.organizations?.name, reason: decisionReason(d) };

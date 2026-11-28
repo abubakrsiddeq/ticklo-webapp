@@ -22,7 +22,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, email, phone, is_admin, is_suspended, suspended_reason, deletion_requested_at, created_at, organization_members(role, organizations(name))")
+    .select("id, full_name, email, phone, is_admin, is_suspended, suspended_reason, deletion_requested_at, deleted_at, created_at, organization_members(role, organizations(name))")
     .order("created_at", { ascending: false })
     .limit(50);
   if (q) {
@@ -30,8 +30,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     else if (/^[+\d\s-]{6,}$/.test(q)) query = query.ilike("phone", `%${(normalizePhone(q) ?? q).replace(/\D/g, "").slice(-10)}%`);
     else query = query.ilike("full_name", `%${q}%`);
   }
-  if (filter === "suspended") query = query.eq("is_suspended", true);
+  if (filter === "suspended") query = query.eq("is_suspended", true).is("deleted_at", null);
   if (filter === "deletion") query = query.not("deletion_requested_at", "is", null);
+  if (filter === "deleted") query = query.not("deleted_at", "is", null);
   const { data: users } = await query;
 
   return (
@@ -46,6 +47,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
           <option value="">All users</option>
           <option value="suspended">Suspended</option>
           <option value="deletion">Deletion requested</option>
+          <option value="deleted">Deleted accounts</option>
         </select>
         <Button type="submit">Search</Button>
       </form>
@@ -79,16 +81,22 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                 </td>
                 <td className="px-3 py-2">{formatShortDateTime(u.created_at)}</td>
                 <td className="px-3 py-2">
-                  {u.is_suspended ? <StatusBadge status="suspended" /> : <StatusBadge status="valid" label="Active" />}
-                  {u.suspended_reason ? <div className="text-xs text-muted-foreground">{u.suspended_reason}</div> : null}
+                  {u.deleted_at ? (
+                    <Pill tone="danger">Deleted</Pill>
+                  ) : u.is_suspended ? (
+                    <StatusBadge status="suspended" />
+                  ) : (
+                    <StatusBadge status="valid" label="Active" />
+                  )}
+                  {u.suspended_reason && !u.deleted_at ? <div className="text-xs text-muted-foreground">{u.suspended_reason}</div> : null}
                   {u.deletion_requested_at ? <div className="text-xs text-warning">Deletion requested</div> : null}
                 </td>
                 <td className="px-3 py-2 text-right">
                   <div className="flex justify-end gap-2">
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/admin/users/${u.id}`}>Roles</Link>
+                      <Link href={`/admin/users/${u.id}`}>Open</Link>
                     </Button>
-                    {u.id !== me.id ? <SuspendButton userId={u.id} suspended={u.is_suspended} name={u.full_name ?? u.email ?? "user"} /> : null}
+                    {u.id !== me.id && !u.deleted_at ? <SuspendButton userId={u.id} suspended={u.is_suspended} name={u.full_name ?? u.email ?? "user"} /> : null}
                   </div>
                 </td>
               </tr>

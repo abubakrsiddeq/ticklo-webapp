@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Building2, CalendarClock, MailWarning, MessageSquareWarning, Ticket, Users, Wallet } from "lucide-react";
+import { AlertTriangle, Ban, Building2, CalendarCheck, CalendarClock, MailWarning, MessageSquareWarning, PauseCircle, Ticket, Users, Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatPKR, formatShortDateTime } from "@/lib/format";
@@ -15,6 +15,10 @@ interface Overview {
   duplicate_flags: number;
   failed_emails_7d: number;
   users: number;
+  societies: number;
+  suspended_societies: number;
+  live_events: number;
+  paused_events: number;
 }
 
 function Tile({ icon: Icon, label, value, href, alert }: { icon: typeof Ticket; label: string; value: string | number; href?: string; alert?: boolean }) {
@@ -50,6 +54,15 @@ export default async function AdminOverviewPage() {
           <Tile icon={CalendarClock} label="Events to review" value={o.pending_events ?? 0} href="/admin/approvals" alert={(o.pending_events ?? 0) > 0} />
           <Tile icon={MessageSquareWarning} label="Open disputes" value={o.open_disputes ?? 0} href="/admin/orders" alert={(o.open_disputes ?? 0) > 0} />
           <Tile icon={AlertTriangle} label="Duplicate flags (pending)" value={o.duplicate_flags ?? 0} href="/admin/fraud" alert={(o.duplicate_flags ?? 0) > 0} />
+        </div>
+      </section>
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-navy">Everything on TickLO</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Tile icon={Building2} label="Societies" value={o.societies ?? 0} href="/admin/societies" />
+          <Tile icon={Ban} label="Suspended societies" value={o.suspended_societies ?? 0} href="/admin/societies?status=suspended" />
+          <Tile icon={CalendarCheck} label="Upcoming events" value={o.live_events ?? 0} href="/admin/events" />
+          <Tile icon={PauseCircle} label="Events with sales paused" value={o.paused_events ?? 0} href="/admin/events?show=paused" alert={(o.paused_events ?? 0) > 0} />
         </div>
       </section>
       <section>
@@ -105,16 +118,16 @@ export default async function AdminOverviewPage() {
           <ul className="divide-y text-sm">
             {deletions.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="min-w-0">
+                <Link href={`/admin/users/${d.id}`} className="min-w-0 hover:underline">
                   {d.full_name ?? "–"} · {d.email}
-                </span>
+                </Link>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <StatusBadge status="pending" label="Requested" /> {d.deletion_requested_at ? formatShortDateTime(d.deletion_requested_at) : ""}
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-muted-foreground">Process in the Supabase dashboard (Authentication → Users → Delete) after checking open orders.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Open the person and use Delete account. People with orders keep their order records as &quot;Deleted user&quot;.</p>
         </section>
       ) : null}
     </div>

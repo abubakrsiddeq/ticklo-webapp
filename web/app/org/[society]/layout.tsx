@@ -9,7 +9,7 @@ import { resubmitOrganization } from "../_actions/org";
 
 export default async function SocietyLayout({ children, params }: { children: React.ReactNode; params: Promise<{ society: string }> }) {
   const { society } = await params;
-  const { org, isOwner } = await requireOrgStaff(society, `/org/${society}`);
+  const { org, isOwner, viaAdmin } = await requireOrgStaff(society, `/org/${society}`);
   const base = `/org/${org.slug}`;
   const tabs = [
     { href: base, label: "Dashboard", match: [`${base}/events`] },
@@ -42,6 +42,17 @@ export default async function SocietyLayout({ children, params }: { children: Re
         ) : null}
       </div>
 
+      {viaAdmin ? (
+        <Alert className="mb-4 border-blue-200 bg-blue-50">
+          <AlertTitle>You are working in this society as TickLO admin</AlertTitle>
+          <AlertDescription>
+            You can change everything an owner can. Changes are saved under your name in the audit log.{" "}
+            <Link href={`/admin/societies/${org.id}`} className="underline">
+              Back to admin
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {org.status === "pending" ? (
         <Alert className="mb-4">
           <AlertTitle>Waiting for TickLO approval</AlertTitle>
@@ -74,7 +85,10 @@ export default async function SocietyLayout({ children, params }: { children: Re
       {org.status === "suspended" ? (
         <Alert variant="destructive" className="mb-4">
           <AlertTitle>Society suspended</AlertTitle>
-          <AlertDescription>Contact TickLO support.</AlertDescription>
+          <AlertDescription>
+            {org.suspended_reason ? `Reason: ${org.suspended_reason}. ` : ""}
+            Ticket sales are stopped and nothing can be changed. Tickets already sold still work at the gate. Contact TickLO support.
+          </AlertDescription>
         </Alert>
       ) : null}
 

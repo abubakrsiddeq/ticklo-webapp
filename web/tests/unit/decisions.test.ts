@@ -3,9 +3,9 @@ import { cleanSearch, decisionActions, decisionReason, parseKind, parseResult, r
 
 describe("decision history helpers (D-076)", () => {
   it("lists a kind's actions, with or without the steps in between", () => {
-    expect(decisionActions("societies", "all")).toEqual(["org.register", "org.resubmit", "org.approve", "org.reject"]);
-    expect(decisionActions("societies", "approved")).toEqual(["org.approve"]);
-    expect(decisionActions("events", "rejected")).toEqual(["event.reject", "event.cancel"]);
+    expect(decisionActions("societies", "all")).toEqual(["org.register", "org.resubmit", "org.approve", "org.reject", "org.suspend", "org.restore", "org.delete"]);
+    expect(decisionActions("societies", "approved")).toEqual(["org.approve", "org.restore"]);
+    expect(decisionActions("events", "rejected")).toEqual(["event.reject", "event.cancel", "event.unpublish", "event.delete", "event.sales_pause"]);
     expect(decisionActions(null, "approved")).toContain("order.approve");
     expect(decisionActions(null, "approved")).not.toContain("org.register");
   });
@@ -45,7 +45,8 @@ describe("organizer decision history (D-077)", () => {
     expect(all).not.toContain("university.delete");
     expect(orgDecisionActions(null, "all", true)).not.toContain("org.register");
     expect(orgDecisionActions("users", "all")).toEqual(all);
-    expect(orgDecisionActions("payments", "rejected")).toEqual(["order.reject"]);
+    expect(orgDecisionActions("payments", "rejected")).toEqual(["order.reject", "order.refund"]);
+    expect(all).toContain("org.suspend"); // D-084: organizers see TickLO's suspension too
   });
 });
 

@@ -23,6 +23,7 @@ export default async function ApprovalsPage() {
       .from("organizations")
       .select("id, slug, name, type, about, logo_url, social_links, proof_path, created_at, created_by, universities ( name, status )")
       .eq("status", "pending")
+      .is("deleted_at", null)
       .order("created_at"),
     supabase
       .from("events")

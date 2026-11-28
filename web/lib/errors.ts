@@ -56,6 +56,9 @@ const FRIENDLY: Record<string, string> = {
   INVALID_FORM: "The registration form is not valid.",
   FORM_LOCKED: "People have registered, so this change is not allowed.",
   NO_SESSIONS: "Add the sessions or the competition before sending the event for review.",
+  ORG_SUSPENDED: "This society is suspended. Contact TickLO support.",
+  SALES_PAUSED: "Ticket sales for this event are paused for now.",
+  CONFIRM_MISMATCH: "Type the name exactly to confirm.",
 };
 
 interface ErrorLike {

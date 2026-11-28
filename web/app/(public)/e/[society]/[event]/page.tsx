@@ -117,12 +117,16 @@ export default async function EventPage({ params, searchParams }: { params: Prom
     };
   });
 
-  const onSale = !cancelled && !ended && !isPreview && types.some((t) => t.saleState === "on" && t.remaining > 0);
+  // D-084: TickLO paused sales, or the society is suspended / deleted
+  const paused = Boolean(event.sales_paused_at) || org.status === "suspended" || Boolean(org.deleted_at);
+  const onSale = !cancelled && !ended && !isPreview && !paused && types.some((t) => t.saleState === "on" && t.remaining > 0);
   const closedReason = cancelled
     ? "This event was cancelled. Ticket sales are closed."
     : ended
       ? "This event has ended."
-      : isPreview
+      : paused
+        ? "Ticket sales are paused for now. Tickets already bought still work."
+        : isPreview
         ? "Preview – tickets go on sale after TickLO approves this event."
         : types.every((t) => t.remaining <= 0)
           ? "Sold out."
@@ -133,7 +137,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               : "Ticket sale is closed.";
 
   const pagePath = eventPath(org.slug, event.slug);
-  const eventOpen = !cancelled && !ended && event.status === "published";
+  const eventOpen = !cancelled && !ended && !paused && event.status === "published";
   // D-064: a session's "Get ticket" button picks a ticket on sale that opens it by name
   const sessionTickets: Record<string, { id: string; price: number }> = {};
   for (const s of sessions) {
@@ -274,7 +278,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               registerBase={`${pagePath}/register`}
               now={now}
               eventOpen={eventOpen}
-              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : "Registration opens after TickLO approves this event."}
+              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : paused ? "Registration is paused for now." : "Registration opens after TickLO approves this event."}
               waitlist={waitlist}
               loggedIn={Boolean(user)}
               loginHref={loginHref}
@@ -310,7 +314,7 @@ export default async function EventPage({ params, searchParams }: { params: Prom
               now={now}
               eventOpen={eventOpen}
               title="Compete"
-              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : "Registration opens after TickLO approves this event."}
+              notOpenText={cancelled ? "This event was cancelled." : ended ? "This event has ended." : paused ? "Registration is paused for now." : "Registration opens after TickLO approves this event."}
               waitlist={waitlist}
               loggedIn={Boolean(user)}
               loginHref={loginHref}

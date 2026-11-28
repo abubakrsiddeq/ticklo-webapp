@@ -14,6 +14,7 @@ import ReviewDecisionEmail from "@/emails/review-decision";
 import TeamInviteEmail from "@/emails/team-invite";
 import EventReminderEmail from "@/emails/event-reminder";
 import TeamDecisionEmail from "@/emails/team-decision";
+import SocietyStatusEmail from "@/emails/society-status";
 
 // High-level notifications. Each loads what it needs with the service role
 // (after the caller has already done the permission check) and never throws.
@@ -247,6 +248,42 @@ export async function notifyEventCancelled(
     await sendEmails(messages);
   } catch (e) {
     console.error("notifyEventCancelled failed", e);
+  }
+}
+
+/** D-084: tell the society owner that TickLO suspended, restored or deleted the society. */
+export async function notifySocietyStatus(input: {
+  change: "suspended" | "restored" | "deleted";
+  owner: { email?: string | null; name?: string | null } | null;
+  societyName: string;
+  orgSlug: string;
+  reason?: string | null;
+  cancelledEvents?: number;
+}) {
+  try {
+    if (!input.owner?.email) return;
+    const subject =
+      input.change === "suspended"
+        ? `${input.societyName} is suspended on TickLO`
+        : input.change === "restored"
+          ? `${input.societyName} is active again on TickLO`
+          : `${input.societyName} was removed from TickLO`;
+    await sendEmail({
+      to: input.owner.email,
+      subject,
+      template: "society-status",
+      related: { type: "society", id: input.orgSlug },
+      react: SocietyStatusEmail({
+        change: input.change,
+        name: firstName(input.owner.name),
+        societyName: input.societyName,
+        reason: input.reason ?? null,
+        cancelledEvents: input.cancelledEvents ?? 0,
+        url: absoluteUrl(dashboardPath(input.orgSlug)),
+      }),
+    });
+  } catch (e) {
+    console.error("notifySocietyStatus failed", e);
   }
 }
 

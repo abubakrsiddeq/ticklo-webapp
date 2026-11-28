@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { SiteAnnouncement } from "@/components/site-announcement";
 import { UserMenu, type UserMenuOrg } from "@/components/user-menu";
 import { HeaderNav, MobileMenu, type NavItem } from "@/components/header-nav";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,14 @@ const glass = "rounded-full bg-white/75 shadow-pill ring-1 ring-white backdrop-b
  */
 export function SiteHeader() {
   return (
-    <Suspense fallback={<SiteHeaderShell />}>
-      <SiteHeaderContent />
-    </Suspense>
+    <>
+      <Suspense fallback={null}>
+        <SiteAnnouncement />
+      </Suspense>
+      <Suspense fallback={<SiteHeaderShell />}>
+        <SiteHeaderContent />
+      </Suspense>
+    </>
   );
 }
 

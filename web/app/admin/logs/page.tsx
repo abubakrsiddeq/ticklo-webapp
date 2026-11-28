@@ -5,6 +5,11 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatShortDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "@/components/action-button";
+import { resendLoggedEmail } from "../control-actions";
+
+// D-084: failed emails of these kinds can be rebuilt from the order or team and sent again
+const RESENDABLE = new Set(["order-confirmed", "payment-instructions", "payment-rejected", "team-decision"]);
 
 export const metadata: Metadata = { title: "Logs" };
 
@@ -56,6 +61,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                 <th className="px-3 py-2 font-medium">Template</th>
                 <th className="px-3 py-2 font-medium">Status</th>
                 <th className="px-3 py-2 font-medium">Error</th>
+                <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -71,6 +77,13 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                     <StatusBadge status={e.status} />
                   </td>
                   <td className="max-w-xs truncate px-3 py-2 text-xs text-muted-foreground">{e.error}</td>
+                  <td className="px-3 py-2 text-right">
+                    {e.status === "failed" && RESENDABLE.has(e.template) && e.related_id ? (
+                      <ActionButton size="xs" variant="outline" action={resendLoggedEmail.bind(null, e.id)}>
+                        Send again
+                      </ActionButton>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>

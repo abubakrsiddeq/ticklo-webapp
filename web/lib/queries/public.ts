@@ -44,7 +44,8 @@ export async function listPublicEvents(filters: EventListFilters = {}) {
     .select(EVENT_CARD_SELECT, { count: "exact" })
     .in("status", ["published", "cancelled"])
     .eq("visibility", "public")
-    .eq("organizations.status", "approved");
+    .eq("organizations.status", "approved")
+    .is("organizations.deleted_at", null); // D-084: admins can read deleted societies, the lists never show them
 
   query = filters.past
     ? query.lt("ends_at", nowIso).order("starts_at", { ascending: false })
@@ -79,6 +80,7 @@ export async function listPublicSessions(filters: { q?: string; universityId?: s
     .eq("events.status", "published")
     .eq("events.visibility", "public")
     .eq("events.organizations.status", "approved")
+    .is("events.organizations.deleted_at", null)
     .gte("ends_at", new Date().toISOString())
     .order("starts_at", { ascending: true })
     .limit(filters.limit ?? 12);
@@ -132,6 +134,7 @@ export async function listPublicSocieties(filters: SocietyListFilters = {}) {
       { count: "exact" },
     )
     .eq("status", "approved")
+    .is("deleted_at", null)
     .in("upcoming.status", ["published"])
     .eq("upcoming.visibility", "public")
     .gte("upcoming.ends_at", nowIso)
@@ -154,7 +157,7 @@ export const getEventPage = cache(async (orgSlug: string, eventSlug: string) => 
   const supabase = await createClient();
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, slug, name, logo_url, about, status, universities ( name, short_name, city )")
+    .select("id, slug, name, logo_url, about, status, deleted_at, universities ( name, short_name, city )")
     .eq("slug", orgSlug)
     .maybeSingle();
   if (!org) return null;
@@ -194,10 +197,10 @@ export const getSocietyPage = cache(async (slug: string) => {
   const supabase = await createClient();
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, slug, name, logo_url, about, type, social_links, status, universities ( name, short_name, city )")
+    .select("id, slug, name, logo_url, about, type, social_links, status, deleted_at, universities ( name, short_name, city )")
     .eq("slug", slug)
     .maybeSingle();
-  if (!org || org.status !== "approved") return null;
+  if (!org || org.status !== "approved" || org.deleted_at) return null;
   const { data: events } = await supabase
     .from("events")
     .select(EVENT_CARD_SELECT)

@@ -64,6 +64,8 @@ export interface OrgAccess {
   org: Tables<"organizations">;
   role: OrgRole | null;
   user: CurrentUser | null;
+  /** D-084: a TickLO admin working in a society they do not own (acts as owner). */
+  viaAdmin: boolean;
 }
 
 export const getOrgAccess = cache(async (slug: string): Promise<OrgAccess | null> => {
@@ -84,8 +86,14 @@ export const getOrgAccess = cache(async (slug: string): Promise<OrgAccess | null
       : Promise.resolve(null),
   ]);
   if (!org) return null;
-  if (!user) return { org, role: null, user: null };
-  return { org, role: membership?.role ?? null, user };
+  if (!user) return { org, role: null, user: null, viaAdmin: false };
+  // D-084: admins act as owner of every society that is not deleted (the
+  // database does the same in org_role_of). A deleted society has no members.
+  if (org.deleted_at) return { org, role: null, user, viaAdmin: false };
+  const isAdmin = user.profile.is_admin && !user.profile.is_suspended;
+  const real = membership?.role ?? null;
+  if (isAdmin) return { org, role: "owner", user, viaAdmin: real !== "owner" };
+  return { org, role: real, user, viaAdmin: false };
 });
 
 /** Organizer (owner or member) of the society. */
@@ -93,8 +101,9 @@ export async function requireOrgStaff(slug: string, next: string) {
   const user = await requireUser(next);
   const access = await getOrgAccess(slug);
   if (!access) notFound();
+  if (access.org.deleted_at && user.profile.is_admin) redirect(`/admin/societies/${access.org.id}`);
   if (access.role !== "owner" && access.role !== "member") redirect("/not-allowed");
-  return { user, org: access.org, role: access.role, isOwner: access.role === "owner" };
+  return { user, org: access.org, role: access.role, isOwner: access.role === "owner", viaAdmin: access.viaAdmin };
 }
 
 /** Owner only: team and payment accounts (Users & roles table). */

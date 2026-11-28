@@ -27,13 +27,22 @@ export const DECISION_ACTIONS: Record<string, DecisionAction> = {
   "org.resubmit": { kind: "societies", label: "Resubmitted", outcome: "step" },
   "org.approve": { kind: "societies", label: "Approved", outcome: "approved" },
   "org.reject": { kind: "societies", label: "Rejected", outcome: "rejected" },
+  // D-084: admin control
+  "org.suspend": { kind: "societies", label: "Suspended", outcome: "rejected" },
+  "org.restore": { kind: "societies", label: "Restored", outcome: "approved" },
+  "org.delete": { kind: "societies", label: "Deleted", outcome: "rejected" },
   "event.submit": { kind: "events", label: "Sent for review", outcome: "step" },
   "event.approve": { kind: "events", label: "Approved", outcome: "approved" },
   "event.reject": { kind: "events", label: "Rejected", outcome: "rejected" },
   "event.cancel": { kind: "events", label: "Cancelled", outcome: "rejected" },
+  "event.unpublish": { kind: "events", label: "Unpublished", outcome: "rejected" },
+  "event.delete": { kind: "events", label: "Deleted", outcome: "rejected" },
+  "event.sales_pause": { kind: "events", label: "Sales paused", outcome: "rejected" },
+  "event.sales_resume": { kind: "events", label: "Sales resumed", outcome: "approved" },
   "order.approve": { kind: "payments", label: "Approved", outcome: "approved" },
   "order.reject": { kind: "payments", label: "Rejected", outcome: "rejected" },
   "order.cancel_by_buyer": { kind: "payments", label: "Cancelled by buyer", outcome: "step" },
+  "order.refund": { kind: "payments", label: "Refunded", outcome: "rejected" },
   "team.approve": { kind: "teams", label: "Approved", outcome: "approved" },
   "team.reject": { kind: "teams", label: "Rejected", outcome: "rejected" },
   "ambassador.approve": { kind: "ambassadors", label: "Approved", outcome: "approved" },
@@ -45,6 +54,7 @@ export const DECISION_ACTIONS: Record<string, DecisionAction> = {
   "dispute.resolve": { kind: "disputes", label: "Resolved", outcome: "approved" },
   "user.suspend": { kind: "users", label: "Suspended", outcome: "rejected" },
   "user.restore": { kind: "users", label: "Restored", outcome: "approved" },
+  "user.delete": { kind: "users", label: "Account deleted", outcome: "rejected" },
 };
 
 export type ResultFilter = "all" | "approved" | "rejected";
