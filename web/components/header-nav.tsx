@@ -6,6 +6,8 @@ import { useSyncExternalStore } from "react";
 import {
   CalendarDays,
   DoorOpen,
+  Info,
+  Mail,
   ChevronRight,
   Compass,
   LayoutDashboard,
@@ -27,6 +29,8 @@ import { cn } from "@/lib/utils";
 export interface NavItem {
   href: string;
   label: string;
+  /** About / Contact: always in the mobile menu, in the desktop pill only when there is room. */
+  secondary?: boolean;
 }
 
 function isActive(pathname: string, href: string) {
@@ -37,6 +41,8 @@ function isActive(pathname: string, href: string) {
 /** Centre links inside the pill header (desktop). */
 export function HeaderNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
+  // Up to 6 links fit next to the logo and account pill from lg (1024 px); 7 need xl (1280 px).
+  const secondaryCls = items.length <= 6 ? "hidden lg:inline-flex" : "hidden xl:inline-flex";
   return (
     <nav
       aria-label="Main"
@@ -51,6 +57,7 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={cn(
               "inline-flex h-11 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap transition-colors lg:px-5 lg:text-[15px]",
+              i.secondary && secondaryCls,
               active
                 ? "bg-brand-strong text-white shadow-[0_6px_16px_-6px_rgb(11_125_71/0.6)]"
                 : "text-navy/70 hover:bg-secondary/80 hover:text-navy",
@@ -71,6 +78,8 @@ function iconFor(href: string): LucideIcon {
   if (href === "/org/new") return Sparkles;
   if (href.startsWith("/org")) return LayoutDashboard;
   if (href.startsWith("/event-day")) return DoorOpen;
+  if (href === "/about") return Info;
+  if (href === "/contact") return Mail;
   return Compass;
 }
 

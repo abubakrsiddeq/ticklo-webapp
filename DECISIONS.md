@@ -1396,3 +1396,6 @@ Owner: "Privacy policy aur terms professional bana do, … About Us and Contact 
     email says which account sent it.
 - Footer "TickLO" column: About us, Contact us, Privacy policy, Terms of use (the mailto link is gone);
   copyright line uses the legal company name.
+- Header (owner follow-up): "About" and "Contact" after the main links. Always in the mobile menu; in the
+  desktop pill from 1024 px when there are up to 6 links, from 1280 px when there are 7 (a signed-in
+  organizer who also scans), so the pill never pushes the account button off the row.

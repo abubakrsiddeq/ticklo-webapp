@@ -28,9 +28,16 @@ async function loadMenuData(userId: string) {
   return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador, managesSessions: (managed ?? 0) > 0 };
 }
 
+// D-090: About and Contact after the main links
+const INFO_NAV: NavItem[] = [
+  { href: "/about", label: "About", secondary: true },
+  { href: "/contact", label: "Contact", secondary: true },
+];
+
 const PUBLIC_NAV: NavItem[] = [
   { href: "/events", label: "Events" },
   { href: "/societies", label: "Societies" },
+  ...INFO_NAV,
 ];
 
 const glass = "rounded-full bg-white/75 shadow-pill ring-1 ring-white backdrop-blur-xl";
@@ -102,6 +109,7 @@ async function SiteHeaderContent() {
       : { href: "/org/new", label: "Register society" },
     // D-086: one "Event day" link instead of "Scan" and "Sell"
     ...(menu?.canScan || menu?.canSell ? [{ href: "/event-day", label: "Event day" }] : []),
+    ...INFO_NAV,
   ];
 
   return (
