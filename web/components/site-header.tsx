@@ -28,6 +28,11 @@ async function loadMenuData(userId: string) {
   return { orgs, canScan: (scanEvents ?? []).length > 0, canSell: (sellEvents ?? []).length > 0, isAmbassador, managesSessions: (managed ?? 0) > 0 };
 }
 
+const PUBLIC_NAV: NavItem[] = [
+  { href: "/events", label: "Events" },
+  { href: "/societies", label: "Societies" },
+];
+
 const glass = "rounded-full bg-white/75 shadow-pill ring-1 ring-white backdrop-blur-xl";
 
 /**
@@ -70,14 +75,15 @@ export function SiteHeaderShell() {
   return (
     <HeaderFrame
       nav={
-        <HeaderNav
-          items={[
-            { href: "/events", label: "Events" },
-            { href: "/societies", label: "Societies" },
-          ]}
-        />
+        <HeaderNav items={PUBLIC_NAV} />
       }
-      right={<span className="size-10 animate-pulse rounded-full bg-secondary" aria-hidden />}
+      right={
+        <>
+          <span className="size-10 animate-pulse rounded-full bg-secondary" aria-hidden />
+          {/* The menu button works while the signed-in part loads (public links first). */}
+          <MobileMenu items={PUBLIC_NAV} user={null} loading />
+        </>
+      }
     />
   );
 }

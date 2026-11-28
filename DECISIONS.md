@@ -1212,3 +1212,14 @@ The plan was agreed in chat and built in one go. Migration `20261128000700_admin
   revoking EXECUTE from `public, anon` is not enough on Supabase, because its default privileges
   grant new functions to `authenticated` directly. Internal helpers must also be revoked from
   `authenticated`.
+
+## D-085 Mobile menu opens with everything at once (owner request, 2026-11-28)
+"Mobile ma menu flyout ma items load hony ma time lgta hy."
+- Two causes: (1) each row of the menu panel faded in one after another (60 ms + 35 ms per row,
+  300 ms each), so the last rows and Log out finished about 0.6 s after the tap and it looked like
+  loading; (2) while the signed-in part of the header was still coming from the database, the
+  quick version of the header had no menu button at all on phones.
+- Now the rows show together with the panel (checked in headless Chrome at 390 px: every row fully
+  visible 20 to 50 ms after the tap, the panel's own 200 ms slide stays). The quick header has the
+  menu button too: Events and Societies plus grey placeholder rows until the rest arrives.
+  Open / closed is shared between the two versions, so a menu opened early stays open and fills in.

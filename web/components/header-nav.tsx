@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   CalendarDays,
   ChevronRight,
@@ -90,14 +90,30 @@ export interface MobileMenuUser {
   avatarUrl: string | null;
 }
 
-/** Stagger the rows in as the panel slides open. */
-const enter = (i: number) => ({ animationDelay: `${60 + i * 35}ms`, animationFillMode: "both" as const });
-const enterClass = "animate-in fade-in slide-in-from-right-4 duration-300 motion-reduce:animate-none";
+/*
+ * Open / closed is shared by every MobileMenu on the page. The header first renders
+ * a quick version (public links) while the signed-in part loads; when the full
+ * version replaces it, a menu that is already open stays open and just gets the
+ * rest of the links.
+ */
+let menuOpen = false;
+const listeners = new Set<() => void>();
+function setMenuOpen(v: boolean) {
+  menuOpen = v;
+  listeners.forEach((l) => l());
+}
+function subscribe(l: () => void) {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+function useMenuOpen(): [boolean, (v: boolean) => void] {
+  return [useSyncExternalStore(subscribe, () => menuOpen, () => false), setMenuOpen];
+}
 
 /** Mobile menu: a glass panel with the same links (icons, active = green pill), the account and auth actions. */
-export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenuUser | null }) {
+export function MobileMenu({ items, user, loading = false }: { items: NavItem[]; user: MobileMenuUser | null; loading?: boolean }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useMenuOpen();
   const close = () => setOpen(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -131,15 +147,19 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenu
             </button>
           </div>
 
-          {user ? (
+          {loading ? (
+            <div className="mx-4 flex items-center gap-3 rounded-3xl bg-white/80 p-3 shadow-card ring-1 ring-white" aria-hidden>
+              <span className="size-12 animate-pulse rounded-full bg-secondary" />
+              <span className="grid flex-1 gap-2">
+                <span className="h-4 w-2/3 animate-pulse rounded bg-secondary" />
+                <span className="h-3 w-1/2 animate-pulse rounded bg-secondary" />
+              </span>
+            </div>
+          ) : user ? (
             <Link
               href="/me/profile"
               onClick={close}
-              className={cn(
-                "mx-4 flex items-center gap-3 rounded-3xl bg-white/80 p-3 shadow-card ring-1 ring-white backdrop-blur",
-                enterClass,
-              )}
-              style={enter(0)}
+              className="mx-4 flex items-center gap-3 rounded-3xl bg-white/80 p-3 shadow-card ring-1 ring-white backdrop-blur"
             >
               <Avatar className="size-12 ring-2 ring-brand-soft">
                 {user.avatarUrl ? <AvatarImage src={user.avatarUrl} alt="" /> : null}
@@ -156,8 +176,9 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenu
           ) : null}
 
           <p className="px-6 pt-6 pb-2 text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase">Menu</p>
+          {/* Rows show at once with the panel (D-085: the old one-by-one entrance read as slow loading). */}
           <nav className="grid gap-1.5 px-3" aria-label="Mobile">
-            {items.map((i, idx) => {
+            {items.map((i) => {
               const active = isActive(pathname, i.href);
               const Icon = iconFor(i.href);
               return (
@@ -166,10 +187,8 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenu
                   href={i.href}
                   onClick={close}
                   aria-current={active ? "page" : undefined}
-                  style={enter(idx + 1)}
                   className={cn(
                     "group flex min-h-14 items-center gap-3 rounded-2xl px-2.5 text-base font-semibold transition-colors",
-                    enterClass,
                     active
                       ? "bg-brand-strong text-white shadow-[0_10px_24px_-10px_rgb(11_125_71/0.7)]"
                       : "text-navy hover:bg-white/80 active:bg-white",
@@ -191,11 +210,21 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenu
                 </Link>
               );
             })}
+            {loading
+              ? [0, 1].map((k) => (
+                  <div key={k} className="flex min-h-14 items-center gap-3 px-2.5" aria-hidden>
+                    <span className="size-10 shrink-0 animate-pulse rounded-xl bg-white" />
+                    <span className="h-4 w-1/2 animate-pulse rounded bg-white" />
+                  </div>
+                ))
+              : null}
           </nav>
 
           <div className="mt-auto p-4 pt-8">
-            {user ? (
-              <form action="/auth/signout" method="post" className={enterClass} style={enter(items.length + 1)}>
+            {loading ? (
+              <div className="h-13 w-full animate-pulse rounded-2xl bg-white" aria-hidden />
+            ) : user ? (
+              <form action="/auth/signout" method="post">
                 <button
                   type="submit"
                   className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold text-red-600 shadow-sm ring-1 ring-navy/[0.06] transition active:scale-[0.98]"
@@ -205,8 +234,7 @@ export function MobileMenu({ items, user }: { items: NavItem[]; user: MobileMenu
               </form>
             ) : (
               <div
-                className={cn("bg-hero relative overflow-hidden rounded-3xl p-5 text-white shadow-lift", enterClass)}
-                style={enter(items.length + 1)}
+                className="bg-hero relative overflow-hidden rounded-3xl p-5 text-white shadow-lift"
               >
                 <div className="bg-grid-navy pointer-events-none absolute inset-0" aria-hidden />
                 <div className="relative">

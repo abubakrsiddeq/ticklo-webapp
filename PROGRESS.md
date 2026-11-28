@@ -317,6 +317,13 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: mobile menu opens at once (D-085)
+- The phone menu's rows no longer come in one by one (last row used to finish ~0.6 s after the
+  tap); they show with the panel. The menu button also works while the header is still loading
+  (public links and placeholders first, the rest fills in without closing the menu).
+- Checked in headless Chrome (390 px): all rows visible 20 to 50 ms after tapping; tapping a link
+  closes the menu. Typecheck, lint, unit tests and build pass. Needs the next Hostinger deploy.
+
 ## Change 2026-11-28: admins can do everything (D-084)
 - **Societies tab:** search and filter (approved, pending, suspended, rejected, deleted). Society
   page: edit name / link / university / type, **Suspend** (reason, optional "also cancel upcoming
