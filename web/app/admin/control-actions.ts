@@ -355,7 +355,8 @@ export async function sendPasswordReset(userId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: user } = await supabase.from("profiles").select("email, deleted_at").eq("id", userId).maybeSingle();
   if (!user?.email || user.deleted_at) return { ok: false, error: "This account has no email address." };
-  const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: absoluteUrl("/auth/confirm?next=/reset-password/update") });
+  // Service client: nothing is stored in the admin's own browser session.
+  const { error } = await createAdminClient().auth.resetPasswordForEmail(user.email, { redirectTo: absoluteUrl("/auth/confirm?next=/reset-password/update") });
   if (error) return { ok: false, error: "The reset email could not be sent. Try again in a minute." };
   await supabase.rpc("admin_log", { p_action: "user.password_reset_sent", p_target_type: "user", p_target_id: userId, p_details: { to: user.email } });
   return { ok: true, message: `Password reset link sent to ${user.email}.` };

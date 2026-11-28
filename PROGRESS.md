@@ -317,6 +317,34 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: admins can do everything (D-084)
+- **Societies tab:** search and filter (approved, pending, suspended, rejected, deleted). Society
+  page: edit name / link / university / type, **Suspend** (reason, optional "also cancel upcoming
+  events"), **Lift suspension**, **Delete** (type the name; for good when nothing was sold,
+  otherwise hidden with records kept and **Bring back** later), team, events with controls,
+  payment accounts on / off, history. "Open dashboard as owner" opens any society's dashboard
+  with full owner rights.
+- **Events tab:** every event (upcoming, paused, waiting, drafts, past, cancelled, all) with Pause /
+  Resume sales, Unpublish, Cancel, Delete (the last two only when nobody booked).
+- **Orders:** Approve / Reject payment, Send tickets again, Edit buyer, Mark refunded, Cancel one
+  ticket. **Users:** Edit profile (incl. login email), Send password reset, Sign out everywhere,
+  Delete account (type DELETE), their orders listed. **Settings tab:** announcement banner.
+  **Logs → Emails:** Send again for failed ticket / payment / team emails.
+- A suspended or deleted society cannot sell or change anything; tickets already sold keep
+  working. Owners are emailed on suspend, restore and delete.
+- Migration `20261128000700_admin_full_control.sql` (new columns, `site_settings`, guards, 15 admin
+  functions, `org_role_of` / visibility policy changes). **Not applied to the live project yet**
+  (see Needs from Abubakar).
+- DB tests: new `admin-full-control.test.ts` (16 tests), all 161 pass. Unit tests 125 pass.
+  Typecheck, lint and build pass. The new screens were not clicked through in a browser (the
+  local setup has no API in front of the test database, and the live database does not have
+  the migration yet).
+- Test (after the migration and deploy): Admin → Societies → open a test society → Suspend with
+  "Test" → the owner gets an email, its event page is gone for visitors, booking as another user
+  says "This society is suspended" → Lift suspension → booking works. Admin → Events → Pause
+  sales → event page says "Ticket sales are paused" → Resume. Admin → Settings → banner text →
+  Show → every page shows it.
+
 ## Change 2026-11-28: easier printed tickets for festivals (D-079 to D-083)
 - **Right details on the paper (D-079):** a printed session ticket shows the session (QAWWALI
   NIGHT, its date, time, venue and poster) with "AUREX 2.0 PRESENTS" above it; passes show the
@@ -567,6 +595,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Admin full control (D-084): apply migration `20261128000700_admin_full_control.sql`, then deploy
+  the new web build.** It changes who can see and change societies and events (RLS and
+  `org_role_of`), so it was not applied without you. Command (D-034 method, from the repo root):
+  `supabase db query --linked -f supabase/migrations/20261128000700_admin_full_control.sql`, then
+  record version `20261128000700` in `supabase_migrations.schema_migrations`. The old live build
+  keeps working with the new database; the new build needs the migration first.
 - **Deploy the new web build on Hostinger (D-079 to D-083):** the migration is applied; until the
   build is deployed the live site still prints the festival name on session tickets.
 - **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077, D-078):** the migrations are applied; until the

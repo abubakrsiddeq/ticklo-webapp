@@ -1043,15 +1043,14 @@ grant execute on function
   public.holds_ticket_for_org(uuid)
 to anon, authenticated, service_role;
 
+-- org_is_frozen, admin_stop_org_events, org_owner_contact and event_has_bookings
+-- are only used inside the functions above (which run as their owner).
 grant execute on function
-  public.org_is_frozen(uuid),
-  public.admin_stop_org_events(uuid, text, boolean),
   public.admin_suspend_organization(uuid, text, boolean),
   public.admin_restore_organization(uuid),
   public.admin_delete_organization(uuid, text, text),
   public.admin_update_organization(uuid, text, text, uuid, public.org_type),
   public.admin_set_payment_account_active(uuid, boolean),
-  public.event_has_bookings(uuid),
   public.admin_set_event_sales_paused(uuid, boolean, text),
   public.admin_unpublish_event(uuid, text),
   public.admin_delete_event(uuid, text),
@@ -1063,3 +1062,9 @@ grant execute on function
   public.admin_delete_user(uuid, text),
   public.admin_save_site_settings(text, text, boolean)
 to authenticated, service_role;
+grant execute on function
+  public.org_is_frozen(uuid),
+  public.admin_stop_org_events(uuid, text, boolean),
+  public.org_owner_contact(uuid),
+  public.event_has_bookings(uuid)
+to service_role;

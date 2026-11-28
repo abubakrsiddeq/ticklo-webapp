@@ -1139,3 +1139,72 @@ registered – the same thing the existing "already registered" error already di
   template the ticket-and-price chip and the date / time lines shrink to one line (a long
   "Sufi Night Ticket · Rs 1,000" used to wrap out of its chip). "← Templates" in step 3 is
   "← Designs", as the step is called.
+
+## D-084 Admins can do everything (owner request, 2026-11-28)
+"Admin panel ma har chiz ki access honi chahiye ... society ko delete and suspend bi kr skta ho."
+The plan was agreed in chat and built in one go. Migration `20261128000700_admin_full_control.sql`.
+- **Admins act as owner of every society.** `org_role_of()` returns `owner` for the signed-in
+  admin (only for their own session, never when asking about someone else), and `getOrgAccess`
+  does the same in the app. So every organizer screen and function works for an admin: events,
+  ticket types, sessions, payments review, team, payment accounts, printed tickets, reports.
+  A blue banner on the dashboard says "You are working in this society as TickLO admin" and links
+  back. `can_manage_session` also lets admins in. `my_sell_events` was changed so the admin's
+  Sell menu does not list every event on TickLO.
+  - Real impersonation ("log in as this student") was not built: it would mean signing in as
+    someone else, which is risky and hard to audit. The admin user page shows the person's
+    orders, tickets, societies and roles instead.
+- **Suspend a society** (approved or pending): status `suspended`, reason saved, the status it had
+  before is kept for the restore. Effects:
+  - No new bookings, team registrations, waitlist places or printed batches (trigger
+    `guard_event_sales` on insert). Organizers cannot create or change anything (trigger
+    `guard_frozen_org` on organizations, events, ticket types, sessions, payment accounts,
+    invites, ticket designs). They may still cancel an event and review payments already sent.
+  - **Tickets already sold stay valid and scanning keeps working** (agreed in chat).
+  - Its public page and events are hidden from visitors. People who booked or hold a ticket
+    still see the event and society (new policy helpers `holds_ticket_for_event/org`), so My
+    tickets keeps working.
+  - Events waiting for approval go back to draft. A checkbox also cancels the upcoming events
+    (normal cancel flow, ticket holders emailed).
+  - The owner gets an email (new template `society-status`) and sees the reason on the dashboard.
+  - "Lift suspension" restores the old status and emails the owner.
+- **Delete a society.** Type the society's name to confirm, give a reason.
+  - Never sold anything (no orders, tickets, printed batches or team registrations): deleted for
+    good with its events, team and payment accounts; the proof file and logo are removed from
+    storage (best effort).
+  - Sold something: `deleted_at` is set instead, so orders, tickets and payment records stay
+    for disputes (the database refuses to delete events with orders anyway). Upcoming events are
+    cancelled and ticket holders emailed. The society disappears everywhere, and its team loses
+    access (`org_role_of` returns nothing for a deleted society). "Bring back" restores it
+    **at any time** (the plan said 30 days; there was no reason to remove the option later).
+    Its link stays reserved.
+  - The name, link and reason are saved in the audit log, so Decisions still shows the name.
+- **Edit a society:** name, link, university, type (admin-only fields). Logo, about and social
+  links: through the dashboard as owner.
+- **Payment accounts:** turn any account off or on from the society page.
+- **Events:** pause / resume ticket sales (new columns `events.sales_paused_at/_reason`; the
+  event page says "Ticket sales are paused for now. Tickets already bought still work.");
+  unpublish (back to draft with the reason) and delete only when nobody booked; cancel as
+  before. Everything else (date, venue, tickets, capacity) through the dashboard as owner.
+- **Orders and tickets:** approve or reject any payment, send the tickets email again, correct the
+  buyer's name / email / phone, cancel one ticket, mark an order refunded. A refund sets the
+  order to `rejected` with "Refunded: <note>" plus `refunded_at/refund_note/refunded_by`, cancels
+  its unused tickets and frees its places (then the waitlist runs). Refused if a ticket was
+  already used at the gate. Free orders have no refund button (cancel the ticket instead).
+- **Users:** edit name, phone, university and login email (changed in Supabase Auth with
+  `email_confirm`, a trigger copies it to the profile); send a password reset link; sign out of
+  every device (`auth.sessions` deleted, takes effect within the hour the current token lasts);
+  delete the account (type DELETE). No orders, tickets, payments, disputes or societies created:
+  deleted for good. Otherwise personal details are wiped (name "Deleted user", email, phone,
+  identities, password), the login is banned, they leave every team, and their orders and
+  tickets stay as "Deleted user". Society owners must hand over first; admins must lose admin
+  access first; nobody can delete themselves. Deletion requests (AUTH-08) are now handled here
+  instead of the Supabase dashboard.
+- **Site settings:** an announcement banner (navy or amber, up to 300 characters) above every
+  page, table `site_settings` (one row, readable by everyone, written by `admin_save_site_settings`).
+- **Emails:** failed ticket, payment and team emails get "Send again" in Logs → Emails.
+- **Overview:** new tiles for societies, suspended societies, upcoming events and paused sales.
+- Every new action needs a reason where something is taken away, writes the audit log and shows
+  in Decisions (new labels: Suspended, Restored, Deleted, Unpublished, Sales paused / resumed,
+  Refunded, Account deleted). Organizers see their society's suspension in History too.
+- Public lists (events, sessions, societies, society page) skip deleted societies explicitly,
+  because admins can read them.
