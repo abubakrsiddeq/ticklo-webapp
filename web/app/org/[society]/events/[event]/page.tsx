@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ScanLine } from "lucide-react";
+import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/copy-button";
@@ -14,6 +14,7 @@ import { kindEmoji } from "@/lib/sessions";
 import { submitEvent } from "@/app/org/_actions/events";
 import { LiveStats, type EventStats } from "./live-stats";
 import { ScannersCard } from "./scanners";
+import { EventDayCard, type EventDayLink } from "./event-day-card";
 import { CancelEventButton } from "./cancel-event";
 
 export const metadata: Metadata = { title: "Event dashboard" };
@@ -22,11 +23,12 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
   const { society, event: eventSlug } = await params;
   const { org, event, isOwner } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}`);
   const supabase = await createClient();
-  const [{ data: stats }, { data: team }, { data: staff }, { data: sessionStats }] = await Promise.all([
+  const [{ data: stats }, { data: team }, { data: staff }, { data: sessionStats }, { data: hasPrinted }] = await Promise.all([
     supabase.rpc("event_stats", { p_event_id: event.id }),
     supabase.rpc("org_team", { p_org_id: org.id }),
     supabase.from("event_staff").select("user_id, expires_at, session_ids").eq("event_id", event.id),
     supabase.rpc("session_stats", { p_event_id: event.id }),
+    supabase.rpc("event_has_printed", { p_event_id: event.id }),
   ]);
   const sessions = sessionStats ?? [];
   const names = new Map((team ?? []).map((t) => [t.user_id, t.full_name ?? t.email ?? "Team member"]));
@@ -34,6 +36,14 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
   const publicUrl = absoluteUrl(eventPath(org.slug, event.slug));
   const live = event.status === "published";
   const scanWindowOpen = live && serverNow() <= new Date(event.ends_at).getTime() + 6 * 3600 * 1000;
+  // D-086: gate and desk links with QR codes for the Event day card
+  const dayLink = async (path: string): Promise<EventDayLink> => {
+    const url = absoluteUrl(path);
+    const qr = await QRCode.toDataURL(url, { margin: 1, width: 240, errorCorrectionLevel: "M", color: { dark: "#0B1F3A", light: "#FFFFFF" } });
+    return { url, qr };
+  };
+  const showEventDay = scanWindowOpen; // published, until gate access ends 6 h after the event
+  const [gateLink, deskLink] = showEventDay ? await Promise.all([dayLink(`/scan/${event.id}`), hasPrinted ? dayLink(`/sell/${event.id}`) : null]) : [null, null];
 
   return (
     <div className="grid gap-6">
@@ -100,6 +110,8 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
         </Card>
       ) : null}
 
+      {gateLink ? <EventDayCard eventName={event.name} base={base} gate={gateLink} desk={deskLink} canOpen={scanWindowOpen} /> : null}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -120,8 +132,8 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
 
         <Card>
           <CardHeader>
-            <CardTitle>Gate scanners</CardTitle>
-            <CardDescription>Volunteers scan tickets with their phone browser at /scan.</CardDescription>
+            <CardTitle>Gate volunteers</CardTitle>
+            <CardDescription>People who let guests in at the gate. They open the gate link above with their phone.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             {event.status !== "cancelled" ? (
@@ -133,13 +145,6 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
                 assigned={(staff ?? []).map((s) => ({ user_id: s.user_id, name: names.get(s.user_id) ?? "Team member", expires_at: s.expires_at, session_ids: s.session_ids }))}
                 sessions={sessions.map((x) => ({ id: x.session_id, name: x.name }))}
               />
-            ) : null}
-            {scanWindowOpen ? (
-              <Button asChild variant="brand">
-                <Link href={`/scan/${event.id}`}>
-                  <ScanLine /> Open scanner
-                </Link>
-              </Button>
             ) : null}
           </CardContent>
         </Card>
