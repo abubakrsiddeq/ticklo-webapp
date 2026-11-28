@@ -4,14 +4,16 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getOrgAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { fail, ok, type ActionResult } from "@/lib/errors";
+import { fail, friendlyError, ok, type ActionResult } from "@/lib/errors";
 import { fromPKTInputValue, rupeesToPaisa } from "@/lib/format";
 import type { Json } from "@/lib/database.types";
 import { parseTeamSize } from "@/lib/sessions";
 import { stylesForKind } from "@/lib/print/category";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { runWaitlist } from "@/lib/waitlist";
-import { hasControlChars } from "@/lib/validation/common";
+import { fieldErrors, hasControlChars } from "@/lib/validation/common";
+import { ticketTypeSchema } from "@/lib/validation/event";
+import { defaultSessionTicketName } from "@/lib/ticket-groups";
 
 // Festival sessions (D-044). Every write is a Postgres function that checks the
 // organizer again; these actions only parse forms.
@@ -60,6 +62,25 @@ export interface SessionFormValues {
   /** D-072: early-bird entry fee (rupees) until a date */
   early_fee?: string;
   early_until?: string;
+  /** D-087: the session's own ticket, set up right in the session form (not competitions) */
+  own_ticket?: OwnTicketValues;
+}
+
+export interface OwnTicketValues {
+  /** false with an id = remove that ticket (only possible before anyone booked it) */
+  enabled: boolean;
+  id: string | null;
+  name: string;
+  price: string; // rupees
+  quantity: string; // empty = same as the session's seats
+  early_price: string;
+  early_until: string;
+}
+
+/** D-087: the result also says when the session was saved but its ticket was not. */
+export interface SessionSaved {
+  id: string;
+  ticketProblem?: string;
 }
 
 export async function saveSession(
@@ -68,7 +89,7 @@ export async function saveSession(
   sessionId: string | null,
   v: SessionFormValues,
   files: FormData | null = null,
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<SessionSaved>> {
   const access = await staffContext(orgSlug);
   if (!access || !uuid.safeParse(eventId).success) return { ok: false, error: "Not allowed." };
   if (sessionId && !uuid.safeParse(sessionId).success) return { ok: false, error: "Session not found." };
@@ -104,6 +125,37 @@ export async function saveSession(
   if (competition && earlyFeeRaw && (!Number.isFinite(earlyFee) || (earlyFee ?? 0) >= fee)) errs.early_fee = "Lower than the fee";
   if (competition && Boolean(earlyFeeRaw) !== Boolean(earlyUntil)) errs.early_until = "Give both the early-bird fee and its last date";
   if (v.registration_ends_at && !regEnds) errs.registration_ends_at = "Check the date";
+  // D-087: check the session's own ticket before anything is saved
+  const own = !competition && v.own_ticket ? v.own_ticket : null;
+  let ticket: { name: string; price_paisa: number; quantity: number; early_price_paisa: number | null; early_until: string | null } | null = null;
+  if (own?.id && !uuid.safeParse(own.id).success) errs.ticket_name = "Ticket not found. Refresh the page.";
+  else if (own?.enabled) {
+    const quantity = String(own.quantity ?? "").trim() || capacity;
+    const parsed = ticketTypeSchema.safeParse({
+      name: String(own.name ?? "").trim() || defaultSessionTicketName(name),
+      description: "",
+      price: String(own.price ?? ""),
+      quantity,
+      sale_starts_at: "",
+      sale_ends_at: "",
+      requires_student_card: false,
+      early_price: String(own.early_price ?? ""),
+      early_until: String(own.early_until ?? ""),
+    });
+    if (!quantity) errs.ticket_quantity = "How many tickets? (or set Seats above)";
+    else if (!parsed.success) {
+      for (const [k, msg] of Object.entries(fieldErrors(parsed.error))) errs[`ticket_${k}`] = msg;
+    } else {
+      const d = parsed.data;
+      ticket = {
+        name: d.name,
+        price_paisa: rupeesToPaisa(d.price),
+        quantity: Number(d.quantity),
+        early_price_paisa: d.early_price ? rupeesToPaisa(d.early_price) : null,
+        early_until: d.early_price ? fromPKTInputValue(d.early_until) : null,
+      };
+    }
+  }
   // D-066: every session has a poster – required for a new one, and for an older one without it
   const poster = await readUpload(files?.get("poster") ?? null, { label: "Poster" });
   if (poster.error) errs.poster = poster.error;
@@ -191,9 +243,56 @@ export async function saveSession(
     });
     if (holderError) return fail(holderError);
   }
+  // D-087: the session's own ticket (after the session exists, so a new one can open it)
+  const ticketProblem = own ? await syncOwnTicket(supabase, eventId, String(id), own, ticket) : null;
   refresh(orgSlug);
   await runWaitlist(); // D-071: more places may have been added
-  return ok({ id: String(id) }, sessionId ? "Session saved." : "Session added.");
+  return ok(
+    { id: String(id), ticketProblem: ticketProblem ?? undefined },
+    ticketProblem ? "Session saved." : own?.enabled && !own.id ? "Session and its ticket saved." : sessionId ? "Session saved." : "Session added.",
+  );
+}
+
+/** D-087: create, update or remove the one ticket that opens only this session. Returns a problem or null. */
+async function syncOwnTicket(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  sessionId: string,
+  own: OwnTicketValues,
+  ticket: { name: string; price_paisa: number; quantity: number; early_price_paisa: number | null; early_until: string | null } | null,
+): Promise<string | null> {
+  const prefix = "Session saved, but its ticket was not: ";
+  if (own.id) {
+    const { data: cur } = await supabase
+      .from("ticket_types")
+      .select("id, all_sessions, registration_session_id")
+      .eq("id", own.id)
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (!cur || cur.all_sessions || cur.registration_session_id) return `${prefix}that ticket is not a ticket for this session. Change it on the tickets tab.`;
+    if (!own.enabled) {
+      const { error } = await supabase.from("ticket_types").delete().eq("id", own.id).eq("event_id", eventId);
+      return error ? prefix + friendlyError(error) : null;
+    }
+    if (!ticket) return null;
+    const { error } = await supabase.from("ticket_types").update(ticket).eq("id", own.id).eq("event_id", eventId);
+    return error ? prefix + friendlyError(error) : null;
+  }
+  if (!own.enabled || !ticket) return null;
+  const { count } = await supabase.from("ticket_types").select("id", { count: "exact", head: true }).eq("event_id", eventId);
+  const { data: created, error } = await supabase
+    .from("ticket_types")
+    .insert({ ...ticket, event_id: eventId, sort_order: (count ?? 0) + 1, requires_student_card: false })
+    .select("id")
+    .single();
+  if (error || !created) return prefix + friendlyError(error);
+  const { error: accessError } = await supabase.rpc("set_ticket_type_access", { p_ticket_type_id: created.id, p_all: false, p_session_ids: [sessionId] });
+  if (accessError) {
+    // never leave it behind as a pass
+    await supabase.from("ticket_types").delete().eq("id", created.id);
+    return prefix + friendlyError(accessError);
+  }
+  return null;
 }
 
 export async function deleteSession(orgSlug: string, sessionId: string): Promise<ActionResult> {

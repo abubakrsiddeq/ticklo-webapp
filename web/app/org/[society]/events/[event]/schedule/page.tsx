@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarRange, ChevronRight, Clock, MapPin, Users } from "lucide-react";
+import { CalendarRange, ChevronRight, Clock, DoorOpen, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatTime, toPKTInputValue } from "@/lib/format";
+import { formatPKR, formatTime, toPKTInputValue } from "@/lib/format";
 import { asQuestions, groupByDay, kindEmoji, kindLabel, teamSizeLabel, competitionFeeText } from "@/lib/sessions";
 import { DeleteSessionButton, SessionDialog, SessionManagers, type SessionValue } from "@/components/sessions/session-forms";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SetupChecklist } from "@/components/sessions/setup-checklist";
 import { getSetupSteps } from "@/lib/queries/setup";
 import { asEventFormat } from "@/lib/sessions";
+import { getEditorTicketTypes } from "@/lib/queries/ticket-types";
+import { sessionTickets, ticketsTabLabel, type EditorTicketType } from "@/lib/ticket-groups";
+
+const asSessionTicket = (t: EditorTicketType) => ({
+  id: t.id,
+  name: t.name,
+  price_paisa: t.price_paisa,
+  quantity: t.quantity,
+  early_price_paisa: t.early_price_paisa,
+  early_until: t.early_until,
+  booked: t.booked,
+  taken: t.taken,
+});
 
 export const metadata: Metadata = { title: "Schedule" };
 
@@ -27,7 +40,7 @@ export default async function SchedulePage({
   const sp = await searchParams;
   const { org, event } = await requireOrgEvent(society, eventSlug, `/org/${society}/events/${eventSlug}/schedule`);
   const supabase = await createClient();
-  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }, { data: evTypes }, { data: evAccess }, { data: styles }] = await Promise.all([
+  const [{ data: sessions }, { data: stats }, { data: managers }, { data: team }, { data: otherComps }, { data: regs }, { data: styles }] = await Promise.all([
     supabase.rpc("event_schedule", { p_event_id: event.id }),
     supabase.rpc("session_stats", { p_event_id: event.id }),
     supabase.from("session_managers").select("session_id, user_id, event_sessions!inner ( event_id )").eq("event_sessions.event_id", event.id),
@@ -41,9 +54,6 @@ export default async function SchedulePage({
       .order("created_at", { ascending: false })
       .limit(30),
     supabase.from("team_registrations").select("session_id").eq("event_id", event.id).in("status", ["pending", "approved"]),
-    // D-070: how people get into each session (own ticket or a pass)
-    supabase.from("ticket_types").select("id, name, all_sessions, registration_session_id").eq("event_id", event.id),
-    supabase.from("ticket_type_sessions").select("ticket_type_id, session_id, ticket_types!inner ( event_id )").eq("ticket_types.event_id", event.id),
     // D-081: what kind of night / event each session is
     supabase.from("event_sessions").select("id, style").eq("event_id", event.id),
   ]);
@@ -51,12 +61,12 @@ export default async function SchedulePage({
   // D-071: people waiting for full competitions (a sign to add places)
   const { data: waitCounts } = await supabase.rpc("event_waitlist_counts", { p_event_id: event.id });
   const waitingFor = new Map((waitCounts ?? []).filter((w) => w.session_id).map((w) => [w.session_id as string, w.waiting + w.offered]));
-  const passTypes = (evTypes ?? []).filter((t) => t.all_sessions && !t.registration_session_id);
-  const ownTicketSessions = new Set(
-    (evAccess ?? []).filter((a) => (evTypes ?? []).some((t) => t.id === a.ticket_type_id && !t.all_sessions && !t.registration_session_id)).map((a) => a.session_id),
-  );
-  const noWayIn = (s: { id: string; kind: string; pass_access: boolean }) =>
-    s.kind !== "competition" && !ownTicketSessions.has(s.id) && !(s.pass_access && passTypes.length > 0);
+  // D-070 / D-087: how people get into each session (own ticket or a pass)
+  const types = await getEditorTicketTypes(supabase, event.id, new Map((sessions ?? []).map((x) => [x.id, x.name])));
+  const passTypes = types.filter((t) => t.all_sessions && !t.registration_for);
+  const passNames = passTypes.map((t) => t.name);
+  const ticketsHref = `/org/${org.slug}/events/${event.slug}/edit`;
+  const tabName = ticketsTabLabel(event.format);
   const registeredSessions = new Set((regs ?? []).map((r) => r.session_id));
   const formSourcesFor = (exceptId: string | null) =>
     (otherComps ?? [])
@@ -80,7 +90,7 @@ export default async function SchedulePage({
           <AlertDescription>
             {isCompetition
               ? "Draft created. Set up your competition below: team size, entry fee and how many teams can take part."
-              : "Draft created. Now add the sessions – each workshop, competition, night or talk – then create passes and session tickets on Edit & tickets."}
+              : "Draft created. Now add the sessions – each workshop, competition, night or talk. Set each one's ticket price right in its form."}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -92,8 +102,8 @@ export default async function SchedulePage({
               <>Teams register from the event page, pay the entry fee (or wait for shortlisting) and get one pass per team or per member. You can add more than one competition (e.g. categories).</>
             ) : (
               <>
-                Add each workshop, competition, qawwali night or talk as a session. Then on <strong>Edit &amp; tickets</strong> choose what each ticket opens: a
-                pass, or only some sessions. Competitions get team registration.
+                Add each workshop, competition, qawwali night or talk as a session. In its form, choose how people get in: a festival pass, its own ticket (with
+                the price), or both. Passes and extra prices live on <strong>{tabName}</strong>. Competitions get team registration.
               </>
             )}
           </p>
@@ -108,6 +118,8 @@ export default async function SchedulePage({
             defaultOpen={sp.add === "competition" && !list.length}
             addLabel={isCompetition ? "Add competition" : "Add session"}
             formSources={formSourcesFor(null)}
+            passNames={passNames}
+            ticketsHref={ticketsHref}
           />
         ) : null}
       </div>
@@ -131,6 +143,9 @@ export default async function SchedulePage({
               {day.sessions.map((s) => {
                 const st = statOf.get(s.id);
                 const competition = s.kind === "competition";
+                const tix = sessionTickets(s.id, types);
+                const inPasses = s.pass_access && passTypes.length > 0;
+                const noWayIn = !competition && !tix.all.length && !inPasses;
                 const value: SessionValue = {
                   id: s.id,
                   name: s.name,
@@ -157,6 +172,19 @@ export default async function SchedulePage({
                   fee_paisa: s.fee_paisa,
                   needs_approval: s.needs_approval,
                   registration_ends_at: competition ? s.registration_ends_at : null,
+                  own_ticket: tix.own ? asSessionTicket(tix.own) : null,
+                  other_tickets: tix.own ? [] : tix.all.map(asSessionTicket),
+                };
+                const dialogProps = {
+                  orgSlug: org.slug,
+                  eventId: event.id,
+                  session: value,
+                  defaultStart,
+                  eventVenue: event.venue,
+                  formSources: formSourcesFor(s.id),
+                  formLocked: competition ? registeredSessions.has(s.id) : (statOf.get(s.id)?.taken ?? 0) > 0,
+                  passNames,
+                  ticketsHref,
                 };
                 const mine = (managers ?? []).filter((m) => m.session_id === s.id).map((m) => ({ user_id: m.user_id, name: names.get(m.user_id) ?? "Team member" }));
                 return (
@@ -174,14 +202,13 @@ export default async function SchedulePage({
                         <p className="font-semibold text-navy">{s.name}</p>
                         {/* D-066 */}
                         {s.poster_url ? null : <Pill tone="warning">Poster missing</Pill>}
-                        {noWayIn(s) ? <Pill tone="danger">No way in yet – add a ticket or include it in a pass</Pill> : null}
+                        {noWayIn ? <Pill tone="danger">No way in yet</Pill> : null}
                         {s.listed ? <Pill tone="info">On Events page</Pill> : null}
                         {waitingFor.get(s.id) ? <Pill tone="warning">🔔 {waitingFor.get(s.id)} on the waitlist</Pill> : null}
                         <a href={`/e/${org.slug}/${event.slug}/s/${s.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-brand-strong hover:underline">
                           Open page ↗
                         </a>
                         <Pill tone="neutral">{kindLabel(s.kind)}</Pill>
-                        {s.pass_access ? <Pill tone="success">In passes</Pill> : null}
                         {competition && s.needs_approval ? <Pill tone="info">Shortlisting</Pill> : null}
                         {Array.isArray(s.results) && s.results.length ? <Pill tone="warning">Results published</Pill> : null}
                       </div>
@@ -198,6 +225,47 @@ export default async function SchedulePage({
                           </span>
                         ) : null}
                       </p>
+                      {/* D-087: how people get in, with the ticket right here */}
+                      {competition ? null : (
+                        <div
+                          className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl px-3 py-2 text-sm ${noWayIn ? "bg-danger-soft ring-1 ring-destructive/30" : "bg-brand-soft/50"}`}
+                        >
+                          <span className="flex items-center gap-1 font-medium text-navy">
+                            <DoorOpen className="size-4 text-brand-strong" aria-hidden /> Way in:
+                          </span>
+                          {tix.all.map((t) => (
+                            <span key={t.id} className="text-navy">
+                              🎫 <strong>{t.name}</strong> · {formatPKR(t.price_paisa, { freeLabel: "Free" })} · {t.taken} sold
+                            </span>
+                          ))}
+                          {s.pass_access ? (
+                            passTypes.length ? (
+                              <span className="text-navy">🎟 {passNames.join(", ")}</span>
+                            ) : (
+                              <span className="text-navy">
+                                🎟 Included in passes, but no pass yet ·{" "}
+                                <Link href={`${ticketsHref}?new=pass#tickets`} className="font-medium text-brand-strong underline">
+                                  Create a pass
+                                </Link>
+                              </span>
+                            )
+                          ) : null}
+                          {noWayIn ? <span className="font-medium text-destructive">Nobody can get in yet</span> : null}
+                          {editable ? (
+                            <span className="ml-auto flex gap-2">
+                              {tix.own ? (
+                                <SessionDialog {...dialogProps} trigger="edit-ticket" defaultOpen={sp.ticket === s.id} />
+                              ) : tix.all.length ? (
+                                <Link href={`${ticketsHref}#tickets`} className="text-xs font-medium text-brand-strong underline">
+                                  Change tickets
+                                </Link>
+                              ) : (
+                                <SessionDialog {...dialogProps} trigger="add-ticket" startWithTicket defaultOpen={sp.ticket === s.id} />
+                              )}
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 text-sm">
                         {competition ? (
                           <>
@@ -232,15 +300,7 @@ export default async function SchedulePage({
                       </Button>
                       {editable ? (
                         <div className="flex">
-                          <SessionDialog
-                            orgSlug={org.slug}
-                            eventId={event.id}
-                            session={value}
-                            defaultStart={defaultStart}
-                            eventVenue={event.venue}
-                            formSources={formSourcesFor(s.id)}
-                            formLocked={competition ? registeredSessions.has(s.id) : (statOf.get(s.id)?.taken ?? 0) > 0}
-                          />
+                          <SessionDialog {...dialogProps} />
                           <DeleteSessionButton orgSlug={org.slug} sessionId={s.id} name={s.name} />
                         </div>
                       ) : null}

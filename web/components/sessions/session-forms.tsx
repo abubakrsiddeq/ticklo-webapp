@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Loader2, Lock, Pencil, Plus, Ticket, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,14 +12,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormField } from "@/components/form-field";
 import { NativeSelect } from "@/components/native-select";
-import { paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
+import { formatPKR, paisaToRupeesInput, toPKTInputValue } from "@/lib/format";
+import { defaultSessionTicketName } from "@/lib/ticket-groups";
 import { SESSION_KINDS, TEAM_SIZE_LIMIT, participationOf, type Participation, type Question } from "@/lib/sessions";
 import { guessStyle, stylesForKind } from "@/lib/print/category";
 import { cn } from "@/lib/utils";
 import { FormBuilder, type FormSource } from "@/components/sessions/form-builder";
 import { DEFAULT_FORM, DEFAULT_TICKET_FIELDS, asForm, checkForm, ticketFieldsOf, type RegistrationForm } from "@/lib/registration-form";
 import type { ActionResult } from "@/lib/errors";
-import { addSessionManager, deleteSession, removeSessionManager, saveSession, type SessionFormValues } from "@/app/org/_actions/sessions";
+import { addSessionManager, deleteSession, removeSessionManager, saveSession, type OwnTicketValues, type SessionFormValues } from "@/app/org/_actions/sessions";
 import { useActionTransition } from "@/lib/use-action-transition";
 
 function useAction() {
@@ -63,6 +65,21 @@ export interface SessionValue {
   fee_paisa: number | null;
   needs_approval: boolean;
   registration_ends_at: string | null;
+  /** D-087: the one ticket that opens only this session (edited right here) */
+  own_ticket?: SessionTicket | null;
+  /** D-087: other tickets that open this session (several prices, or tickets for several sessions) */
+  other_tickets?: SessionTicket[];
+}
+
+export interface SessionTicket {
+  id: string;
+  name: string;
+  price_paisa: number;
+  quantity: number;
+  early_price_paisa?: number | null;
+  early_until?: string | null;
+  booked: boolean;
+  taken: number;
 }
 
 /** FES-01/FES-08/FES-09/FES-10: add or edit a session (workshop, competition, night…). */
@@ -77,6 +94,10 @@ export function SessionDialog({
   addLabel = "Add session",
   formSources = [],
   formLocked = false,
+  passNames = [],
+  ticketsHref,
+  trigger = "icon",
+  startWithTicket = false,
 }: {
   orgSlug: string;
   eventId: string;
@@ -90,8 +111,31 @@ export function SessionDialog({
   formSources?: FormSource[];
   /** D-068: people registered for this competition */
   formLocked?: boolean;
+  /** D-087: the event's festival passes (names), to say who gets in with "Included in passes" */
+  passNames?: string[];
+  /** D-087: the tickets tab, for more prices and new passes */
+  ticketsHref?: string;
+  /** D-087: "icon" = pencil, "add-ticket" / "edit-ticket" = a button that opens the form at "How do people get in?" */
+  trigger?: "icon" | "add-ticket" | "edit-ticket";
+  /** D-087: open with "Sell its own ticket" ticked */
+  startWithTicket?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(defaultOpen);
+  const wayInRef = useRef<HTMLFieldSetElement>(null);
+  const focusTicket = trigger !== "icon" || startWithTicket;
+  // D-087: opened from a link (?ticket=<session>) after the props change, e.g. right after adding a session
+  const [seenDefaultOpen, setSeenDefaultOpen] = useState(defaultOpen);
+  if (defaultOpen !== seenDefaultOpen) {
+    setSeenDefaultOpen(defaultOpen);
+    if (defaultOpen) setOpen(true);
+  }
+  useEffect(() => {
+    if (!open || !focusTicket) return;
+    const t = window.setTimeout(() => wayInRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }), 150);
+    return () => window.clearTimeout(t);
+  }, [open, focusTicket]);
   const savedForm = session?.form ? asForm(session.form) : null;
   const [regForm, setRegForm] = useState<RegistrationForm>(() => savedForm ?? { member: DEFAULT_FORM.member.map((f) => ({ ...f })), team: [] });
   const [kind, setKind] = useState(session?.kind ?? defaultKind);
@@ -100,12 +144,24 @@ export function SessionDialog({
   const [style, setStyle] = useState<string | null>(null);
   const styleChoices = stylesForKind(kind);
   const styleNow = style ?? session?.style ?? guessStyle(kind, nameDraft) ?? "";
+  const [passAccess, setPassAccess] = useState(session?.pass_access ?? (defaultKind === "concert" || defaultKind === "talk" || defaultKind === "other"));
+  // D-087: "Sell its own ticket" – on for a session that has one, and for new workshops (limited seats)
+  const ownTicket = session?.own_ticket ?? null;
+  const otherTickets = session?.other_tickets ?? [];
+  const initialOwn = Boolean(ownTicket) || startWithTicket || (!session && defaultKind === "workshop");
+  const [ownOn, setOwnOn] = useState(initialOwn);
+  const [followUp, setFollowUp] = useState<{ id: string; name: string; v: SessionFormValues } | null>(null);
   const openDialog = () => {
     setNameDraft(session?.name ?? "");
     setStyle(null);
+    setOwnOn(initialOwn || trigger === "add-ticket");
     setOpen(true);
   };
-  const [passAccess, setPassAccess] = useState(session?.pass_access ?? false);
+  const closeDialog = (next: boolean) => {
+    setOpen(next);
+    // D-087: drop ?ticket=… so a refresh does not open the form again
+    if (!next && defaultOpen) router.replace(pathname, { scroll: false });
+  };
   const [needsApproval, setNeedsApproval] = useState(session?.needs_approval ?? false);
   // D-070: on the Events page – on by default for competitions, workshops and concerts
   const [listed, setListed] = useState<boolean | null>(session ? (session.listed ?? false) : null);
@@ -128,7 +184,15 @@ export function SessionDialog({
 
   return (
     <>
-      {session ? (
+      {session && trigger === "add-ticket" ? (
+        <Button size="sm" variant="brand" onClick={openDialog}>
+          <Plus /> Add a ticket
+        </Button>
+      ) : session && trigger === "edit-ticket" ? (
+        <Button size="sm" variant="outline" onClick={openDialog}>
+          <Pencil /> Edit ticket
+        </Button>
+      ) : session ? (
         <Button size="icon-sm" variant="ghost" aria-label={`Edit ${session.name}`} onClick={openDialog}>
           <Pencil />
         </Button>
@@ -137,7 +201,7 @@ export function SessionDialog({
           <Plus /> {addLabel}
         </Button>
       )}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={closeDialog}>
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
           <form
             className="grid gap-4"
@@ -167,6 +231,7 @@ export function SessionDialog({
                 registration_ends_at: String(fd.get("registration_ends_at") ?? ""),
                 early_fee: String(fd.get("early_fee") ?? ""),
                 early_until: String(fd.get("early_until") ?? ""),
+                own_ticket: competition || (!ownOn && !ownTicket) || (!ownTicket && otherTickets.length) ? undefined : ownTicketValues(fd, ownOn, ownTicket?.id ?? null),
               };
               // D-068: the registration form must make sense before it is sent
               const formProblem = competition ? checkForm(regForm) : checkForm(ticketForm, "ticket");
@@ -191,8 +256,16 @@ export function SessionDialog({
               run(async () => {
                 const res = await saveSession(orgSlug, eventId, session?.id ?? null, v, files);
                 setErrors(res.ok ? {} : (res.fieldErrors ?? {}));
+                if (res.ok) {
+                  if (res.data?.ticketProblem) toast.error(res.data.ticketProblem);
+                  // D-087: a new session nobody can get into yet – ask how people get in
+                  const madeTicket = Boolean(v.own_ticket?.enabled) && !res.data?.ticketProblem;
+                  if (!session && !competition && res.data?.id && !madeTicket && !(passAccess && passNames.length)) {
+                    setFollowUp({ id: res.data.id, name: v.name.trim(), v });
+                  }
+                }
                 return res;
-              }, () => setOpen(false));
+              }, () => closeDialog(false));
             }}
           >
             <DialogHeader>
@@ -218,7 +291,10 @@ export function SessionDialog({
                   value={kind}
                   onChange={(e) => {
                     setKind(e.target.value);
-                    if (!session) setPassAccess(e.target.value === "concert" || e.target.value === "talk" || e.target.value === "other");
+                    if (!session) {
+                      setPassAccess(e.target.value === "concert" || e.target.value === "talk" || e.target.value === "other");
+                      if (!startWithTicket) setOwnOn(e.target.value === "workshop");
+                    }
                   }}
                 >
                   {SESSION_KINDS.map((k) => (
@@ -268,6 +344,23 @@ export function SessionDialog({
                 <Input id={`${p}-cap`} name="capacity" inputMode="numeric" defaultValue={session?.capacity ?? ""} placeholder={competition ? (solo ? "100" : "30") : "40"} />
               </FormField>
             </div>
+            {competition ? null : (
+              <WayIn
+                ref={wayInRef}
+                p={p}
+                errors={errors}
+                passAccess={passAccess}
+                setPassAccess={setPassAccess}
+                passNames={passNames}
+                ownOn={ownOn}
+                setOwnOn={setOwnOn}
+                ownTicket={ownTicket}
+                otherTickets={otherTickets}
+                namePlaceholder={defaultSessionTicketName(nameDraft) || "e.g. DJ Night ticket"}
+                ticketsHref={ticketsHref}
+                sessionId={session?.id ?? null}
+              />
+            )}
             <FormField
               id={`${p}-poster`}
               label={session?.poster_url ? "Poster / banner (upload to replace)" : "Poster / banner"}
@@ -402,18 +495,7 @@ export function SessionDialog({
                 </label>
               </fieldset>
             ) : (
-              <>
               <FormBuilder value={ticketForm} onChange={setTicketForm} solo sources={[]} locked={formLocked} saved={savedTicketForm} mode="ticket" />
-              <label className="flex items-start gap-3 rounded-xl border border-navy/10 p-3 text-sm">
-                <Checkbox checked={passAccess} onCheckedChange={(v) => setPassAccess(v === true)} className="mt-0.5" />
-                <span>
-                  <span className="font-medium text-navy">Included in all-access passes</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Pass holders get in. Turn off for limited-seat workshops that need their own ticket.
-                  </span>
-                </span>
-              </label>
-              </>
             )}
 
             <DialogFooter>
@@ -424,7 +506,255 @@ export function SessionDialog({
           </form>
         </DialogContent>
       </Dialog>
+      {followUp ? (
+        <WayInFollowUp
+          followUp={followUp}
+          passNames={passNames}
+          passAccess={passAccess}
+          ticketsHref={ticketsHref}
+          onClose={() => setFollowUp(null)}
+          onSellTicket={() => {
+            setFollowUp(null);
+            router.push(`${pathname}?ticket=${followUp.id}`, { scroll: false });
+          }}
+          onIncludeInPasses={() =>
+            run(
+              () => saveSession(orgSlug, eventId, followUp.id, { ...followUp.v, pass_access: true, own_ticket: undefined }, null),
+              () => setFollowUp(null),
+            )
+          }
+          pending={pending}
+        />
+      ) : null}
     </>
+  );
+}
+
+/** D-087: the session's own ticket from the form fields. */
+function ownTicketValues(fd: FormData, enabled: boolean, id: string | null): OwnTicketValues {
+  return {
+    enabled,
+    id,
+    name: String(fd.get("ticket_name") ?? ""),
+    price: String(fd.get("ticket_price") ?? ""),
+    quantity: String(fd.get("ticket_quantity") ?? ""),
+    early_price: String(fd.get("ticket_early_price") ?? ""),
+    early_until: String(fd.get("ticket_early_until") ?? ""),
+  };
+}
+
+/** D-087: "How do people get in?" – festival passes and/or the session's own ticket, in the session form. */
+function WayIn({
+  ref,
+  p,
+  errors,
+  passAccess,
+  setPassAccess,
+  passNames,
+  ownOn,
+  setOwnOn,
+  ownTicket,
+  otherTickets,
+  namePlaceholder,
+  ticketsHref,
+  sessionId,
+}: {
+  ref: React.Ref<HTMLFieldSetElement>;
+  p: string;
+  errors: Record<string, string>;
+  passAccess: boolean;
+  setPassAccess: (v: boolean) => void;
+  passNames: string[];
+  ownOn: boolean;
+  setOwnOn: (v: boolean) => void;
+  ownTicket: SessionTicket | null;
+  otherTickets: SessionTicket[];
+  namePlaceholder: string;
+  ticketsHref?: string;
+  sessionId: string | null;
+}) {
+  const locked = ownTicket?.booked ?? false;
+  const several = !ownTicket && otherTickets.length > 0;
+  const nobody = !passAccess && !ownOn && !several;
+  return (
+    <fieldset ref={ref} className="grid scroll-mt-4 gap-3 rounded-xl border-2 border-brand/30 bg-brand-soft/30 p-3">
+      <legend className="px-1 text-sm font-semibold text-navy">🎫 How do people get in?</legend>
+      <p className="-mt-1 text-xs text-muted-foreground">Tick one or both. Set the price here, no need to go to another tab.</p>
+
+      <label className="flex items-start gap-3 rounded-xl border border-navy/10 bg-white p-3 text-sm">
+        <Checkbox checked={passAccess} onCheckedChange={(v) => setPassAccess(v === true)} className="mt-0.5" />
+        <span>
+          <span className="font-medium text-navy">Festival pass holders get in</span>
+          <span className="block text-xs text-muted-foreground">
+            {passNames.length
+              ? `${passNames.join(", ")} ${passNames.length === 1 ? "opens" : "open"} this session.`
+              : "No festival pass yet. Create one on the tickets tab and it will open this session."}
+          </span>
+        </span>
+      </label>
+
+      {several ? (
+        <div className="grid gap-2 rounded-xl border border-navy/10 bg-white p-3 text-sm">
+          <p className="font-medium text-navy">Tickets for this session</p>
+          <ul className="grid gap-1">
+            {otherTickets.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center gap-x-2 text-sm">
+                <Ticket className="size-3.5 text-brand-strong" aria-hidden />
+                <span className="font-medium text-navy">{t.name}</span>
+                <span className="text-muted-foreground">
+                  · {formatPKR(t.price_paisa, { freeLabel: "Free" })} · {t.taken} sold
+                </span>
+              </li>
+            ))}
+          </ul>
+          {ticketsHref ? (
+            <Link href={`${ticketsHref}#tickets`} className="text-xs font-medium text-brand-strong underline">
+              Change these on the tickets tab
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid gap-3 rounded-xl border border-navy/10 bg-white p-3 text-sm">
+          <label className="flex items-start gap-3">
+            <Checkbox checked={ownOn} disabled={locked && ownOn} onCheckedChange={(v) => setOwnOn(v === true)} className="mt-0.5" />
+            <span>
+              <span className="font-medium text-navy">Sell a ticket for this session</span>
+              <span className="block text-xs text-muted-foreground">
+                {locked
+                  ? `${ownTicket?.taken ?? 0} sold, so this ticket stays. You can still raise the quantity.`
+                  : ownTicket && !ownOn
+                    ? `"${ownTicket.name}" will be removed when you save.`
+                    : "Opens only this session, e.g. a DJ night or a workshop. Sale ends when the session starts."}
+              </span>
+            </span>
+          </label>
+          {ownOn ? (
+            <>
+              {locked ? (
+                <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Tickets are already booked: the price is locked. Quantity can&apos;t go below{" "}
+                  {ownTicket?.taken}.
+                </p>
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-[1fr_130px_130px]">
+                <FormField id={`${p}-tname`} label="Ticket name" hint="Empty = the session name + ticket" error={errors.ticket_name}>
+                  <Input id={`${p}-tname`} name="ticket_name" defaultValue={ownTicket?.name ?? ""} maxLength={80} placeholder={namePlaceholder} />
+                </FormField>
+                <FormField id={`${p}-tprice`} label="Price (Rs)" hint="0 = free" error={errors.ticket_price} required>
+                  <Input
+                    id={`${p}-tprice`}
+                    name="ticket_price"
+                    inputMode="decimal"
+                    readOnly={locked}
+                    defaultValue={ownTicket ? paisaToRupeesInput(ownTicket.price_paisa) : ""}
+                    placeholder="e.g. 1500"
+                  />
+                </FormField>
+                <FormField id={`${p}-tqty`} label="How many" hint="Empty = same as seats" error={errors.ticket_quantity}>
+                  <Input id={`${p}-tqty`} name="ticket_quantity" type="number" inputMode="numeric" min={1} defaultValue={ownTicket?.quantity ?? ""} placeholder="e.g. 200" />
+                </FormField>
+              </div>
+              <div className="grid gap-3 rounded-xl bg-brand-soft/60 p-3 sm:grid-cols-2">
+                <FormField id={`${p}-tep`} label="🐦 Early-bird price (Rs, optional)" hint="Lower price until the date on the right" error={errors.ticket_early_price}>
+                  <Input
+                    id={`${p}-tep`}
+                    name="ticket_early_price"
+                    inputMode="decimal"
+                    placeholder="e.g. 1200"
+                    defaultValue={ownTicket?.early_price_paisa != null ? paisaToRupeesInput(ownTicket.early_price_paisa) : ""}
+                  />
+                </FormField>
+                <FormField id={`${p}-teu`} label="Early bird until (PKT)" hint="Then the normal price" error={errors.ticket_early_until}>
+                  <Input id={`${p}-teu`} name="ticket_early_until" type="datetime-local" defaultValue={toPKTInputValue(ownTicket?.early_until)} />
+                </FormField>
+              </div>
+              {ticketsHref ? (
+                <p className="text-xs text-muted-foreground">
+                  More than one price (Student, VIP), a student-card check or sale dates?{" "}
+                  {sessionId ? (
+                    <Link href={`${ticketsHref}?new=session&session=${sessionId}#tickets`} className="font-medium text-brand-strong underline">
+                      Add another ticket on the tickets tab
+                    </Link>
+                  ) : (
+                    "Save first, then add more on the tickets tab."
+                  )}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      )}
+      {nobody ? <p className="rounded-lg bg-warning-soft px-3 py-2 text-xs font-medium text-navy">Nobody can get in yet. Tick at least one way in.</p> : null}
+    </fieldset>
+  );
+}
+
+/** D-087: right after adding a session nobody can get into yet. */
+function WayInFollowUp({
+  followUp,
+  passNames,
+  passAccess,
+  ticketsHref,
+  onClose,
+  onSellTicket,
+  onIncludeInPasses,
+  pending,
+}: {
+  followUp: { id: string; name: string };
+  passNames: string[];
+  passAccess: boolean;
+  ticketsHref?: string;
+  onClose: () => void;
+  onSellTicket: () => void;
+  onIncludeInPasses: () => void;
+  pending: boolean;
+}) {
+  const noPassYet = passNames.length === 0;
+  return (
+    <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>✓ {followUp.name} saved. How do people get in?</DialogTitle>
+          <DialogDescription>
+            {passAccess && noPassYet
+              ? `${followUp.name} is included in festival passes, but there is no pass yet. Nobody can get in until you add a pass or a ticket.`
+              : "Nobody can get in yet. Choose one, you can change it any time."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <Button variant="brand" className="h-auto justify-start py-3 text-left" onClick={onSellTicket}>
+            <span>
+              <span className="block font-semibold">🎫 Sell a ticket for {followUp.name}</span>
+              <span className="block text-xs font-normal opacity-90">Set the price and how many, right here</span>
+            </span>
+          </Button>
+          {passAccess ? null : (
+            <Button variant="outline" className="h-auto justify-start py-3 text-left" disabled={pending} onClick={onIncludeInPasses}>
+              {pending ? <Loader2 className="animate-spin" /> : null}
+              <span>
+                <span className="block font-semibold">🎟 Let festival pass holders in</span>
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {noPassYet ? "Then create a pass on the tickets tab" : `${passNames.join(", ")} will open it`}
+                </span>
+              </span>
+            </Button>
+          )}
+          {noPassYet && ticketsHref ? (
+            <Button asChild variant="outline" className="h-auto justify-start py-3 text-left">
+              <Link href={`${ticketsHref}?new=pass#tickets`}>
+                <span>
+                  <span className="block font-semibold">➕ Create a festival pass</span>
+                  <span className="block text-xs font-normal text-muted-foreground">One ticket for many sessions</span>
+                </span>
+              </Link>
+            </Button>
+          ) : null}
+          <Button variant="ghost" onClick={onClose}>
+            Later
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
