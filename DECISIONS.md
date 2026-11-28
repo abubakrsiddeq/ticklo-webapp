@@ -1317,3 +1317,29 @@ not. Owner asked for all five suggestions ("sab bana do").
   to Schedule.
 - No database change. Booked = non-expired orders *or* printed tickets (the tickets tab only looked
   at orders before; the database already counted both).
+
+## D-088 Emails to TickLO admins: instant alerts and a morning digest (owner request, 2026-11-28)
+Admins got no email at all; everything waited on the dashboard. Owner picked parts 1 and 2 of the
+suggestion ("1 and 2 kar do bss"); the weekly report and 48-hour reminder were not built.
+- **Who gets them:** every account with admin access that is not suspended or deleted, one email
+  each (recipients stay private). No setting to turn them off yet.
+- **Instant emails, only when an admin has to act** (one layout `emails/admin-alert.tsx`, one
+  button straight to the page, sent after the response with `after()` so nobody waits for SMTP):
+  - New society registered / rejected society resubmitted (with the earlier rejection reason,
+    university, who registered, society head) → Approvals.
+  - Event sent for review (or resubmitted). When it starts within 3 days the subject starts with
+    "Starts in N days:" and the email asks to review it today → Approvals.
+  - Possible duplicate payment proof (what matched) → the order page. The society still gets its
+    own warning email as before.
+  - New dispute (with the student's message) → the order page.
+  - A buyer reaches 3 rejected payments (same rule as the Fraud page: "Event cancelled" does not
+    count) → the user page. Sent once per person (checked in the email log), not when suspended.
+- **Morning digest** at 9:00 PKT (`/api/cron/admin-digest`, Supabase cron `0 4 * * *`):
+  waiting societies, events and "Other" universities with how long each has waited (red after
+  24 hours, or when an event starts within 3 days); open disputes, unreviewed duplicate payments,
+  account deletion requests and emails that failed in the last 24 hours; events today and
+  tomorrow; yesterday's new accounts, bookings and tickets. Subject e.g. "TickLO daily: 4 waiting,
+  2 need attention".
+  - **Not sent on quiet days** (nothing waiting, nothing needing attention), so it is never noise.
+  - At most once per Pakistan day, checked in the email log, so a double cron call does not repeat it.
+- Not emailed to admins: single orders, proofs, tickets, other admins' decisions (Decisions page).

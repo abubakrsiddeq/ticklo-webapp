@@ -317,6 +317,16 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: emails to TickLO admins (D-088)
+- Instant emails to every admin for: new or resubmitted society, event sent for review (subject
+  warns when it starts within 3 days), possible duplicate payment, new dispute, a buyer with 3
+  rejected payments (once). One button each, straight to the right admin page.
+- Morning digest at 9:00 PKT with everything waiting (red after 24 h), disputes, duplicates,
+  deletion requests, failed emails, events today / tomorrow and yesterday's numbers. Skipped on
+  quiet days; once per day.
+- Typecheck, lint, unit tests (new `admin-digest.test.ts`) and build pass; both templates rendered
+  with sample data. **Not tried against the live database** (no local database). No migration.
+
 ## Change 2026-11-28: festival tickets set up next to their session (D-087)
 - Session form (workshop / night / talk) asks **"How do people get in?"**: festival pass holders
   and/or **its own ticket** with price, how many and early bird. Saved together with the session,
@@ -634,6 +644,10 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Admin emails (D-088):** deploy the new web build, then in the Supabase SQL editor run
+  `select cron.schedule('ticklo-admin-digest', '0 4 * * *', $$select public.call_app_cron('/api/cron/admin-digest')$$);`
+  (also in `supabase/ops/app-cron.sql`). Make sure your admin account has the right email. To test
+  the digest now: `curl -H "Authorization: Bearer <CRON_SECRET>" https://ticklo.bkrtechsolutions.com/api/cron/admin-digest`.
 - **Deploy the new web build on Hostinger (D-087):** no migration or env vars. Then try check #22
   (session ticket in the session form) and the new Details / Passes & tickets tabs.
 - **Deploy the new web build on Hostinger (D-086):** no migration or env vars. Then open Event day
