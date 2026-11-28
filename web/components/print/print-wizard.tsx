@@ -204,7 +204,7 @@ export function PrintWizard({
         <div className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep("choose")}>
-              <ArrowLeft /> Templates
+              <ArrowLeft /> Designs
             </Button>
             <div className="flex flex-wrap gap-2">
               <Button

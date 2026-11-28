@@ -284,11 +284,17 @@ export const TEMPLATES_PER_CATEGORY = 6;
 /**
  * D-079: the small line above the headline says "AUREX 2.0 PRESENTS" (or "FESTIVAL PASS") on
  * festival tickets and keeps the template's own words ("LIVE IN CONCERT") everywhere else.
- * It shrinks to one line so a long festival name never runs into the headline.
+ * It shrinks to one line so a long festival name never runs into the headline; so do the
+ * ticket-and-price chips.
  */
 function festivalReady(t: TicketTemplate): TicketTemplate {
   const layers = t.design.layers.map((l): Layer => {
-    if (l.type !== "text" || l.id !== "kicker" || l.text.startsWith("{{presents")) return l;
+    if (l.type !== "text") return l;
+    // a long ticket name ("Sufi Night Ticket · Rs 1,000") shrinks to stay on its chip
+    // and so do date / time lines ("From 9:00 PM" on a pass, "1 – 2 Dec 2026")
+    const oneLine = l.id === "price" || l.id === "type" || /\{\{\s*(date|time)\s*\}\}/.test(l.text);
+    if (oneLine && !l.fitHeight) return { ...l, fitHeight: Math.round(l.fontSize * 1.35) };
+    if (l.id !== "kicker" || l.text.startsWith("{{presents")) return l;
     return { ...l, text: `{{presents|${l.text}}}`, fitHeight: l.fitHeight ?? Math.round(l.fontSize * 1.35) };
   });
   return { ...t, design: { ...t.design, layers } };

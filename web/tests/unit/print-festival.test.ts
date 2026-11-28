@@ -62,9 +62,12 @@ describe("printed values (D-079)", () => {
 
   it("prints the festival with its dates on a pass and an entry ticket", () => {
     const pass = printValues(event, org, { name: "All Access", price_paisa: 250000 }, ticketScope("festival", { all_sessions: true }, sessions));
-    expect(pass).toMatchObject({ event_name: "Aurex 2.0", presents: "FESTIVAL PASS", date: "1 – 2 Dec 2026", time: "7:00 PM" });
+    expect(pass).toMatchObject({ event_name: "Aurex 2.0", presents: "FESTIVAL PASS", date: "1 – 2 Dec 2026", time: "From 7:00 PM" });
     const entry = printValues(event, org, { name: "Gate", price_paisa: 30000 }, ticketScope("festival", { session_ids: [] }, sessions));
-    expect(entry).toMatchObject({ event_name: "Aurex 2.0", presents: "ENTRY TICKET", time: "12:00 AM" });
+    expect(entry).toMatchObject({ event_name: "Aurex 2.0", presents: "ENTRY TICKET", time: "From 10:00 AM" });
+    // a festival without sessions yet that starts at midnight is open all day
+    const empty = printValues(event, org, { name: "Gate", price_paisa: 30000 }, ticketScope("festival", { session_ids: [] }, []));
+    expect(empty.time).toBe("All day");
   });
 
   it("writes day ranges", () => {

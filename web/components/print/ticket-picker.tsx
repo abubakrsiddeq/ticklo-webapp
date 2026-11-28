@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { formatPKR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { PrintScopeKind } from "@/lib/print/values";
+import { SCOPE_GROUPS, type PrintScopeKind } from "@/lib/print/values";
 import type { PlaceholderValues } from "@/lib/print/design";
 
 export interface WizardType {
@@ -22,12 +22,6 @@ export interface WizardType {
   category: string | null;
   prefix: string;
 }
-
-const GROUPS: { key: string; title: string; hint: string; scopes: PrintScopeKind[] }[] = [
-  { key: "single", title: "🎫 Tickets for one event", hint: "Prints that event's name, time and place.", scopes: ["session", "sessions"] },
-  { key: "passes", title: "🎟 Festival passes", hint: "Prints the festival's name and dates.", scopes: ["pass"] },
-  { key: "entry", title: "🚪 Entry tickets", hint: "Entry to the festival, no session.", scopes: ["entry", "event"] },
-];
 
 /** D-080: step 1 – which tickets to print, as cards that say what each one gets you in. */
 export function TicketPicker({ types, festival, selectedId, onPick }: { types: WizardType[]; festival: boolean; selectedId: string; onPick: (id: string) => void }) {
@@ -77,7 +71,7 @@ export function TicketPicker({ types, festival, selectedId, onPick }: { types: W
         <p className="text-sm text-muted-foreground">The name, time, place and price on the paper come from the ticket you pick.</p>
       </div>
       {festival
-        ? GROUPS.map((g) => {
+        ? SCOPE_GROUPS.map((g) => {
             const items = types.filter((t) => g.scopes.includes(t.scope));
             if (!items.length) return null;
             return (

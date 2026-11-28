@@ -4,10 +4,9 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireOrgEvent } from "@/lib/auth";
 import { getPrintOverview, getPrintSessions, listOrgTemplates, nextSerial } from "@/lib/queries/print";
-import { printValues, ticketScope } from "@/lib/print/values";
+import { printValues, scopeEmoji, scopeWhen, ticketScope } from "@/lib/print/values";
 import { suggestPrefix } from "@/lib/print/design";
 import { suggestedCategory } from "@/lib/print/category";
-import { kindEmoji } from "@/lib/sessions";
 import { serverNow } from "@/lib/time";
 import { PrintWizard } from "@/components/print/print-wizard";
 
@@ -43,7 +42,6 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
           const scope = ticketScope(event.format, access.get(t.id), sessions);
           const values = printValues(event, org, t, scope);
           const headline = values.event_name ?? event.name;
-          const emoji = { event: "🎫", session: kindEmoji(scope.sessions[0]?.kind ?? ""), sessions: "🎫", pass: "🎟", entry: "🚪" }[scope.kind];
           return {
             id: t.id,
             name: t.name,
@@ -52,8 +50,8 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
             values,
             scope: scope.kind,
             headline,
-            emoji,
-            when: [values.date, values.time, values.venue].filter(Boolean).join(" · "),
+            emoji: scopeEmoji(scope),
+            when: scopeWhen(values),
             category: suggestedCategory(event.format, event.name, scope),
             prefix: suggestPrefix(headline),
           };

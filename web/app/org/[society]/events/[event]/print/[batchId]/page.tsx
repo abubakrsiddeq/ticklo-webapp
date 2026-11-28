@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgEvent } from "@/lib/auth";
 import { getPrintBatch, getTypeScope } from "@/lib/queries/print";
-import { printValues } from "@/lib/print/values";
+import { printValues, scopeHeadline } from "@/lib/print/values";
 import { parseDesign } from "@/lib/print/design";
 import { formatPKR, formatShortDateTime, formatTime, paisaToRupeesInput } from "@/lib/format";
 import { DownloadPdf } from "@/components/print/download-pdf";
@@ -34,13 +34,16 @@ export default async function PrintBatchPage({
   if (!detail) notFound();
   const { batch, tickets } = detail;
   const design = parseDesign(batch.design);
-  const values = printValues(event, org, batch.ticket_types, await getTypeScope(event, batch.ticket_types.id));
+  const scope = await getTypeScope(event, batch.ticket_types.id);
+  const values = printValues(event, org, batch.ticket_types, scope);
   const base = `/org/${org.slug}/events/${event.slug}/print`;
   const first = tickets[0]?.serial ?? "";
   const last = tickets[tickets.length - 1]?.serial ?? "";
   const printable = tickets.filter((t) => t.status !== "cancelled").length;
   const editable = event.status !== "cancelled";
-  const title = batch.label || `${batch.ticket_types.name} batch`;
+  // D-083: an unnamed batch is called after what it prints (Qawwali Night), not "… batch"
+  const headline = scopeHeadline(event, batch.ticket_types, scope);
+  const title = batch.label || headline;
 
   return (
     <div className="grid gap-6">
@@ -65,7 +68,8 @@ export default async function PrintBatchPage({
           <span className="font-mono">
             {first} – {last}
           </span>{" "}
-          · {batch.quantity} × {batch.ticket_types.name} · {formatPKR(batch.ticket_types.price_paisa, { freeLabel: "Free" })} · created {formatShortDateTime(batch.created_at)}
+          · {title !== headline ? `${headline} · ` : ""}
+          {batch.quantity} × {batch.ticket_types.name} · {formatPKR(batch.ticket_types.price_paisa, { freeLabel: "Free" })} · created {formatShortDateTime(batch.created_at)}
           {batch.download_count ? ` · PDF downloaded ${batch.download_count}× (last ${formatShortDateTime(batch.last_downloaded_at!)})` : ""}
         </p>
       </div>

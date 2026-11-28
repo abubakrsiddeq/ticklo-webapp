@@ -1119,3 +1119,23 @@ registered – the same thing the existing "already registered" error already di
   or sold online." The serial prefix ("Letters before the number", made from the headline) and the
   batch name moved under **More options**, which opens by itself when the prefix has a problem.
   An empty batch name shows the headline in the batch list (D-083).
+
+## D-083 Printed tickets page in plain words (owner request, 2026-11-28)
+- The ticket table shows each ticket as on the picker (D-080): emoji, what it prints (Qawwali
+  Night), the ticket's own name under it, and for festivals the printed date · time · venue,
+  grouped 🎫 Tickets for one event / 🎟 Festival passes / 🚪 Entry tickets.
+- Columns renamed: Ticket, Price, Total, Printed, **Can still print or sell** (was "Places
+  left"). The footnote "Places left = quantity − sold online − on hold − printed" became a
+  sentence: "the total minus tickets sold online, waiting for payment, or printed. A cancelled
+  (voided) paper ticket gives its place back."
+- The three how-it-works steps say Create (pick the ticket, choose a design, check the words,
+  say how many) / Print / Sell & scan without jargon ("one per page for a printing press").
+- An unnamed batch is called after what it prints ("Qawwali Night QN-0001 – QN-0100") instead
+  of "Sufi Night Ticket batch", on the list and the batch page; a named batch shows the headline
+  in its second line.
+- Polish found while checking the screens: pass and entry tickets print "From 9:00 PM" (the
+  first pass session, or the festival's first session for entry) instead of "12:00 AM", and
+  "All day" when the festival has no sessions yet and starts at midnight. On every built-in
+  template the ticket-and-price chip and the date / time lines shrink to one line (a long
+  "Sufi Night Ticket · Rs 1,000" used to wrap out of its chip). "← Templates" in step 3 is
+  "← Designs", as the step is called.
