@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { designSchema, fillPlaceholders, usedPlaceholders, withTexts, withoutTexts } from "@/lib/print/design";
+import { cleanTexts, designSchema, fillPlaceholders, placeholderFallback, usedPlaceholders, withTexts, withoutTexts } from "@/lib/print/design";
 import { TEMPLATES, cloneDesign, templateByKey } from "@/lib/print/templates";
 import { printDateRange, printValues, scopeHeadline, ticketScope, type PrintSession } from "@/lib/print/values";
 
@@ -121,5 +121,18 @@ describe("organizer texts on the design (D-082)", () => {
     expect(designSchema.parse(d).texts).toEqual({ event_name: "Mehfil" });
     expect(designSchema.safeParse({ ...d, texts: { serial: "X" } }).success).toBe(false);
     expect("texts" in withoutTexts(d)).toBe(false);
+  });
+});
+
+describe("What the ticket says (D-082)", () => {
+  it("keeps only changed, trimmed texts", () => {
+    expect(cleanTexts({ event_name: "  Mehfil ", venue: "", date: "   " })).toEqual({ event_name: "Mehfil" });
+    expect(cleanTexts({})).toBeUndefined();
+    expect(cleanTexts({ venue: "x".repeat(300) })?.venue).toHaveLength(200);
+  });
+  it("knows the words a template prints when a value is empty", () => {
+    const d = templateByKey("qawwali-sufi")!.design;
+    expect(placeholderFallback(d, "presents", {})).toBe("AN EVENING OF SUFI MUSIC");
+    expect(placeholderFallback(d, "venue", {})).toBe("");
   });
 });

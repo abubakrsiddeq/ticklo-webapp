@@ -135,6 +135,9 @@ export function PropertiesPanel({
             className="text-sm"
             dir="auto"
           />
+          {new RegExp(TOKEN.source).test(layer.text) ? (
+            <p className="text-xs text-muted-foreground">Words in {"{{ }}"} fill in from your ticket. To change them, use &quot;What the ticket says&quot; above the editor.</p>
+          ) : null}
           <NativeSelect
             aria-label="Insert event detail"
             value=""

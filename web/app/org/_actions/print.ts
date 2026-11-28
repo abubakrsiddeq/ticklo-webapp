@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/errors";
 import { readUpload, uploadPublicImage } from "@/lib/storage";
 import { optionalPhone, PHONE_HINT } from "@/lib/phone";
-import { designProblems, designSchema, serialLabel } from "@/lib/print/design";
+import { designProblems, designSchema, serialLabel, withoutTexts, type TicketDesign } from "@/lib/print/design";
 import { ticketQrToken } from "@/lib/qr";
 import type { Json } from "@/lib/database.types";
 import { fetchAll } from "@/lib/queries/fetch-all";
@@ -199,7 +199,7 @@ export async function saveTicketTemplate(orgSlug: string, input: { name: string;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("ticket_templates")
-    .insert({ org_id: access.org.id, name: parsed.data.name, category: parsed.data.category, design: d.data as unknown as Json, created_by: access.user!.id })
+    .insert({ org_id: access.org.id, name: parsed.data.name, category: parsed.data.category, design: withoutTexts(d.data as TicketDesign) as unknown as Json, created_by: access.user!.id })
     .select("id")
     .single();
   if (error) return fail(error);

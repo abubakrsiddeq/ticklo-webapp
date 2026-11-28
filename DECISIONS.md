@@ -1097,3 +1097,25 @@ registered – the same thing the existing "already registered" error already di
   Workshop, competition → Competition, talk → Conference / Seminar, concert → Concert);
   festival passes and entry tickets → Festival / Mela; competition events → Competition;
   single events → a guess from the event name. When nothing fits, the full gallery opens as before.
+
+## D-082 "What the ticket says" and a simpler "How many" (owner request, 2026-11-28)
+- **Step 3 "Text & look"** starts with a card **What the ticket says**: the details this design
+  prints as plain fields (Big name, Small line above the name, Date, Time, Place, and Festival
+  name / Sessions included / Society when the design uses them). Each starts from the ticket
+  (D-079) and can be retyped; changed fields say "Changed by you. Original: …" with
+  **Use original**. Emptying a field prints the original. The ticket's name and price are shown
+  as fixed ("cannot be changed here, so the paper always matches what is sold").
+- Below it, "Colours, pictures and layout" is the existing editor (optional). Text layers with
+  `{{ }}` show a hint pointing to the card instead of making organizers edit placeholders.
+- The retyped words are stored on the batch's design as `design.texts` (keys limited to
+  event_name, presents, festival, includes, date, time, venue, society; 200 characters each;
+  checked by the design schema). They win over the event's values in the preview, the PDF and
+  re-downloads (`withTexts`). They belong to the batch only: changing the picked ticket clears
+  them, and "Save as my template" never stores them. "Edit design" on a batch shows the same card.
+  Postgres needed no change (`print_design_problem` ignores extra keys).
+- **Step 4 "How many"** asks one thing: the number (with 25 / 50 / 100 / 200 / 500 quick picks,
+  only those that fit). A summary says "100 tickets numbered QN-0001 to QN-0100. Each Rs 1,000,
+  together worth Rs 1,00,000 when sold. After this, 398 more Qawwali Night tickets can be printed
+  or sold online." The serial prefix ("Letters before the number", made from the headline) and the
+  batch name moved under **More options**, which opens by itself when the prefix has a problem.
+  An empty batch name shows the headline in the batch list (D-083).

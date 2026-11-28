@@ -199,6 +199,15 @@ export function usedPlaceholders(design: Pick<TicketDesign, "layers">): Set<stri
   return keys;
 }
 
+/** The words a design prints for an empty value: the first {{key|fallback}} of that key, filled in. */
+export function placeholderFallback(design: Pick<TicketDesign, "layers">, key: string, values: PlaceholderValues): string {
+  for (const l of design.layers) {
+    if (l.type !== "text" || l.hidden) continue;
+    for (const m of l.text.matchAll(TOKEN)) if (m[1] === key && m[2] !== undefined) return fillPlaceholders(m[2], values);
+  }
+  return "";
+}
+
 /** D-082: details the organizer may retype in "What the ticket says" (stored on the design). */
 export const EDITABLE_TEXT_KEYS = ["event_name", "presents", "festival", "includes", "date", "time", "venue", "society"] as const;
 export type EditableTextKey = (typeof EDITABLE_TEXT_KEYS)[number];
@@ -212,6 +221,16 @@ export function withTexts(values: PlaceholderValues, texts: TicketDesign["texts"
     if (t) out[k] = t;
   }
   return out;
+}
+
+/** Only the texts the organizer changed, trimmed; undefined when none (stored on the design). */
+export function cleanTexts(texts: Partial<Record<EditableTextKey, string>> | null | undefined): TicketDesign["texts"] {
+  const out: Partial<Record<EditableTextKey, string>> = {};
+  for (const k of EDITABLE_TEXT_KEYS) {
+    const t = texts?.[k]?.trim();
+    if (t) out[k] = t.slice(0, 200);
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 /** The design without the organizer's texts (editor, saved templates). */

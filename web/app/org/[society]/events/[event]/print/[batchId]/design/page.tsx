@@ -4,6 +4,7 @@ import { requireOrgEvent } from "@/lib/auth";
 import { getPrintBatch, getTypeScope } from "@/lib/queries/print";
 import { printValues } from "@/lib/print/values";
 import { parseDesign } from "@/lib/print/design";
+import { formatPKR } from "@/lib/format";
 import { BatchDesignEditor } from "@/components/print/batch-design-editor";
 
 export const metadata: Metadata = { title: "Edit ticket design" };
@@ -27,6 +28,7 @@ export default async function BatchDesignPage({ params }: { params: Promise<{ so
       backHref={back}
       initialDesign={design}
       values={{ ...printValues(event, org, detail.batch.ticket_types, scope), serial: first?.serial, code: first?.code }}
+      priceLine={`${detail.batch.ticket_types.name} · ${formatPKR(detail.batch.ticket_types.price_paisa, { freeLabel: "Free" })}`}
     />
   );
 }

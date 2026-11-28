@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowRight, Loader2, Printer, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Printer, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormField } from "@/components/form-field";
 import { createPrintBatch, saveTicketTemplate } from "@/app/org/_actions/print";
-import { designProblems, serialLabel, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
+import { designProblems, serialLabel, withTexts, withoutTexts, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
 import { cloneDesign } from "@/lib/print/templates";
 import { formatPKR } from "@/lib/format";
 
@@ -30,6 +30,7 @@ import { TicketFonts } from "./ticket-fonts";
 import { TemplateGallery, type ChosenTemplate, type SavedTemplate } from "./template-gallery";
 import { DesignThumb } from "./design-thumb";
 import { PickedTicket, TicketPicker, type WizardType } from "./ticket-picker";
+import { TicketTextsForm, cleanTexts, type TicketTexts } from "./ticket-texts-form";
 import { useActionTransition } from "@/lib/use-action-transition";
 
 const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => m.TicketEditor), {
@@ -77,6 +78,9 @@ export function PrintWizard({
   const [prefixTouched, setPrefixTouched] = useState(false);
   const [quantity, setQuantity] = useState(String(Math.min(100, firstAvailable?.remaining || 100)));
   const [quantityTouched, setQuantityTouched] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  // D-082: what the organizer retyped in "What the ticket says"
+  const [texts, setTexts] = useState<TicketTexts>({});
   const [label, setLabel] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState(false);
@@ -87,12 +91,15 @@ export function PrintWizard({
   const type = types.find((t) => t.id === typeId) ?? firstAvailable;
   const cleanPrefix = prefix.trim().toUpperCase();
   const prefixOk = /^[A-Z0-9]{1,6}$/.test(cleanPrefix);
-  const values = useMemo<PlaceholderValues>(
+  const baseValues = useMemo<PlaceholderValues>(
     () => ({ ...(type?.values ?? {}), serial: serialLabel(prefixOk ? cleanPrefix : "TKT", nextSerial), code: "K7Q2-M9XD" }),
     [type, prefixOk, cleanPrefix, nextSerial],
   );
+  const values = useMemo(() => withTexts(baseValues, texts), [baseValues, texts]);
   const qty = Math.floor(Number(quantity));
-  const qtyOk = Number.isFinite(qty) && qty >= 1 && qty <= Math.min(2000, type?.remaining ?? 0);
+  const maxQty = Math.min(2000, type?.remaining ?? 0);
+  const qtyOk = Number.isFinite(qty) && qty >= 1 && qty <= maxQty;
+  const moreShown = moreOpen || Boolean(errors.prefix) || !prefixOk;
   const problems = design ? designProblems(design) : [];
 
   if (!types.length) {
@@ -102,7 +109,7 @@ export function PrintWizard({
   const steps: { key: Step; label: string }[] = [
     { key: "ticket", label: "1. Ticket" },
     { key: "choose", label: "2. Design" },
-    { key: "edit", label: "3. Edit" },
+    { key: "edit", label: "3. Text & look" },
     { key: "generate", label: "4. How many" },
   ];
   const stepIndex = steps.findIndex((s) => s.key === step);
@@ -115,6 +122,7 @@ export function PrintWizard({
   const pickType = (id: string) => {
     const t = types.find((x) => x.id === id);
     if (!t) return;
+    if (id !== typeId) setTexts({});
     setTypeId(id);
     if (!prefixTouched) setPrefix(t.prefix);
     if (!quantityTouched) setQuantity(String(Math.min(100, t.remaining || 100)));
@@ -131,7 +139,7 @@ export function PrintWizard({
         prefix: cleanPrefix,
         label: label.trim() || undefined,
         templateKey: template?.key.startsWith("saved:") ? "saved" : template?.key,
-        design,
+        design: { ...withoutTexts(design), texts: cleanTexts(texts) },
       });
       setConfirm(false);
       if (!res.ok) {
@@ -185,7 +193,7 @@ export function PrintWizard({
             orgSlug={orgSlug}
             onChoose={(t) => {
               setTemplate(t);
-              setDesign(cloneDesign(t.design));
+              setDesign(withoutTexts(cloneDesign(t.design)));
               setStep("edit");
             }}
           />
@@ -213,6 +221,19 @@ export function PrintWizard({
               </Button>
             </div>
           </div>
+          {type ? (
+            <TicketTextsForm
+              design={design}
+              values={baseValues}
+              texts={texts}
+              onChange={setTexts}
+              priceLine={`${type.name} · ${formatPKR(type.price_paisa, { freeLabel: "Free" })}`}
+            />
+          ) : null}
+          <div>
+            <h3 className="font-heading text-lg font-bold text-navy">Colours, pictures and layout</h3>
+            <p className="text-sm text-muted-foreground">Optional. Drag things around, change colours or add your own picture.</p>
+          </div>
           <TicketEditor key={template.key} initialDesign={design} values={values} orgSlug={orgSlug} onDesignChange={setDesign} />
         </div>
       ) : null}
@@ -222,31 +243,90 @@ export function PrintWizard({
           <div className="grid content-start gap-4 rounded-2xl bg-white p-5 shadow-card ring-1 ring-navy/[0.06]">
             <div>
               <h3 className="font-heading text-lg font-bold text-navy">How many tickets?</h3>
-              <p className="text-sm text-muted-foreground">
-                Each ticket gets its own QR code and serial number. They count against &quot;{type.name}&quot; ({type.remaining} left), so online buyers can&apos;t take the same places.
-              </p>
+              <p className="text-sm text-muted-foreground">Each ticket gets its own QR code and number. Up to {maxQty} now.</p>
             </div>
-            <FormField id="qty" label="Number of tickets" required error={errors.quantity ?? (!qtyOk && quantity ? `Choose 1 – ${Math.min(2000, type.remaining)}` : undefined)} hint="Up to 2000 per batch.">
-              <Input id="qty" type="number" inputMode="numeric" min={1} max={Math.min(2000, type.remaining)} value={quantity} onChange={(e) => {
+            <FormField id="qty" label="Number of tickets" required error={errors.quantity ?? (!qtyOk && quantity ? `Choose 1 – ${maxQty}` : undefined)}>
+              <Input
+                id="qty"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={maxQty}
+                value={quantity}
+                onChange={(e) => {
                   setQuantity(e.target.value);
                   setQuantityTouched(true);
-                }} />
+                }}
+              />
             </FormField>
-            <FormField id="prefix" label="Serial prefix" required error={errors.prefix ?? (!prefixOk ? "1–6 letters or numbers" : undefined)} hint={`First ticket: ${serialLabel(prefixOk ? cleanPrefix : "TKT", nextSerial)}`}>
-              <Input id="prefix" value={prefix} maxLength={6} onChange={(e) => {
-                setPrefix(e.target.value.toUpperCase());
-                setPrefixTouched(true);
-              }} className="font-mono uppercase" />
-            </FormField>
-            <FormField id="label" label="Batch name (optional)" hint="For your records, e.g. “Gate sale” or “Ali's book”.">
-              <Input id="label" value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} />
-            </FormField>
+            <div className="flex flex-wrap gap-2" aria-label="Quick amounts">
+              {[25, 50, 100, 200, 500].filter((n) => n <= maxQty).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    setQuantity(String(n));
+                    setQuantityTouched(true);
+                  }}
+                  className={cn("rounded-full border px-3 py-1 text-sm", qty === n ? "border-navy bg-navy text-white" : "border-input bg-white text-navy hover:bg-muted")}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
             {qtyOk && prefixOk ? (
-              <p className="rounded-xl bg-brand-soft p-3 text-sm text-brand-strong">
-                Serials <b className="font-mono">{serialLabel(cleanPrefix, nextSerial)}</b> to <b className="font-mono">{serialLabel(cleanPrefix, nextSerial + qty - 1)}</b> ·{" "}
-                {formatPKR(type.price_paisa * qty, { freeLabel: "Free" })} face value
-              </p>
+              <div className="rounded-xl bg-brand-soft p-3 text-sm text-brand-strong" role="status">
+                <p>
+                  <b>{qty} tickets</b> numbered <b className="font-mono">{serialLabel(cleanPrefix, nextSerial)}</b> to{" "}
+                  <b className="font-mono">{serialLabel(cleanPrefix, nextSerial + qty - 1)}</b>.
+                </p>
+                <p>
+                  {type.price_paisa ? (
+                    <>
+                      Each {formatPKR(type.price_paisa)}, together worth <b>{formatPKR(type.price_paisa * qty)}</b> when sold.{" "}
+                    </>
+                  ) : (
+                    "Free tickets. "
+                  )}
+                  After this, {type.remaining - qty} more {type.headline} tickets can be printed or sold online.
+                </p>
+              </div>
             ) : null}
+            <div className="grid gap-3">
+              <button
+                type="button"
+                aria-expanded={moreShown}
+                onClick={() => setMoreOpen(!moreShown)}
+                className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-brand-strong hover:underline"
+              >
+                <ChevronDown className={cn("size-4 transition-transform", moreShown && "rotate-180")} aria-hidden /> More options (ticket numbers, batch name)
+              </button>
+              {moreShown ? (
+                <div className="grid gap-3 rounded-xl border border-navy/10 p-3">
+                  <FormField
+                    id="prefix"
+                    label="Letters before the number"
+                    required
+                    error={errors.prefix ?? (!prefixOk ? "1–6 letters or numbers" : undefined)}
+                    hint={`Made from "${type.headline}". First ticket: ${serialLabel(prefixOk ? cleanPrefix : "TKT", nextSerial)}`}
+                  >
+                    <Input
+                      id="prefix"
+                      value={prefix}
+                      maxLength={6}
+                      onChange={(e) => {
+                        setPrefix(e.target.value.toUpperCase());
+                        setPrefixTouched(true);
+                      }}
+                      className="font-mono uppercase"
+                    />
+                  </FormField>
+                  <FormField id="label" label="Batch name (optional)" hint={`Only for you. Empty = "${type.headline}".`}>
+                    <Input id="label" value={label} maxLength={80} placeholder="e.g. Gate sale, Ali's book" onChange={(e) => setLabel(e.target.value)} />
+                  </FormField>
+                </div>
+              ) : null}
+            </div>
             <div className="flex flex-wrap justify-between gap-2">
               <Button variant="ghost" onClick={() => setStep("edit")}>
                 <ArrowLeft /> Back to design
@@ -268,8 +348,8 @@ export function PrintWizard({
           <AlertDialogHeader>
             <AlertDialogTitle>Create {qty} printed tickets?</AlertDialogTitle>
             <AlertDialogDescription>
-              {qty} &quot;{type?.name}&quot; tickets ({serialLabel(cleanPrefix || "TKT", nextSerial)} – {serialLabel(cleanPrefix || "TKT", nextSerial + Math.max(qty, 1) - 1)}) will be
-              created and taken from the {type?.remaining} places left. Lost tickets can be voided later.
+              {qty} {type?.headline} tickets ({serialLabel(cleanPrefix || "TKT", nextSerial)} – {serialLabel(cleanPrefix || "TKT", nextSerial + Math.max(qty, 1) - 1)}) will be
+              created. They use up {qty} of the {type?.remaining} places left, so online buyers cannot get the same places. A lost ticket can be cancelled later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -302,7 +382,8 @@ export function PrintWizard({
               disabled={pending || !saveName.trim() || !design}
               onClick={() =>
                 start(async () => {
-                  const res = await saveTicketTemplate(orgSlug, { name: saveName, category: "custom", design });
+                  if (!design) return;
+                  const res = await saveTicketTemplate(orgSlug, { name: saveName, category: "custom", design: withoutTexts(design) });
                   if (res.ok) {
                     toast.success(res.message ?? "Saved");
                     setSaveOpen(false);

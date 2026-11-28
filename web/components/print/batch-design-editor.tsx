@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -8,7 +8,8 @@ import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { updatePrintBatchDesign } from "@/app/org/_actions/print";
-import { designProblems, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
+import { designProblems, withTexts, withoutTexts, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
+import { TicketTextsForm, cleanTexts, type TicketTexts } from "./ticket-texts-form";
 import { useActionTransition } from "@/lib/use-action-transition";
 
 const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => m.TicketEditor), {
@@ -27,15 +28,21 @@ export function BatchDesignEditor({
   backHref,
   initialDesign,
   values,
+  priceLine,
 }: {
   orgSlug: string;
   batchId: string;
   backHref: string;
   initialDesign: TicketDesign;
   values: PlaceholderValues;
+  priceLine: string;
 }) {
   const router = useRouter();
-  const [design, setDesign] = useState(initialDesign);
+  // D-082: the organizer's texts live beside the editor (the editor only changes the artwork)
+  const [startDesign] = useState(() => withoutTexts(initialDesign));
+  const [design, setDesign] = useState(startDesign);
+  const [texts, setTexts] = useState<TicketTexts>(initialDesign.texts ?? {});
+  const shown = useMemo(() => withTexts(values, texts), [values, texts]);
   const [pending, start] = useActionTransition();
   const problems = designProblems(design);
 
@@ -52,7 +59,7 @@ export function BatchDesignEditor({
           disabled={pending || problems.length > 0}
           onClick={() =>
             start(async () => {
-              const res = await updatePrintBatchDesign(orgSlug, batchId, design);
+              const res = await updatePrintBatchDesign(orgSlug, batchId, { ...design, texts: cleanTexts(texts) });
               if (res.ok) {
                 toast.success(res.message ?? "Saved");
                 router.push(backHref);
@@ -66,7 +73,8 @@ export function BatchDesignEditor({
       <p className="rounded-xl bg-secondary p-3 text-sm text-navy">
         The QR codes and serial numbers stay the same – only the artwork changes. Tickets you already printed keep working.
       </p>
-      <TicketEditor initialDesign={initialDesign} values={values} orgSlug={orgSlug} onDesignChange={setDesign} />
+      <TicketTextsForm design={design} values={values} texts={texts} onChange={setTexts} priceLine={priceLine} />
+      <TicketEditor initialDesign={startDesign} values={shown} orgSlug={orgSlug} onDesignChange={setDesign} />
     </div>
   );
 }
