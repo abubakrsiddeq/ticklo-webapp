@@ -1269,3 +1269,51 @@ choice on the entry scanner stays as it was (D-042).
   without scan access to "Not allowed"); others see how to get access and that the check-in
   list below still works.
 - No database change.
+
+## D-087 Festival tickets set up next to their session (owner request, 2026-11-28)
+Organizers complained that after adding a night like "DJ Night" on Schedule they had to go to a
+different tab (Edit & tickets), add a ticket and tick DJ Night under "What does this ticket open?".
+Competitions already set their fee inside the session form (D-044); workshops, nights and talks did
+not. Owner asked for all five suggestions ("sab bana do").
+- **"How do people get in?" in the session form** (workshop, concert, talk, other): *Festival pass
+  holders get in* (was "Included in all-access passes", now names the passes that open it) and
+  *Sell a ticket for this session* with ticket name (empty = "<session> ticket"), price, how many
+  (empty = the session's seats; one of the two is needed), early-bird price + date. New workshops
+  start with it ticked (limited seats), new nights/talks with passes ticked, as before. A warning
+  shows when neither is ticked.
+- **What the form edits:** a normal ticket type that opens only this session, so it is also listed
+  on the tickets tab and can be edited in either place. The form edits it in place only when it is
+  the *one* ticket for this session alone; with several prices (Student, General) or a ticket for
+  several sessions the form lists them with a link to the tickets tab. Student card, sale dates
+  and extra prices stay on the tickets tab ("Add another ticket" link opens that form ready).
+- **Server:** `saveSession` checks the ticket with the same rules as the ticket form *before*
+  saving the session (errors show under the fields), then creates it (`set_ticket_type_access`
+  to this session; if that fails the new ticket is deleted, so it never stays a pass), updates
+  name / price / quantity / early bird (description, sale dates and student card are kept), or
+  deletes it when unticked. Database rules did not change: price locked after the first booking,
+  no delete with bookings, quantity not below sold (the box is locked in the form once sold). If
+  the session saved but its ticket did not, the dialog closes (no duplicate session on retry) and
+  says why. Sale ends when the session starts (D-064 default).
+- **After adding a session nobody can get into:** a short dialog "DJ Night saved. How do people get
+  in?" → *Sell a ticket for DJ Night* (opens the session form at that section via
+  `?ticket=<session>`), *Let festival pass holders in* (saves the session with passes on), *Create a
+  festival pass* when there is none, *Later*.
+- **Schedule cards:** a "Way in" row lists its tickets (price, sold) and the passes that open it, with
+  **Add a ticket** / **Edit ticket** buttons; red "Nobody can get in yet" when there is none, and
+  "Included in passes, but no pass yet · Create a pass". It replaces the long red pill and the
+  "In passes" pill.
+- **Tickets tab grouped** like the public sidebar (D-070): 🎟 Festival passes, 🎫 Tickets for one
+  event (by the session's start), 🚪 Entry tickets, 🏆 Competition entries. For events with sessions,
+  adding a ticket asks first: *Festival pass* or *Ticket for one event* (pick the session; the
+  form opens with that session ticked and the name filled in). Links: `?new=pass`,
+  `?new=session&session=<id>`. Single events keep the plain "Add ticket type" button.
+- **Details tab:** event details (and Duplicate event) move from Edit & tickets to a new
+  `…/details` tab. `…/edit` stays the tickets page (links in emails and bookmarks keep working)
+  and is called **Passes & tickets** for festivals, **Tickets** otherwise. Tab order: Overview,
+  Payments, Details, Schedule, tickets, Attendees, … Texts that said "Edit & tickets" now say "the
+  tickets tab".
+- **Setup checklist (festivals):** the step is "Passes & tickets" and is done only when every
+  non-competition session has a way in; otherwise it says "N sessions with no way in yet" and links
+  to Schedule.
+- No database change. Booked = non-expired orders *or* printed tickets (the tickets tab only looked
+  at orders before; the database already counted both).

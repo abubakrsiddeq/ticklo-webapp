@@ -317,6 +317,19 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: festival tickets set up next to their session (D-087)
+- Session form (workshop / night / talk) asks **"How do people get in?"**: festival pass holders
+  and/or **its own ticket** with price, how many and early bird. Saved together with the session,
+  also listed on the tickets tab. Several prices or shared tickets are shown with a link instead.
+- A new session nobody can get into gets a follow-up: sell a ticket / let pass holders in / create a
+  pass / later. Schedule cards show a **Way in** row with **Add a ticket** / **Edit ticket**.
+- Tickets tab for festivals is **Passes & tickets**, grouped (passes, tickets for one event, entry,
+  competition entries); "Add" asks *pass* or *ticket for one event* first. Event details moved to a
+  new **Details** tab. Setup checklist counts sessions with no way in.
+- Typecheck, lint, unit tests (new `ticket-groups.test.ts`, 134 total) and build pass. **Not
+  clicked through in a logged-in browser yet** (no local database; `.env.local` points at the live
+  project). No migration; needs the next Hostinger deploy.
+
 ## Change 2026-11-28: Event day, gate vs desk made obvious (D-086)
 - One **Event day** link (header, menu, footer, app shortcut) instead of "Scan" and "Sell". It
   shows each event with two big cards: **At the gate** (green, let people in) and **At the desk**
@@ -612,6 +625,7 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 | 14 | Ambassador link + reward (D-043) | Organizer: event → Ambassadors → Add ambassador (team member) → Program: Rs 50 per ticket, Rs 100 off for buyers → Save. Copy the card's link → open it logged out as another user → banner "… invited you" → book → price is Rs 100 less per ticket → approve → card shows 1 counted, reward Rs 50; the ambassador opens Sell → My link & rank and sees rank #1 |
 | 15 | Promo code | Ambassadors → New promo code `FAST20`, 20 %, min 2 tickets → book 1 ticket with the code (error) → 2 tickets (20 % off) |
 | 16 | Applications | Program → tick "Take applications" → student opens the event page → Apply → organizer Accepts → student gets "My ambassador page" in the menu |
+| 22 | Session ticket in the session form (D-087) | Festival → Schedule → Add session "DJ Night" (concert) → untick passes, tick "Sell a ticket", price 1500, How many 300 → Save → card shows "Way in: 🎫 DJ Night ticket · Rs 1,500 · 0 sold"; Passes & tickets lists it under "Tickets for one event". Add "Talk" with nothing ticked → follow-up dialog → "Sell a ticket" opens its form. Book one DJ ticket → Edit ticket: price locked, cannot untick |
 | 21 | Kind of event first (D-045) | New event → choose 🎪 Festival → you land on Schedule with the checklist; choose 🏆 Competition → the competition form opens; choose 🎟 Single → Edit & tickets as before |
 | 18 | Festival sessions (D-044) | Event → Schedule → add "AI Workshop" (workshop, 2 seats, not in passes, question "Laptop?" required) and "Qawwali" (concert, in passes) → Edit & tickets → add "Workshop" ticket → Opens → only AI Workshop. Event page shows the schedule; book 1 Workshop (answer the question) and 1 pass; try 3 workshop tickets → "Only 2 seats left" |
 | 19 | Session scanning | Scanner → choose AI Workshop → scan the workshop ticket (OK), again (Already checked in), scan the pass (Not for this session) → choose Main entry → the workshop ticket still gets in once |
@@ -620,6 +634,8 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Deploy the new web build on Hostinger (D-087):** no migration or env vars. Then try check #22
+  (session ticket in the session form) and the new Details / Passes & tickets tabs.
 - **Deploy the new web build on Hostinger (D-086):** no migration or env vars. Then open Event day
   as an organizer (both cards), as a gate volunteer (goes straight to the gate screen) and as a
   seller, and print a gate guide from the event overview.
