@@ -1208,3 +1208,7 @@ The plan was agreed in chat and built in one go. Migration `20261128000700_admin
   Refunded, Account deleted). Organizers see their society's suspension in History too.
 - Public lists (events, sessions, societies, society page) skip deleted societies explicitly,
   because admins can read them.
+- Applied to TickLO Production on 2026-11-28 with follow-up `20261128000800_admin_helpers_private`:
+  revoking EXECUTE from `public, anon` is not enough on Supabase, because its default privileges
+  grant new functions to `authenticated` directly. Internal helpers must also be revoked from
+  `authenticated`.

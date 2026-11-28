@@ -333,8 +333,13 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - A suspended or deleted society cannot sell or change anything; tickets already sold keep
   working. Owners are emailed on suspend, restore and delete.
 - Migration `20261128000700_admin_full_control.sql` (new columns, `site_settings`, guards, 15 admin
-  functions, `org_role_of` / visibility policy changes). **Not applied to the live project yet**
-  (see Needs from Abubakar).
+  functions, `org_role_of` / visibility policy changes). **Applied to TickLO Production
+  (2026-11-28, D-034 method, one transaction, recorded in the migration history)**, followed by
+  `20261128000800_admin_helpers_private.sql`: Supabase's default privileges had given signed-in
+  users EXECUTE on four internal helpers (one of them returns a society owner's email), now
+  revoked. Checked live: 15 admin functions, 11 guard triggers, 6 new columns, the settings row;
+  visitors see the same 2 societies and 1 event as before; the admin is owner of every society;
+  visitors cannot call admin functions and signed-in users cannot call the helpers.
 - DB tests: new `admin-full-control.test.ts` (16 tests), all 161 pass. Unit tests 125 pass.
   Typecheck, lint and build pass. The new screens were not clicked through in a browser (the
   local setup has no API in front of the test database, and the live database does not have
@@ -595,12 +600,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
-- **Admin full control (D-084): apply migration `20261128000700_admin_full_control.sql`, then deploy
-  the new web build.** It changes who can see and change societies and events (RLS and
-  `org_role_of`), so it was not applied without you. Command (D-034 method, from the repo root):
-  `supabase db query --linked -f supabase/migrations/20261128000700_admin_full_control.sql`, then
-  record version `20261128000700` in `supabase_migrations.schema_migrations`. The old live build
-  keeps working with the new database; the new build needs the migration first.
+- **Deploy the new web build on Hostinger (D-084):** the migrations are applied; until the build is
+  deployed the live admin panel does not have the Societies, Events and Settings tabs or the new
+  buttons. No new env vars. Then try the D-084 test steps.
 - **Deploy the new web build on Hostinger (D-079 to D-083):** the migration is applied; until the
   build is deployed the live site still prints the festival name on session tickets.
 - **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077, D-078):** the migrations are applied; until the
