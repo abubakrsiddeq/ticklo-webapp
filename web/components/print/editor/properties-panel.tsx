@@ -25,6 +25,7 @@ import { NativeSelect } from "@/components/native-select";
 import {
   MIN_QR_SIZE,
   PLACEHOLDERS,
+  TOKEN,
   isProtected,
   mm,
   type Fill,
@@ -41,7 +42,7 @@ export type LayerPatch = Partial<Layer>;
 export function layerLabel(l: Layer): string {
   if (l.name) return l.name;
   if (l.type === "text") {
-    const readable = l.text.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (m, k: string) => PLACEHOLDERS.find((p) => p.key === k)?.label.replace(/ \(.*\)$/, "") ?? m);
+    const readable = l.text.replace(TOKEN, (m, k: string) => PLACEHOLDERS.find((p) => p.key === k)?.label.replace(/ \(.*\)$/, "") ?? m);
     return readable.replace(/\s+/g, " ").slice(0, 28) || "Text";
   }
   return { image: "Image", rect: "Box", ellipse: "Circle", line: "Line", path: "Shape", qr: "QR code", brand: "TickLO logo", text: "Text" }[l.type];

@@ -3,8 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireOrgEvent } from "@/lib/auth";
-import { getPrintOverview, listOrgTemplates, nextSerial } from "@/lib/queries/print";
-import { printValues } from "@/lib/print/values";
+import { getPrintOverview, getPrintSessions, listOrgTemplates, nextSerial } from "@/lib/queries/print";
+import { printValues, ticketScope } from "@/lib/print/values";
 import { suggestPrefix } from "@/lib/print/design";
 import { serverNow } from "@/lib/time";
 import { PrintWizard } from "@/components/print/print-wizard";
@@ -17,7 +17,12 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
   const base = `/org/${org.slug}/events/${event.slug}/print`;
   if (event.status !== "published" || new Date(event.ends_at).getTime() <= serverNow()) redirect(base);
 
-  const [{ types }, saved, next] = await Promise.all([getPrintOverview(event.id), listOrgTemplates(org.id), nextSerial(event.id)]);
+  const [{ types }, saved, next, { sessions, access }] = await Promise.all([
+    getPrintOverview(event.id),
+    listOrgTemplates(org.id),
+    nextSerial(event.id),
+    getPrintSessions(event.id),
+  ]);
 
   return (
     <div className="grid gap-4">
@@ -36,7 +41,7 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
           name: t.name,
           price_paisa: t.price_paisa,
           remaining: t.remaining,
-          values: printValues(event, org, t),
+          values: printValues(event, org, t, ticketScope(event.format, access.get(t.id), sessions)),
         }))}
       />
     </div>

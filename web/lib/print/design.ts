@@ -8,6 +8,8 @@ import { z } from "zod";
  * Units: 1 design unit = 0.1 mm (a 180 × 65 mm ticket is 1800 × 650).
  * Text can contain placeholders like {{event_name}}; {{serial}} and {{code}}
  * change on every ticket, the rest are the same for the whole batch.
+ * A placeholder can carry a fallback: {{presents|LIVE IN CONCERT}} prints the
+ * fallback when the value is empty (D-079: festival tickets fill it).
  *
  * Rules (also checked in Postgres → print_design_problem):
  *  - exactly one QR layer, at least 20 mm, not rotated, fully on the ticket
@@ -140,6 +142,8 @@ export interface TicketDesign {
   height: number;
   background: Fill;
   layers: Layer[];
+  /** D-082: what the organizer typed in "What the ticket says" – wins over the event's values. */
+  texts?: Partial<Record<EditableTextKey, string>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,7 +151,10 @@ export interface TicketDesign {
 // ---------------------------------------------------------------------------
 
 export const PLACEHOLDERS = [
-  { key: "event_name", label: "Event name", sample: "Qawwali Night 2026" },
+  { key: "event_name", label: "Headline (event or session name)", sample: "Qawwali Night 2026" },
+  { key: "presents", label: "Festival line (e.g. AUREX PRESENTS)", sample: "AUREX 2.0 PRESENTS" },
+  { key: "festival", label: "Festival name", sample: "Aurex 2.0" },
+  { key: "includes", label: "Sessions included", sample: "Qawwali Night, Mushaira" },
   { key: "society", label: "Society", sample: "LUMS Music Society" },
   { key: "date", label: "Date", sample: "Sat, 12 Dec 2026" },
   { key: "day", label: "Day (12)", sample: "12" },
@@ -168,13 +175,50 @@ export type PlaceholderValues = Partial<Record<PlaceholderKey | "poster" | "logo
 /** Placeholders that are different on every ticket. */
 export const PER_TICKET_KEYS: ReadonlySet<string> = new Set(["serial", "code"]);
 
-const TOKEN = /\{\{\s*([a-z_]+)\s*\}\}/g;
+/** {{key}} or {{key|fallback}}; the fallback may contain plain {{other}} placeholders. */
+export const TOKEN = /\{\{\s*([a-z_]+)\s*(?:\|((?:[^{}]|\{\{\s*[a-z_]+\s*\}\})*))?\}\}/g;
 
 export function fillPlaceholders(text: string, values: PlaceholderValues): string {
-  return text.replace(TOKEN, (whole, key: string) => {
+  return text.replace(TOKEN, (whole, key: string, fallback: string | undefined) => {
     const v = (values as Record<string, string | undefined>)[key];
+    if (fallback !== undefined) return v ? v : fillPlaceholders(fallback, values);
     return v ?? whole;
   });
+}
+
+/** Placeholder keys used by the visible text layers of a design (fallbacks included). */
+export function usedPlaceholders(design: Pick<TicketDesign, "layers">): Set<string> {
+  const keys = new Set<string>();
+  for (const l of design.layers) {
+    if (l.type !== "text" || l.hidden) continue;
+    for (const m of l.text.matchAll(TOKEN)) {
+      keys.add(m[1]);
+      if (m[2]) for (const inner of m[2].matchAll(TOKEN)) keys.add(inner[1]);
+    }
+  }
+  return keys;
+}
+
+/** D-082: details the organizer may retype in "What the ticket says" (stored on the design). */
+export const EDITABLE_TEXT_KEYS = ["event_name", "presents", "festival", "includes", "date", "time", "venue", "society"] as const;
+export type EditableTextKey = (typeof EDITABLE_TEXT_KEYS)[number];
+
+/** The event's values with the organizer's own texts on top (empty texts are ignored). */
+export function withTexts(values: PlaceholderValues, texts: TicketDesign["texts"] | null | undefined): PlaceholderValues {
+  if (!texts) return values;
+  const out: PlaceholderValues = { ...values };
+  for (const k of EDITABLE_TEXT_KEYS) {
+    const t = texts[k]?.trim();
+    if (t) out[k] = t;
+  }
+  return out;
+}
+
+/** The design without the organizer's texts (editor, saved templates). */
+export function withoutTexts(d: TicketDesign): TicketDesign {
+  const { texts: _texts, ...rest } = d;
+  void _texts;
+  return rest;
 }
 
 export function hasPerTicketPlaceholder(text: string): boolean {
@@ -301,6 +345,7 @@ export const designSchema = z.object({
   height: z.number().min(300).max(3000),
   background: fill,
   layers: z.array(layerSchema).max(MAX_LAYERS),
+  texts: z.partialRecord(z.enum(EDITABLE_TEXT_KEYS), z.string().max(200)).optional(),
 });
 
 export interface DesignProblem {

@@ -1031,3 +1031,29 @@ registered – the same thing the existing "already registered" error already di
   see the team's decisions (only the lead's account is linked to the registration).
 - `order.cancel_by_buyer` now also shows in the admin Decisions page under Payments as
   "Cancelled by buyer" (a step, not a decision).
+
+## D-079 Printed festival tickets show what they get you in (owner request, 2026-11-28)
+- Problem: a printed "Sufi Night Ticket" of the festival Aurex 2.0 said AUREX 2.0 in big letters
+  with the festival's start (1 Dec, 12:00 AM), the festival's venue and poster, so the gate and
+  the buyer could not tell it was the qawwali night ticket.
+- Rule: the big name is what the ticket gets you in; the festival goes in a small line above it.
+  Worked out from the ticket type's access (D-044), so organizers set nothing new:
+  - **One session** (Sufi Night Ticket → Qawwali Night): headline = session name; date, time,
+    venue and poster = the session's (venue / poster fall back to the festival's).
+    Top line "AUREX 2.0 PRESENTS".
+  - **Some chosen sessions** (combo): headline = the ticket type's name, `{{includes}}` = the
+    session names, date = first to last session day, time = first session, venue = shared
+    venue or the festival's. Top line "AUREX 2.0 PRESENTS".
+  - **Festival pass:** headline = festival, top line "FESTIVAL PASS", date = festival range
+    ("1 – 2 Dec 2026"), time = first pass session (reads better than "12:00 AM").
+  - **Entry ticket** (no session): headline = festival, top line "ENTRY TICKET", festival range.
+  - Single events and competition events print exactly as before.
+- New placeholders `{{presents}}`, `{{festival}}`, `{{includes}}`, and fallbacks:
+  `{{presents|LIVE IN CONCERT}}` prints the fallback when the value is empty (the fallback may
+  contain plain placeholders such as `{{society}}`). Every built-in template's top line
+  ("kicker") is wrapped this way and shrinks to one line, so festival tickets say
+  "AUREX 2.0 PRESENTS" and other events keep the template's words. Royal Qawwali got a small
+  festival line (empty outside festivals).
+- Older batches and saved designs: re-downloading an existing festival batch now prints the
+  session's details too (values are filled at download time). QR codes do not change, so
+  already printed tickets keep scanning. Saved designs keep their own top line until edited.

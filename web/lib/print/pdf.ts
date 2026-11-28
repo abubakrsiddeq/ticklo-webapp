@@ -17,6 +17,7 @@ import {
   type QrLayer,
   type TextLayer,
   type TicketDesign,
+  withTexts,
 } from "./design";
 import { layoutPlan, type PrintLayout } from "./layout";
 import { QR_MARGIN_MODULES, qrMatrix, qrRunsPath } from "./qr-matrix";
@@ -55,8 +56,10 @@ async function canvasToPng(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-export async function buildTicketsPdf(design: TicketDesign, baseValues: PlaceholderValues, tickets: PdfTicket[], opts: PdfOptions): Promise<Uint8Array> {
+export async function buildTicketsPdf(design: TicketDesign, eventValues: PlaceholderValues, tickets: PdfTicket[], opts: PdfOptions): Promise<Uint8Array> {
   if (!tickets.length) throw new Error("No tickets to print.");
+  // D-082: what the organizer typed on the design wins over the event's details
+  const baseValues = withTexts(eventValues, design.texts);
   const K = await loadKonva();
   const assets = await prepareAssets(design, { ...baseValues, serial: tickets[0].serial, code: tickets[0].code });
 
@@ -220,8 +223,9 @@ function drawSheetExtras(
 
 
 /** Render a design to a PNG data URL (template thumbnails and previews). */
-export async function designPreviewDataUrl(design: TicketDesign, values: PlaceholderValues, widthPx: number, qrToken: string): Promise<string> {
+export async function designPreviewDataUrl(design: TicketDesign, eventValues: PlaceholderValues, widthPx: number, qrToken: string): Promise<string> {
   const K = await loadKonva();
+  const values = withTexts(eventValues, design.texts);
   const assets = await prepareAssets(design, values);
   const canvas = renderToCanvas(K, design, { values, assets, qrToken, pixelRatio: widthPx / design.width });
   return canvas.toDataURL("image/png");

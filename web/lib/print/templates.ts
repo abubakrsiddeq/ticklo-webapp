@@ -4,7 +4,7 @@
  * 180 × 65 mm: the main part (with the QR, kept by the guest) and a 42 mm
  * tear-off stub (kept by the seller, with space for the buyer's name/phone).
  */
-import type { TicketDesign } from "./design";
+import type { Layer, TicketDesign } from "./design";
 import {
   CAR, DOME, H, LANTERN, MOUNTAINS_BACK, MOUNTAINS_FRONT, NOTES, STUB_X, TROPHY,
   bars, brand, bunting, checker, design, dotGrid, ellipse, image, line, linear, path, qr, rect, star, starRow, stub, text,
@@ -57,6 +57,7 @@ const HANDMADE: TicketTemplate[] = [
       path("stars-top", starRow(1380, 40, 26), [1380, 40], 0, 18, STUB_X, 40, GOLD, { opacity: 0.55, name: "Stars" }),
       path("stars-bottom", starRow(1380, 40, 26), [1380, 40], 0, 592, STUB_X, 40, GOLD, { opacity: 0.55, name: "Stars" }),
       text("urdu", "قوالی نائٹ", 70, 55, 900, 64, "nastaliq-700", GOLD_SOFT, { opacity: 0.9 }),
+      text("kicker", "", 72, 170, 900, 21, "poppins-600", GOLD_SOFT, { letterSpacing: 6, name: "Festival line" }),
       text("title", "{{event_name}}", 70, 198, 940, 96, "cinzel-700", GOLD, { uppercase: true, lineHeight: 1.05, letterSpacing: 2, fitHeight: 125 }),
       line("rule", 72, 330, 420, GOLD, 3),
       text("date", "{{date}}  ·  {{time}}", 70, 360, 900, 40, "poppins-600", "#FFFFFF"),
@@ -280,10 +281,23 @@ const HANDMADE: TicketTemplate[] = [
 /** Templates per category in the gallery: the hand-made ones first, then modern layouts up to this number. */
 export const TEMPLATES_PER_CATEGORY = 6;
 
+/**
+ * D-079: the small line above the headline says "AUREX 2.0 PRESENTS" (or "FESTIVAL PASS") on
+ * festival tickets and keeps the template's own words ("LIVE IN CONCERT") everywhere else.
+ * It shrinks to one line so a long festival name never runs into the headline.
+ */
+function festivalReady(t: TicketTemplate): TicketTemplate {
+  const layers = t.design.layers.map((l): Layer => {
+    if (l.type !== "text" || l.id !== "kicker" || l.text.startsWith("{{presents")) return l;
+    return { ...l, text: `{{presents|${l.text}}}`, fitHeight: l.fitHeight ?? Math.round(l.fontSize * 1.35) };
+  });
+  return { ...t, design: { ...t.design, layers } };
+}
+
 export const TEMPLATES: TicketTemplate[] = TEMPLATE_CATEGORIES.flatMap((c) => {
   const own = HANDMADE.filter((t) => t.category === c.key);
   return [...own, ...modernTemplates(c.key, Math.max(0, TEMPLATES_PER_CATEGORY - own.length))];
-});
+}).map(festivalReady);
 
 export function templateByKey(key: string | null | undefined): TicketTemplate | null {
   return TEMPLATES.find((t) => t.key === key) ?? null;

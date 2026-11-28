@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgEvent } from "@/lib/auth";
-import { getPrintBatch } from "@/lib/queries/print";
+import { getPrintBatch, getTypeScope } from "@/lib/queries/print";
 import { printValues } from "@/lib/print/values";
 import { parseDesign } from "@/lib/print/design";
 import { formatPKR, formatShortDateTime, formatTime, paisaToRupeesInput } from "@/lib/format";
@@ -34,7 +34,7 @@ export default async function PrintBatchPage({
   if (!detail) notFound();
   const { batch, tickets } = detail;
   const design = parseDesign(batch.design);
-  const values = printValues(event, org, batch.ticket_types);
+  const values = printValues(event, org, batch.ticket_types, await getTypeScope(event, batch.ticket_types.id));
   const base = `/org/${org.slug}/events/${event.slug}/print`;
   const first = tickets[0]?.serial ?? "";
   const last = tickets[tickets.length - 1]?.serial ?? "";
