@@ -15,6 +15,8 @@ export interface EmailMessage {
   related?: { type: string; id: string };
   /** Files; give `contentId` to show an image inline with <img src="cid:…"> */
   attachments?: { filename: string; content: Buffer; contentType?: string; contentId?: string }[];
+  /** Reply-To for this email only (e.g. the sender of a contact form); defaults to EMAIL_REPLY_TO */
+  replyTo?: string;
 }
 
 let resend: Resend | null = null;
@@ -65,7 +67,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
     if (serverEnv.smtp.host) {
       const info = await getSmtp().sendMail({
         from: serverEnv.emailFrom,
-        replyTo: serverEnv.emailReplyTo || undefined,
+        replyTo: msg.replyTo || serverEnv.emailReplyTo || undefined,
         to: msg.to,
         subject: msg.subject,
         html,
@@ -82,7 +84,7 @@ export async function sendEmail(msg: EmailMessage): Promise<{ ok: boolean }> {
     }
     const { data, error } = await getResend().emails.send({
       from: serverEnv.emailFrom,
-      replyTo: serverEnv.emailReplyTo || undefined,
+      replyTo: msg.replyTo || serverEnv.emailReplyTo || undefined,
       to: msg.to,
       subject: msg.subject,
       html,

@@ -590,9 +590,9 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
    verified, the interactive UI has not been driven by a browser yet.
 2. Visual check on real phones (Android Chrome, iPhone Safari) at 360 px, especially the
    camera scanner and the live QR page.
-3. Privacy policy and terms are drafts (open question: who writes them).
+3. Privacy policy and terms are written (D-090) but not reviewed by a lawyer.
 4. Open questions from the doc are still open: pilot society/date, review time limit for
-   organizers, screenshot retention period, domain + sender address.
+   organizers. (Screenshot retention: 90 days, D-090.)
 
 ## How to test
 
@@ -644,6 +644,12 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Privacy, Terms, About, Contact (D-090):** deploy the new web build (no migration). Then:
+  (1) on Hostinger set `PROOF_RETENTION_DAYS=90` (the Privacy policy promises it);
+  (2) in Supabase SQL editor on TickLO Production run the `ticklo-cleanup-proofs` line at the end of
+  `supabase/ops/app-cron.sql`; (3) send a test message from `/contact` and check it reaches
+  ticklopakistan@gmail.com and Reply goes to the sender; (4) if possible have a lawyer read
+  `/privacy` and `/terms`.
 - **University names without the city (D-089):** apply migration
   `20261128000900_university_names_without_city.sql` to TickLO Production (`supabase db push`, or
   the D-034 method), then deploy the new web build. Safe in either order: the live build already

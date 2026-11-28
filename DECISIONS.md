@@ -1369,3 +1369,30 @@ D-059 rule that skipped the city whenever the name contained it.
 - Now used everywhere a full university name is listed: pickers, admin society/user pages,
   Approvals, Campus ambassador campus list, the public society page, the event filter dropdown and
   the admin alert and digest emails. Cards that show the short name (LUMS, NUST) are unchanged.
+
+## D-090 Privacy policy, Terms, About us and Contact us (owner request, 2026-11-28)
+Owner: "Privacy policy aur terms professional bana do, … About Us and Contact us pages bi".
+- `/privacy` and `/terms` are final (no "Draft" banner). Shared layout `components/legal/legal-page.tsx`:
+  hero with "Last updated" (`LEGAL_UPDATED` in `lib/site.ts`), an "At a glance" summary, numbered
+  sections with a sticky contents list on desktop and a folded one on phones, contact card at the end.
+- Both name the operator as **BKR Tech Solutions (SMC-Private) Limited** (SECP CUIN 0332540), governing
+  law Pakistan, courts of Islamabad. They describe what the code really does (societies are the
+  organizers and receive the money, who sees what, Supabase Mumbai / Hostinger / Cloudflare, sign-in and
+  7-day referral cookies, account deletion from the profile). They are a careful plain-language draft,
+  not reviewed by a lawyer.
+- Retention: payment screenshots and student card photos are deleted **90 days after the event ends**
+  (answers the open question). Needs `PROOF_RETENTION_DAYS=90` on Hostinger and the new
+  `ticklo-cleanup-proofs` job (daily 2:30 AM PKT) from `supabase/ops/app-cron.sql`.
+- `/about`: TickLO story (before / with TickLO), values, how it works for students and societies, and
+  "Built by BKR Tech Solutions" with facts from bkrtechsolutions.com (SECP, PSEB, Islamabad and Oslo,
+  120+ projects, 60+ clients, 25+ specialists) and the founder card (Abubakar Siddique, Founder & CEO).
+  The site's "8+ years" claim was left out because it does not match the 2024 founding.
+- `/contact`: support email (ticklopakistan@gmail.com), business email (info@bkrtechsolutions.com.pk),
+  call / WhatsApp +92 (320) 6068300 (Abubakar Siddique), address Bahria University H-11 Campus with the
+  owner's Google Maps link and an embedded map, a contact form and quick answers.
+  - The form (name, email, optional mobile, topic, message 20–2000) emails the support inbox with
+    Reply-To set to the sender (`EmailMessage.replyTo`, new). Hidden honeypot field, 5 per hour per IP
+    and 3 per hour per email. Logged-in people get their name, email and phone filled in, and the
+    email says which account sent it.
+- Footer "TickLO" column: About us, Contact us, Privacy policy, Terms of use (the mailto link is gone);
+  copyright line uses the legal company name.

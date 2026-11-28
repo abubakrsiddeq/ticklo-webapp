@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, QrCode, Wallet } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { SUPPORT_EMAIL, TAGLINE } from "@/lib/site";
+import { COMPANY, TAGLINE } from "@/lib/site";
 
 const COLUMNS = [
   {
@@ -25,9 +25,10 @@ const COLUMNS = [
   {
     title: "TickLO",
     links: [
+      { href: "/about", label: "About us" },
+      { href: "/contact", label: "Contact us" },
       { href: "/privacy", label: "Privacy policy" },
       { href: "/terms", label: "Terms of use" },
-      { href: `mailto:${SUPPORT_EMAIL}`, label: "Contact support" },
     ],
   },
 ];
@@ -85,7 +86,7 @@ export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
         </div>
         <div className="border-t border-white/10">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-            <p>© {new Date().getFullYear()} TickLO · A product by BKR Tech Solutions</p>
+            <p>© {new Date().getFullYear()} TickLO · A product of {COMPANY.legalName}</p>
             <p className="flex items-center gap-2">
               <span className="inline-block size-2 rounded-full bg-brand-light" aria-hidden /> Made in Pakistan for students
             </p>

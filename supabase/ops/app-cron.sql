@@ -32,3 +32,6 @@ select cron.schedule('ticklo-waitlist', '*/5 * * * *', $$select public.call_app_
 select cron.schedule('ticklo-reminders', '*/15 * * * *', $$select public.call_app_cron('/api/cron/reminders')$$);
 -- D-088 admin digest – daily at 04:00 UTC = 9:00 PKT (sent once a day, only when something waits)
 select cron.schedule('ticklo-admin-digest', '0 4 * * *', $$select public.call_app_cron('/api/cron/admin-digest')$$);
+-- D-090 delete payment screenshots and student card photos PROOF_RETENTION_DAYS (90) after the
+-- event, as the Privacy policy says – daily at 21:30 UTC = 2:30 AM PKT
+select cron.schedule('ticklo-cleanup-proofs', '30 21 * * *', $$select public.call_app_cron('/api/cron/cleanup-proofs')$$);
