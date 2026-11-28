@@ -4074,6 +4074,13 @@ export type Database = {
         };
         Returns: number;
       };
+      university_clean_name: {
+        Args: {
+          p_name: string | null;
+          p_city: string | null;
+        };
+        Returns: string;
+      };
       update_member_role: {
         Args: {
           p_org_id: string | null;

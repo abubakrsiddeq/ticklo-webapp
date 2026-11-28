@@ -644,6 +644,10 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **University names without the city (D-089):** apply migration
+  `20261128000900_university_names_without_city.sql` to TickLO Production (`supabase db push`, or
+  the D-034 method), then deploy the new web build. Safe in either order: the live build already
+  shows "Bahria University" + Islamabad as "Bahria University (Islamabad)".
 - **Admin emails (D-088):** deploy the new web build. The cron job `ticklo-admin-digest`
   (`0 4 * * *` = 9:00 PKT) is already scheduled on TickLO Production (2026-11-28); until the
   build is deployed its call just gets a 404. Make sure your admin account has the right email.

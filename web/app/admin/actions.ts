@@ -141,7 +141,7 @@ export async function approveUniversity(id: string, input: unknown): Promise<Act
     p_email_domain: parsed.data.email_domain,
   });
   if (error) {
-    if (error.code === "23505") return { ok: false, error: "A university with this name already exists – use Merge instead.", fieldErrors: { name: "Already in the list" } };
+    if (error.code === "23505") return { ok: false, error: "A university with this name already exists in this city – use Merge instead.", fieldErrors: { name: "Already in the list" } };
     return fail(error);
   }
   revalidatePath("/", "layout");

@@ -15,26 +15,26 @@
 insert into public.universities (id, name, short_name, city, email_domain) values
   ('10000000-0000-4000-8000-000000000001', 'Lahore University of Management Sciences', 'LUMS', 'Lahore', 'lums.edu.pk'),
   ('10000000-0000-4000-8000-000000000002', 'National University of Sciences and Technology', 'NUST', 'Islamabad', 'nust.edu.pk'),
-  ('10000000-0000-4000-8000-000000000003', 'FAST National University (Lahore)', 'FAST-NU Lahore', 'Lahore', 'nu.edu.pk'),
-  ('10000000-0000-4000-8000-000000000004', 'FAST National University (Islamabad)', 'FAST-NU Islamabad', 'Islamabad', 'nu.edu.pk'),
-  ('10000000-0000-4000-8000-000000000005', 'FAST National University (Karachi)', 'FAST-NU Karachi', 'Karachi', 'nu.edu.pk'),
+  ('10000000-0000-4000-8000-000000000003', 'FAST National University', 'FAST-NU Lahore', 'Lahore', 'nu.edu.pk'),
+  ('10000000-0000-4000-8000-000000000004', 'FAST National University', 'FAST-NU Islamabad', 'Islamabad', 'nu.edu.pk'),
+  ('10000000-0000-4000-8000-000000000005', 'FAST National University', 'FAST-NU Karachi', 'Karachi', 'nu.edu.pk'),
   ('10000000-0000-4000-8000-000000000006', 'Institute of Business Administration', 'IBA', 'Karachi', 'iba.edu.pk'),
   ('10000000-0000-4000-8000-000000000007', 'University of Engineering and Technology', 'UET Lahore', 'Lahore', 'uet.edu.pk'),
   ('10000000-0000-4000-8000-000000000008', 'University of the Punjab', 'PU', 'Lahore', 'pu.edu.pk'),
-  ('10000000-0000-4000-8000-000000000009', 'COMSATS University Islamabad', 'COMSATS', 'Islamabad', 'comsats.edu.pk'),
+  ('10000000-0000-4000-8000-000000000009', 'COMSATS University', 'COMSATS', 'Islamabad', 'comsats.edu.pk'),
   ('10000000-0000-4000-8000-000000000010', 'Ghulam Ishaq Khan Institute', 'GIKI', 'Topi', 'giki.edu.pk'),
   ('10000000-0000-4000-8000-000000000011', 'NED University of Engineering and Technology', 'NED', 'Karachi', 'neduet.edu.pk'),
   ('10000000-0000-4000-8000-000000000012', 'Habib University', 'Habib', 'Karachi', 'habib.edu.pk'),
   ('10000000-0000-4000-8000-000000000013', 'Quaid-i-Azam University', 'QAU', 'Islamabad', 'qau.edu.pk'),
   ('10000000-0000-4000-8000-000000000014', 'Air University', 'AU', 'Islamabad', 'au.edu.pk'),
   ('10000000-0000-4000-8000-000000000015', 'University of Central Punjab', 'UCP', 'Lahore', 'ucp.edu.pk'),
-  ('10000000-0000-4000-8000-000000000016', 'Bahria University (Islamabad)', 'Bahria Islamabad', 'Islamabad', 'bahria.edu.pk'),
+  ('10000000-0000-4000-8000-000000000016', 'Bahria University', 'Bahria Islamabad', 'Islamabad', 'bahria.edu.pk'),
   ('10000000-0000-4000-8000-000000000017', 'Pakistan Institute of Engineering and Applied Sciences', 'PIEAS', 'Islamabad', 'pieas.edu.pk'),
-  ('10000000-0000-4000-8000-000000000018', 'COMSATS University (Lahore)', 'COMSATS Lahore', 'Lahore', 'cuilahore.edu.pk'),
+  ('10000000-0000-4000-8000-000000000018', 'COMSATS University', 'COMSATS Lahore', 'Lahore', 'cuilahore.edu.pk'),
   ('10000000-0000-4000-8000-000000000019', 'Information Technology University', 'ITU', 'Lahore', 'itu.edu.pk'),
   ('10000000-0000-4000-8000-000000000020', 'Aga Khan University', 'AKU', 'Karachi', 'aku.edu'),
   ('10000000-0000-4000-8000-000000000021', 'University of Karachi', 'KU', 'Karachi', 'uok.edu.pk'),
-  ('10000000-0000-4000-8000-000000000022', 'Bahria University (Karachi)', 'Bahria Karachi', 'Karachi', 'bahria.edu.pk')
+  ('10000000-0000-4000-8000-000000000022', 'Bahria University', 'Bahria Karachi', 'Karachi', 'bahria.edu.pk')
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------------

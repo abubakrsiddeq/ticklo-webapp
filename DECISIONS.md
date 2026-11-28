@@ -1354,8 +1354,18 @@ D-059 rule that skipped the city whenever the name contained it.
 - A city that is part of the real name stays and no bracket is added: it sits at the start
   ("Lahore University of Management Sciences") or follows "of", "the", "at", "in", "for", "and"
   ("University of Karachi").
-- Display only; stored names are not changed, so the admin Universities page still shows and edits
-  the name as saved.
+- Stored names are cleaned too (owner follow-up "database ma bhi names clean kr do"), migration
+  `20261128000900_university_names_without_city`:
+  - `university_clean_name(name, city)` applies the same rule in SQL; a trigger runs it on every
+    insert/update (admin form, approval, "Other" request), and capitalises an all-lowercase city.
+  - Existing rows are cleaned: Bahria, COMSATS and FAST campuses become "Bahria University",
+    "COMSATS University", "FAST National University", each with its own city.
+  - Because campuses now share a name, the unique index is on (name, city) instead of name.
+  - `request_university` matches a typed name after cleaning and within its city, so
+    "Bahria University Karachi" links to the Karachi campus. The same name with another city files
+    a new request (could be a real new campus); an admin can merge it.
+  - `universityLabel` still strips a city from the end, so the old live build and any unclean
+    name both show correctly.
 - Now used everywhere a full university name is listed: pickers, admin society/user pages,
   Approvals, Campus ambassador campus list, the public society page, the event filter dropdown and
   the admin alert and digest emails. Cards that show the short name (LUMS, NUST) are unchanged.

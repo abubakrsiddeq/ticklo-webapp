@@ -32,10 +32,12 @@ describe("'Other' university requests (D-057)", () => {
     expect(await visibleTo((await createUser(c)).id, id)).toBe(false);
   });
 
-  it("reuses an existing university by name or short name, and a pending one by name", async () => {
+  it("reuses an existing university by name and city or short name, and a pending one by name", async () => {
     const u = await createUser(c);
     expect(await request(u.id, "lums")).toBe(LUMS);
-    expect(await request(u.id, "Lahore University of Management Sciences")).toBe(LUMS);
+    expect(await request(u.id, "Lahore University of Management Sciences", "Lahore")).toBe(LUMS);
+    // D-089: names are matched within their city (campuses share a name).
+    expect(await request(u.id, "Lahore University of Management Sciences", "Sargodha")).not.toBe(LUMS);
     const first = await request(u.id, "Government College Sahiwal", "Sahiwal");
     expect(await request((await createUser(c)).id, "government college sahiwal", "Sahiwal")).toBe(first);
   });
@@ -81,5 +83,37 @@ describe("'Other' university requests (D-057)", () => {
     expect((await c.query("select university_id from public.profiles where id = $1", [u.id])).rows[0].university_id).toBe(LUMS);
     expect((await c.query("select university_id from public.organizations where id = $1", [SEED.pendingOrg])).rows[0].university_id).toBe(LUMS);
     expect((await c.query("select 1 from public.universities where id = $1", [id])).rowCount).toBe(0);
+  });
+});
+
+describe("university names are saved without their city (D-089)", () => {
+  const BAHRIA_ISB = "10000000-0000-4000-8000-000000000016";
+  const BAHRIA_KHI = "10000000-0000-4000-8000-000000000022";
+  const S = ["uuid", "text", "text", "text", "text"];
+
+  it("cleans the seeded names and keeps a city that is part of the real name", async () => {
+    const rows = await c.query("select id, name, city from public.universities where id = any($1)", [[BAHRIA_ISB, BAHRIA_KHI, LUMS]]);
+    const byId = Object.fromEntries(rows.rows.map((r) => [r.id, r]));
+    expect(byId[BAHRIA_ISB]).toMatchObject({ name: "Bahria University", city: "Islamabad" });
+    expect(byId[BAHRIA_KHI]).toMatchObject({ name: "Bahria University", city: "Karachi" });
+    expect(byId[LUMS].name).toBe("Lahore University of Management Sciences");
+    const ku = await c.query("select name from public.universities where lower(city) = 'karachi' and name ilike 'university of karachi'");
+    expect(ku.rows[0].name).toBe("University of Karachi");
+  });
+
+  it("takes the city off a typed request and finds the right campus", async () => {
+    const u = await createUser(c);
+    expect(await request(u.id, "Bahria University Karachi", "Karachi")).toBe(BAHRIA_KHI);
+    expect(await request(u.id, "bahria university (islamabad)", "Islamabad")).toBe(BAHRIA_ISB);
+    const id = await request(u.id, "Bahria University, Lahore", "lahore");
+    const row = await c.query("select name, city, status from public.universities where id = $1", [id]);
+    expect(row.rows[0]).toEqual({ name: "Bahria University", city: "Lahore", status: "pending" });
+  });
+
+  it("cleans names an admin saves, and a name only has to be unique within its city", async () => {
+    const id = await asUser(c, SEED.admin, () => rpc<string>(c, "admin_save_university", [null, "Riphah International University Rawalpindi", "Riphah", "Rawalpindi", ""], S));
+    expect((await c.query("select name from public.universities where id = $1", [id])).rows[0].name).toBe("Riphah International University");
+    await asUser(c, SEED.admin, () => rpc(c, "admin_save_university", [null, "Riphah International University", "", "Faisalabad", ""], S));
+    await expect(asUser(c, SEED.admin, () => rpc(c, "admin_save_university", [null, "Riphah International University (Rawalpindi)", "", "Rawalpindi", ""], S))).rejects.toThrow(/universities_name_city_key/);
   });
 });
