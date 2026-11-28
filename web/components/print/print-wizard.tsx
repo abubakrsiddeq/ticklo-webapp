@@ -19,15 +19,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormField } from "@/components/form-field";
-import { NativeSelect } from "@/components/native-select";
 import { createPrintBatch, saveTicketTemplate } from "@/app/org/_actions/print";
 import { designProblems, serialLabel, type PlaceholderValues, type TicketDesign } from "@/lib/print/design";
 import { cloneDesign } from "@/lib/print/templates";
 import { formatPKR } from "@/lib/format";
+
+export type { WizardType } from "./ticket-picker";
 import { cn } from "@/lib/utils";
 import { TicketFonts } from "./ticket-fonts";
 import { TemplateGallery, type ChosenTemplate, type SavedTemplate } from "./template-gallery";
 import { DesignThumb } from "./design-thumb";
+import { PickedTicket, TicketPicker, type WizardType } from "./ticket-picker";
 import { useActionTransition } from "@/lib/use-action-transition";
 
 const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => m.TicketEditor), {
@@ -39,18 +41,10 @@ const TicketEditor = dynamic(() => import("./editor/ticket-editor").then((m) => 
   ),
 });
 
-export interface WizardType {
-  id: string;
-  name: string;
-  price_paisa: number;
-  remaining: number;
-  values: PlaceholderValues;
-}
-
-type Step = "choose" | "edit" | "generate";
+type Step = "ticket" | "choose" | "edit" | "generate";
 
 /**
- * PRT-01..PRT-04: choose a template → edit it → say how many tickets →
+ * PRT-01..PRT-04: pick the tickets (D-080) → choose a template → edit it → say how many →
  * TickLO creates them (each with its own QR and serial) → batch page with the PDF.
  */
 export function PrintWizard({
@@ -60,7 +54,7 @@ export function PrintWizard({
   types,
   saved,
   nextSerial,
-  defaultPrefix,
+  festival,
 }: {
   orgSlug: string;
   eventId: string;
@@ -68,16 +62,21 @@ export function PrintWizard({
   types: WizardType[];
   saved: SavedTemplate[];
   nextSerial: number;
-  defaultPrefix: string;
+  festival: boolean;
 }) {
   const router = useRouter();
-  const firstAvailable = types.find((t) => t.remaining > 0) ?? types[0];
-  const [step, setStep] = useState<Step>("choose");
+  const available = types.filter((t) => t.remaining > 0);
+  const firstAvailable = available[0] ?? types[0];
+  // D-080: with a single ticket type there is nothing to pick
+  const onlyOne = types.length === 1 && available.length === 1;
+  const [step, setStep] = useState<Step>(onlyOne ? "choose" : "ticket");
   const [typeId, setTypeId] = useState(firstAvailable?.id ?? "");
   const [template, setTemplate] = useState<ChosenTemplate | null>(null);
   const [design, setDesign] = useState<TicketDesign | null>(null);
-  const [prefix, setPrefix] = useState(defaultPrefix);
+  const [prefix, setPrefix] = useState(firstAvailable?.prefix ?? "TKT");
+  const [prefixTouched, setPrefixTouched] = useState(false);
   const [quantity, setQuantity] = useState(String(Math.min(100, firstAvailable?.remaining || 100)));
+  const [quantityTouched, setQuantityTouched] = useState(false);
   const [label, setLabel] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState(false);
@@ -101,10 +100,26 @@ export function PrintWizard({
   }
 
   const steps: { key: Step; label: string }[] = [
-    { key: "choose", label: "1. Template" },
-    { key: "edit", label: "2. Design" },
-    { key: "generate", label: "3. How many" },
+    { key: "ticket", label: "1. Ticket" },
+    { key: "choose", label: "2. Design" },
+    { key: "edit", label: "3. Edit" },
+    { key: "generate", label: "4. How many" },
   ];
+  const stepIndex = steps.findIndex((s) => s.key === step);
+  const canOpen = (k: Step) => {
+    const i = steps.findIndex((s) => s.key === k);
+    if (i >= stepIndex) return false;
+    return k === "ticket" ? !onlyOne : k === "choose" || Boolean(design);
+  };
+
+  const pickType = (id: string) => {
+    const t = types.find((x) => x.id === id);
+    if (!t) return;
+    setTypeId(id);
+    if (!prefixTouched) setPrefix(t.prefix);
+    if (!quantityTouched) setQuantity(String(Math.min(100, t.remaining || 100)));
+    setStep(design ? "edit" : "choose");
+  };
 
   const generate = () =>
     start(async () => {
@@ -132,33 +147,34 @@ export function PrintWizard({
     <div className="grid gap-4">
       <TicketFonts />
       <ol className="flex flex-wrap gap-2 text-sm" aria-label="Steps">
-        {steps.map((s) => (
-          <li
-            key={s.key}
-            aria-current={step === s.key ? "step" : undefined}
-            className={cn("rounded-full px-3 py-1", step === s.key ? "bg-navy text-white" : "bg-white text-muted-foreground ring-1 ring-navy/10")}
-          >
-            {s.label}
-          </li>
-        ))}
+        {steps
+          .filter((s) => !(onlyOne && s.key === "ticket"))
+          .map((s, i) => {
+            const label = onlyOne ? `${i + 1}. ${s.label.replace(/^\d+\. /, "")}` : s.label;
+            const cls = cn("rounded-full px-3 py-1", step === s.key ? "bg-navy text-white" : "bg-white text-muted-foreground ring-1 ring-navy/10");
+            return (
+              <li key={s.key} aria-current={step === s.key ? "step" : undefined}>
+                {canOpen(s.key) ? (
+                  <button type="button" onClick={() => setStep(s.key)} className={cn(cls, "text-navy hover:bg-muted")}>
+                    {label}
+                  </button>
+                ) : (
+                  <span className={cn(cls, "inline-block")}>{label}</span>
+                )}
+              </li>
+            );
+          })}
       </ol>
+
+      {step !== "ticket" && type ? <PickedTicket type={type} onChange={onlyOne ? undefined : () => setStep("ticket")} /> : null}
+
+      {step === "ticket" ? <TicketPicker types={types} festival={festival} selectedId={typeId} onPick={pickType} /> : null}
 
       {step === "choose" ? (
         <div className="grid gap-4">
-          <div className="grid gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-navy/[0.06] sm:grid-cols-[1fr_auto] sm:items-end">
-            <FormField id="type" label="Ticket type" hint="Its name and price are printed on the ticket.">
-              <NativeSelect id="type" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id} disabled={t.remaining < 1}>
-                    {t.name} · {formatPKR(t.price_paisa, { freeLabel: "Free" })} · {t.remaining} left
-                  </option>
-                ))}
-              </NativeSelect>
-            </FormField>
-          </div>
           {type && type.remaining < 1 ? (
             <p role="alert" className="rounded-xl bg-warning-soft p-3 text-sm text-warning">
-              No &quot;{type.name}&quot; tickets are left. Raise its quantity on Edit &amp; tickets, or choose another type.
+              No &quot;{type.name}&quot; tickets are left. Raise its quantity on Edit &amp; tickets, or choose another ticket.
             </p>
           ) : null}
           <TemplateGallery
@@ -208,20 +224,17 @@ export function PrintWizard({
                 Each ticket gets its own QR code and serial number. They count against &quot;{type.name}&quot; ({type.remaining} left), so online buyers can&apos;t take the same places.
               </p>
             </div>
-            <FormField id="type2" label="Ticket type">
-              <NativeSelect id="type2" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id} disabled={t.remaining < 1}>
-                    {t.name} · {formatPKR(t.price_paisa, { freeLabel: "Free" })} · {t.remaining} left
-                  </option>
-                ))}
-              </NativeSelect>
-            </FormField>
             <FormField id="qty" label="Number of tickets" required error={errors.quantity ?? (!qtyOk && quantity ? `Choose 1 – ${Math.min(2000, type.remaining)}` : undefined)} hint="Up to 2000 per batch.">
-              <Input id="qty" type="number" inputMode="numeric" min={1} max={Math.min(2000, type.remaining)} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              <Input id="qty" type="number" inputMode="numeric" min={1} max={Math.min(2000, type.remaining)} value={quantity} onChange={(e) => {
+                  setQuantity(e.target.value);
+                  setQuantityTouched(true);
+                }} />
             </FormField>
             <FormField id="prefix" label="Serial prefix" required error={errors.prefix ?? (!prefixOk ? "1–6 letters or numbers" : undefined)} hint={`First ticket: ${serialLabel(prefixOk ? cleanPrefix : "TKT", nextSerial)}`}>
-              <Input id="prefix" value={prefix} maxLength={6} onChange={(e) => setPrefix(e.target.value.toUpperCase())} className="font-mono uppercase" />
+              <Input id="prefix" value={prefix} maxLength={6} onChange={(e) => {
+                setPrefix(e.target.value.toUpperCase());
+                setPrefixTouched(true);
+              }} className="font-mono uppercase" />
             </FormField>
             <FormField id="label" label="Batch name (optional)" hint="For your records, e.g. “Gate sale” or “Ali's book”.">
               <Input id="label" value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} />

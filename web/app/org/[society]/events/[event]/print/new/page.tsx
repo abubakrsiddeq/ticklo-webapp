@@ -6,6 +6,8 @@ import { requireOrgEvent } from "@/lib/auth";
 import { getPrintOverview, getPrintSessions, listOrgTemplates, nextSerial } from "@/lib/queries/print";
 import { printValues, ticketScope } from "@/lib/print/values";
 import { suggestPrefix } from "@/lib/print/design";
+import { suggestedCategory } from "@/lib/print/category";
+import { kindEmoji } from "@/lib/sessions";
 import { serverNow } from "@/lib/time";
 import { PrintWizard } from "@/components/print/print-wizard";
 
@@ -34,15 +36,28 @@ export default async function NewPrintedTicketsPage({ params }: { params: Promis
         eventId={event.id}
         basePath={base}
         nextSerial={next}
-        defaultPrefix={suggestPrefix(event.name)}
+        festival={event.format === "festival"}
         saved={saved.map((s) => ({ id: s.id, name: s.name, category: s.category, design: s.design }))}
-        types={types.map((t) => ({
-          id: t.id,
-          name: t.name,
-          price_paisa: t.price_paisa,
-          remaining: t.remaining,
-          values: printValues(event, org, t, ticketScope(event.format, access.get(t.id), sessions)),
-        }))}
+        types={types.map((t) => {
+          // D-079 / D-080: what each ticket gets you in decides what is printed and how its card reads
+          const scope = ticketScope(event.format, access.get(t.id), sessions);
+          const values = printValues(event, org, t, scope);
+          const headline = values.event_name ?? event.name;
+          const emoji = { event: "🎫", session: kindEmoji(scope.sessions[0]?.kind ?? ""), sessions: "🎫", pass: "🎟", entry: "🚪" }[scope.kind];
+          return {
+            id: t.id,
+            name: t.name,
+            price_paisa: t.price_paisa,
+            remaining: t.remaining,
+            values,
+            scope: scope.kind,
+            headline,
+            emoji,
+            when: [values.date, values.time, values.venue].filter(Boolean).join(" · "),
+            category: suggestedCategory(event.format, event.name, scope),
+            prefix: suggestPrefix(headline),
+          };
+        })}
       />
     </div>
   );

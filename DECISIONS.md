@@ -1057,3 +1057,21 @@ registered – the same thing the existing "already registered" error already di
 - Older batches and saved designs: re-downloading an existing festival batch now prints the
   session's details too (values are filled at download time). QR codes do not change, so
   already printed tickets keep scanning. Saved designs keep their own top line until edited.
+
+## D-080 Printed tickets start with "Which tickets do you want to print?" (owner request, 2026-11-28)
+- The "Ticket type" dropdown only showed "Sufi Night Ticket · Rs 1,000 · 498 left", so an
+  organizer could not see which session it was for. Step 1 is now cards: the session's emoji
+  and name (Qawwali Night), the ticket's own name under it when different, the date · time ·
+  venue that will be printed, the price and "N can be printed". Sold-out tickets show "None
+  left. Raise its quantity on Edit & tickets." and cannot be picked.
+- Festivals group the cards like the festival page (D-070) with a one-line hint each:
+  🎫 Tickets for one event, 🎟 Festival passes, 🚪 Entry tickets. Single events show a plain list.
+- The wizard has four steps: 1. Ticket, 2. Design, 3. Edit, 4. How many. Earlier steps can be
+  opened again from the step pills. Steps 2 to 4 show "Printing Qawwali Night · Sufi Night
+  Ticket · Rs 1,000 · Wed, 2 Dec 2026 · 8:00 PM · Main Lawn" with **Change**; changing the ticket
+  keeps the design (only the details change).
+- The ticket is chosen once: the second "Ticket type" select on "How many" was removed (changing
+  it after designing was confusing).
+- With a single ticket type there is nothing to pick: the wizard starts at Design (3 steps).
+- The serial prefix is suggested from the headline (Qawwali Night → QN) and follows the picked
+  ticket until the organizer types their own; the quantity likewise.
