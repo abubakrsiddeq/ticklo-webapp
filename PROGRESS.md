@@ -317,6 +317,19 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: Event day, gate vs desk made obvious (D-086)
+- One **Event day** link (header, menu, footer, app shortcut) instead of "Scan" and "Sell". It
+  shows each event with two big cards: **At the gate** (green, let people in) and **At the desk**
+  (amber, sell paper tickets); one job only opens it straight away; the last job is marked.
+- Gate screen has a green "ENTRY" band, desk screen an amber "SELLING" band, matching camera frames,
+  and a sale now shows amber ("Give the ticket. Entry is at the gate."). Plain words everywhere,
+  "Scanner" role shown as "Gate volunteer".
+- Organizer event overview: **Event day card** with gate and desk links, QR codes, WhatsApp
+  message and a **printable one-page guide** per job. First-time 3-step guide on both screens.
+- Session page button opens the scanner at that session's door only for people who may scan it.
+- Typecheck, lint, unit tests (new `event-day.test.ts`) and build pass. **Not clicked through in a
+  logged-in browser yet.** No migration; needs the next Hostinger deploy.
+
 ## Change 2026-11-28: mobile menu opens at once (D-085)
 - The phone menu's rows no longer come in one by one (last row used to finish ~0.6 s after the
   tap); they show with the panel. The menu button also works while the header is still loading
@@ -607,6 +620,9 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Deploy the new web build on Hostinger (D-086):** no migration or env vars. Then open Event day
+  as an organizer (both cards), as a gate volunteer (goes straight to the gate screen) and as a
+  seller, and print a gate guide from the event overview.
 - **Deploy the new web build on Hostinger (D-084):** the migrations are applied; until the build is
   deployed the live admin panel does not have the Societies, Events and Settings tabs or the new
   buttons. No new env vars. Then try the D-084 test steps.

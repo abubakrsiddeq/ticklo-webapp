@@ -1223,3 +1223,49 @@ The plan was agreed in chat and built in one go. Migration `20261128000700_admin
   visible 20 to 50 ms after the tap, the panel's own 200 ms slide stays). The quick header has the
   menu button too: Events and Societies plus grey placeholder rows until the rest arrives.
   Open / closed is shared between the two versions, so a menu opened early stays open and fills in.
+
+## D-086 Event day: one entry point, two clearly different jobs (owner request, 2026-11-28)
+Organizers complained they could not tell which scanner is for what. Causes found: `/scan`
+(let people in) and `/sell` (sell paper tickets) looked the same (same camera box, same green
+result), the words overlapped ("Scan & sell", "Gate sale" inside the entry scanner, "scanner" as a
+role and a screen), and organizers saw both "Scan" and "Sell" in the header. Owner picked
+suggestions 1, 2, 4, 5, 6 and 7 ("point 3 k ilawa sab kr do"); 3 (the app noticing a wrong screen
+and asking for the gate-sale payment at scan time) is not built, so the "Gate sale: Off / Cash…"
+choice on the entry scanner stays as it was (D-042).
+- **One link "Event day"** (`/event-day`) replaces "Scan" and "Sell" in the header, the account
+  menu, the footer and the home-screen shortcut ("Sell tickets" shortcut stays because the Sell
+  screen's install hint names it). It lists each event with big cards per job: **At the gate**
+  (green, "Let people in…") and **At the desk** (amber, "Sell paper tickets… Nobody goes in from
+  here"), plus "Ambassador: my link & rank". With exactly one job in total it opens that screen
+  (like `/scan` and `/sell` did). The card of the job this phone did last is marked "Last time"
+  (localStorage, no auto-redirect, so nobody gets stuck on a screen). `/scan` and `/sell` without
+  an event now redirect here; invite acceptance for volunteers and the seller login landing with
+  several events go here too. Event-level links `/scan/<id>` and `/sell/<id>` are unchanged, so
+  links already sent on WhatsApp keep working.
+- **Colour per job:** a wide band at the top of each screen: green "ENTRY · People go in when the
+  screen turns green" (with the door name for festivals) or amber "SELLING · Nobody goes in from
+  this screen". Camera frame green / amber. A successful sale is now an amber full screen with
+  "Give the ticket. Entry is at the gate." (green stays reserved for "let them in").
+- **Plain words:** "Start entry scanning", "Which door are you at?", "Main gate" (session doors
+  say "Only tickets that include this session", a "Now" badge on the running session), "Change
+  door", "Back to Event day", "QR not working? Find by name" (was Manual check-in), "Sell
+  tickets" tab (was Scan & sell), seller banner "Sell tickets" (was Open scanner). The role
+  `scanner` is shown as **Gate volunteer** everywhere (team, invites, invite email, admin,
+  volunteer list on the event page); the database value stays `scanner`. The app's language
+  stays English; WhatsApp messages are Roman Urdu like D-042.
+- **Organizer "Event day" card** on the event overview (published events, until gate access ends
+  6 h after the event): gate panel and desk panel (desk only when the event has printed tickets,
+  otherwise a pointer to Printed tickets), each with who can open it, the link + Copy, a QR code,
+  "Send on WhatsApp" (ready-made Roman Urdu steps, recipient chosen in WhatsApp), "Print guide"
+  and "Open". The old "Open scanner" button there is replaced by this card; "Gate scanners" is
+  now "Gate volunteers".
+- **First-time guide:** the first time a phone opens the gate or desk screen it shows 3 steps and
+  3 tips for that job (remembered per job on that phone); "How it works" in the band opens it
+  again. **Printable guide** at `…/events/<event>/guide?mode=gate|desk`: one page with the job
+  colour, a QR that opens the screen, the steps, what each colour means and the tips, to stick at
+  the gate or the desk.
+- **Session doors:** the session page's button (`/manage/<id>`) is now "Let people in at this
+  door" (green) and only shows to people who may scan that session (it used to lead managers
+  without scan access to "Not allowed"); others see how to get access and that the check-in
+  list below still works.
+- No database change.
