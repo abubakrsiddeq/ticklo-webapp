@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-6">
           <li>Your phone number and email are shown only to the organizers of events you have booked, and to TickLO admins.</li>
           <li>Payment screenshots and student card photos are private: only that event&apos;s organizers and TickLO admins can view them, through short-lived links.</li>
-          <li>Gate volunteers (scanners) see only your name and ticket type.</li>
+          <li>Gate volunteers see only your name and ticket type.</li>
         </ul>
         <h2 className="text-xl font-semibold text-navy">Payments</h2>
         <p>

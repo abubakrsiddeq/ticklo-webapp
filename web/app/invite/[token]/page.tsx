@@ -59,7 +59,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
               <>
                 <p>
                   <strong>{invite.org_name}</strong> invited you to join as{" "}
-                  <strong>{invite.role === "member" ? "a team member" : "a scanner"}</strong>.
+                  <strong>{invite.role === "member" ? "a team member" : "a gate volunteer"}</strong>.
                 </p>
                 <ActionButton variant="brand" size="lg" action={acceptInvite.bind(null, token)}>
                   Accept invite

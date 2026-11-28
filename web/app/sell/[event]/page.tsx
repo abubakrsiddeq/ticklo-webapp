@@ -4,13 +4,16 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SellScreen } from "./sell-screen";
 import { SellTabs } from "./sell-tabs";
+import { ModeStrip } from "@/components/event-day/mode-strip";
+import { RememberMode } from "@/components/event-day/remember-mode";
+import { FirstTimeGuide } from "@/components/event-day/first-time-guide";
 
 export const metadata: Metadata = { title: "Sell printed tickets", robots: { index: false } };
 
 export default async function SellEventPage({ params }: { params: Promise<{ event: string }> }) {
   const { event: eventId } = await params;
   const user = await requireUser(`/sell/${eventId}`);
-  if (!/^[0-9a-f-]{36}$/i.test(eventId)) redirect("/sell");
+  if (!/^[0-9a-f-]{36}$/i.test(eventId)) redirect("/event-day");
   const supabase = await createClient();
   const { data: allowed } = await supabase.rpc("can_sell_printed", { p_event_id: eventId, p_user_id: user.id });
   if (!allowed) redirect("/not-allowed");
@@ -20,12 +23,18 @@ export default async function SellEventPage({ params }: { params: Promise<{ even
     supabase.rpc("my_sell_events"),
     supabase.from("print_sellers").select("id").eq("event_id", eventId).eq("user_id", user.id).maybeSingle(),
   ]);
-  if (!event) redirect("/sell");
+  if (!event) redirect("/event-day");
   // D-043: no paper tickets for this event → the ambassador screen is all there is
   const hasPrinted = (sellEvents ?? []).some((e) => e.event_id === eventId && e.has_printed);
   if (!hasPrinted && me) redirect(`/sell/${eventId}/promote`);
   return (
     <>
+      <RememberMode eventId={event.id} mode="desk" />
+      {/* D-086: amber "Selling" band – this phone sells, nobody goes in from here */}
+      <ModeStrip mode="desk">
+        <FirstTimeGuide mode="desk" />
+      </ModeStrip>
+      <div className="h-3" />
       {me ? <SellTabs eventId={event.id} active="sell" /> : null}
       <SellScreen eventId={event.id} eventName={event.name} sellerName={user.profile.full_name ?? user.email} initialStock={stock ?? []} />
     </>

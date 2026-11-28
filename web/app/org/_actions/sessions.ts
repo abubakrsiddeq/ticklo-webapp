@@ -248,5 +248,5 @@ export async function setScannerSessions(orgSlug: string, eventId: string, userI
   });
   if (error) return fail(error);
   refresh(orgSlug);
-  return ok(undefined, sessionIds.length ? "Scanner limited to the chosen sessions." : "Scanner can scan the whole event.");
+  return ok(undefined, sessionIds.length ? "Gate volunteer limited to the chosen doors." : "Gate volunteer can scan at every door.");
 }

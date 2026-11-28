@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Clock, Download, MapPin, ScanLine, Trophy, Users } from "lucide-react";
+import { Clock, DoorOpen, Download, MapPin, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pill, StatusBadge } from "@/components/status-badge";
@@ -36,15 +36,18 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
   const questions = ticketFieldsOf(s.form, { names: s.attendee_names, university: s.attendee_university, questions: s.questions }).filter(
     (f) => !f.builtin && !f.hidden,
   );
-  const [{ data: attendees }, { data: regs }, { data: counts }, { data: fee }] = await Promise.all([
+  const [{ data: attendees }, { data: regs }, { data: counts }, { data: fee }, { data: scanAccess }] = await Promise.all([
     supabase.rpc("session_attendees", { p_session_id: sessionId }),
     competition ? supabase.rpc("session_registrations", { p_session_id: sessionId }) : Promise.resolve({ data: [] as never[] }),
     supabase.rpc("session_counts", { p_session_id: sessionId }),
     supabase.from("ticket_types").select("price_paisa").eq("registration_session_id", sessionId).maybeSingle(),
+    supabase.rpc("my_scan_sessions", { p_event_id: s.events.id }),
   ]);
   const ev = s.events;
   const now = serverNow();
   const live = ev.status === "published" && now <= new Date(ev.ends_at).getTime() + 6 * 3600 * 1000;
+  // D-086: the gate scanner opens straight at this session's door, only for people who may scan it
+  const canScanHere = ((scanAccess as { sessions?: { id: string }[] } | null)?.sessions ?? []).some((x) => x.id === sessionId);
   const c = (counts as { checked_in: number; total_tickets: number } | null) ?? { checked_in: 0, total_tickets: 0 };
   const registrations = regs ?? [];
   // D-068: answers follow the competition's registration form; files open through short signed links
@@ -98,10 +101,10 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
           ) : null}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {live ? (
-            <Button asChild variant="brand">
+          {live && canScanHere ? (
+            <Button asChild className="bg-green-600 text-white hover:bg-green-700">
               <Link href={`/scan/${ev.id}?session=${s.id}`}>
-                <ScanLine /> Scan for this session
+                <DoorOpen /> Let people in at this door
               </Link>
             </Button>
           ) : null}
@@ -111,6 +114,11 @@ export default async function ManageSessionPage({ params }: { params: Promise<{ 
             </a>
           </Button>
         </div>
+        {live && !canScanHere && !competition ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            To scan tickets at this door, ask the organizer to add you as a gate volunteer for this session. You can still check people in from the list below.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

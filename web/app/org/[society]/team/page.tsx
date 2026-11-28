@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { serverNow } from "@/lib/time";
 import { revokeInvite } from "@/app/org/_actions/manage";
 import { InviteForm } from "./invite-form";
+import { roleLabel } from "@/lib/roles";
 import { MemberRowActions } from "./member-row-actions";
 
 export const metadata: Metadata = { title: "Team" };
@@ -35,8 +36,8 @@ export default async function TeamPage({ params }: { params: Promise<{ society: 
         <CardHeader>
           <CardTitle>Invite someone</CardTitle>
           <CardDescription>
-            <strong>Members</strong> can do everything except change the team and payment accounts. <strong>Scanners</strong> can
-            only scan tickets for events you assign them to.
+            <strong>Members</strong> can do everything except change the team and payment accounts. <strong>Gate volunteers</strong> can
+            only let people in (scan tickets) at events you add them to.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,7 +84,7 @@ export default async function TeamPage({ params }: { params: Promise<{ society: 
                     <div className="min-w-0">
                       <p className="font-medium text-navy">{i.email}</p>
                       <p className="text-sm text-muted-foreground">
-                        {i.role} · sent {formatDate(i.created_at)} · expires {formatDate(i.expires_at)}
+                        {roleLabel(i.role)} · sent {formatDate(i.created_at)} · expires {formatDate(i.expires_at)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

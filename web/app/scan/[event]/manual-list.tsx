@@ -122,7 +122,7 @@ export function ManualList({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] gap-0 p-0">
         <SheetHeader className="border-b p-4">
-          <SheetTitle>Manual check-in</SheetTitle>
+          <SheetTitle>Find by name</SheetTitle>
           <SheetDescription>
             {online ? "Search by name, ticket code or the serial on a paper ticket." : "Offline: you can search the saved list, but check-in needs internet."}
           </SheetDescription>

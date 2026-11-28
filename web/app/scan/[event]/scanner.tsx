@@ -10,6 +10,9 @@ import { describeScan, type ScanResponse, type ScanView } from "@/lib/scan/resul
 import { failureFeedback, successFeedback, unlockAudio } from "@/lib/scan/feedback";
 import { deviceLabel } from "@/lib/scan/device";
 import { formatPKR } from "@/lib/format";
+import { ModeStrip } from "@/components/event-day/mode-strip";
+import { RememberMode } from "@/components/event-day/remember-mode";
+import { FirstTimeGuide } from "@/components/event-day/first-time-guide";
 import { ManualList } from "./manual-list";
 import { scanSessionToken } from "../actions";
 
@@ -172,7 +175,7 @@ export function Scanner({
         showResult({
           ok: false,
           title: offline ? "Offline" : "Could not check",
-          subtitle: offline ? "Scan nahi ho rahe – no internet. Use the manual list or wait for the connection." : "Network problem – scan again.",
+          subtitle: offline ? "Scan nahi ho rahe – no internet. Use “Find by name” or wait for the connection." : "Network problem – scan again.",
         });
       } finally {
         setChecking(false);
@@ -218,6 +221,11 @@ export function Scanner({
 
   return (
     <div className="flex flex-1 flex-col">
+      <RememberMode eventId={eventId} mode="gate" />
+      {/* D-086: green "Entry" band – this phone lets people in */}
+      <ModeStrip mode="gate" detail={session ? session.name : canSwitch ? "Main gate" : null}>
+        <FirstTimeGuide mode="gate" />
+      </ModeStrip>
       {/* SCN-09 offline banner */}
       {!online ? (
         <div className="flex items-center justify-between gap-3 bg-red-600 px-4 py-3 text-white" role="alert">
@@ -225,16 +233,15 @@ export function Scanner({
             <WifiOff className="size-6 shrink-0" aria-hidden /> Offline: scan nahi ho rahe
           </span>
           <Button size="sm" variant="secondary" onClick={() => setShowList(true)}>
-            Manual list
+            Find by name
           </Button>
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between gap-3 px-4 pb-3">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate font-semibold">{eventName}</p>
-          {session ? <p className="truncate text-sm font-semibold text-brand-light">Session: {session.name}</p> : canSwitch ? <p className="text-sm font-semibold text-brand-light">Main entry</p> : null}
-          <p className="text-xs text-slate-300">Scanner: {scannerName}</p>
+          <p className="text-xs text-slate-300">Signed in as {scannerName}</p>
         </div>
         {/* SCN-08 live count */}
         <div className="shrink-0 text-right" aria-live="polite">
@@ -249,7 +256,7 @@ export function Scanner({
         <video ref={videoRef} className="size-full object-cover" muted playsInline autoPlay aria-label="Camera preview" />
         {camera === "on" ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-            <div className="size-2/3 rounded-3xl border-4 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+            <div className="size-2/3 rounded-3xl border-4 border-green-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
@@ -257,7 +264,7 @@ export function Scanner({
               <>
                 <Camera className="size-14 text-slate-300" aria-hidden />
                 <Button variant="brand" size="lg" onClick={startCamera}>
-                  Start scanning
+                  Start entry scanning
                 </Button>
                 <p className="text-sm text-slate-300">Allow camera access when your browser asks.</p>
               </>
@@ -298,7 +305,7 @@ export function Scanner({
 
       {hasPrinted ? (
         <div className="mx-auto mt-4 grid w-full max-w-md gap-2 px-4">
-          <p className="text-sm text-slate-300">Selling paper tickets at the gate? Unsold ones you scan are recorded as paid by:</p>
+          <p className="text-sm text-slate-300">Also selling paper tickets here at the gate? Unsold ones you scan are recorded as paid by:</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Gate sale">
             <button
               type="button"
@@ -327,15 +334,15 @@ export function Scanner({
 
       <div className="mx-auto mt-4 flex w-full max-w-md flex-wrap justify-center gap-2 px-4 pb-6">
         <Button variant="secondary" onClick={() => setShowList(true)}>
-          <ListChecks /> Manual check-in
+          <ListChecks /> QR not working? Find by name
         </Button>
         {canSwitch ? (
           <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
-            <Link href={`/scan/${eventId}?pick=1`}>Change session</Link>
+            <Link href={`/scan/${eventId}?pick=1`}>Change door</Link>
           </Button>
         ) : null}
         <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
-          <Link href="/scan?list=1">Change event</Link>
+          <Link href="/event-day?list=1">Back to Event day</Link>
         </Button>
       </div>
 

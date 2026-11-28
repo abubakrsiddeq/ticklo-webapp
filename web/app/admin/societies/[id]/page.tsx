@@ -17,6 +17,7 @@ import { universityLabel } from "@/lib/university-label";
 import { DECISION_ACTIONS, decisionReason } from "@/lib/decisions";
 import { restoreOrganization, setPaymentAccountActive } from "../../control-actions";
 import { DeleteSocietyButton, EditSocietyForm, SuspendSocietyButton } from "../../control-buttons";
+import { roleLabel } from "@/lib/roles";
 import { EventAdminActions, countOf } from "../../event-admin-actions";
 
 export const metadata: Metadata = { title: "Society" };
@@ -164,7 +165,7 @@ export default async function AdminSocietyPage({ params }: { params: Promise<{ i
                       {m.profiles?.email} · {formatPhone(m.profiles?.phone)}
                     </div>
                   </div>
-                  <Pill tone={m.role === "owner" ? "info" : "neutral"}>{m.role}</Pill>
+                  <Pill tone={m.role === "owner" ? "info" : "neutral"}>{roleLabel(m.role)}</Pill>
                 </li>
               ))}
           </ul>

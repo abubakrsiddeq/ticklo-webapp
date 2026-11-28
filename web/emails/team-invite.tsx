@@ -12,7 +12,7 @@ export default function TeamInviteEmail(p: TeamInviteProps) {
   const roleText =
     p.role === "member"
       ? "a team member (manage events and verify payments)"
-      : "a scanner (scan tickets at the gate with your phone)";
+      : "a gate volunteer (let people in by scanning their tickets with your phone)";
   return (
     <EmailLayout preview={`${p.inviterName} invited you to ${p.orgName} on TickLO`}>
       <H1>You&apos;re invited to {p.orgName}</H1>

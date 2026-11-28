@@ -112,7 +112,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           <CardTitle>Society roles</CardTitle>
           <CardDescription>
             <strong>Owner</strong> runs the society (team, payment accounts). <strong>Members</strong> manage events and payments.{" "}
-            <strong>Scanners</strong> only scan tickets. Each society has one owner – making someone owner turns the old owner into a member.
+            <strong>Gate volunteers</strong> only let people in (scan tickets). Each society has one owner – making someone owner turns the old owner into a member.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

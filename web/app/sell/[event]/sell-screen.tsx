@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { IScannerControls } from "@zxing/browser";
 import { Camera, CameraOff, CheckCircle2, Gift, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InstallHint } from "@/components/install-hint";
@@ -149,7 +150,7 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8">
       <div>
         <p className="truncate font-semibold">{eventName}</p>
-        <p className="text-xs text-slate-300">Seller: {sellerName}</p>
+        <p className="text-xs text-slate-300">Signed in as {sellerName}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-center">
@@ -185,14 +186,14 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
               <>
                 <Camera className="size-12 text-slate-300" aria-hidden />
                 <Button variant="brand" size="lg" onClick={startCamera}>
-                  Scan ticket to sell
+                  Scan a ticket to sell
                 </Button>
               </>
             )}
           </div>
         ) : (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-            <div className="size-2/3 rounded-3xl border-4 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+            <div className="size-2/3 rounded-3xl border-4 border-amber-300 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
           </div>
         )}
       </div>
@@ -257,6 +258,12 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
         />
       </div>
 
+      <p className="text-center text-sm">
+        <Link href="/event-day?list=1" className="font-semibold text-brand-light hover:underline">
+          Back to Event day
+        </Link>
+      </p>
+
       {mine.inStock.length ? (
         <details className="rounded-2xl bg-white/5 p-3 text-sm">
           <summary className="cursor-pointer font-semibold">My unsold tickets ({mine.inStock.length})</summary>
@@ -298,12 +305,14 @@ export function SellScreen({ eventId, eventName, sellerName, initialStock }: { e
             setResult(null);
             pendingRef.current = false;
           }}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center text-white ${result.ok ? "bg-green-600" : "bg-red-600"}`}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center ${result.ok ? "bg-amber-400 text-navy" : "bg-red-600 text-white"}`}
           aria-live="assertive"
         >
           {result.ok ? <CheckCircle2 className="size-24" aria-hidden /> : <XCircle className="size-24" aria-hidden />}
           <span className="font-heading text-5xl font-bold">{result.title}</span>
           {result.sub ? <span className="text-xl opacity-90">{result.sub}</span> : null}
+          {/* D-086: a sale is not an entry */}
+          {result.ok ? <span className="mt-2 rounded-xl bg-navy px-4 py-2 text-lg font-bold text-white">Give the ticket. Entry is at the gate.</span> : null}
         </button>
       ) : null}
     </div>

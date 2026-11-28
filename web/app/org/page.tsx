@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
+import { roleLabel } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "My societies" };
@@ -39,7 +40,7 @@ export default async function MySocietiesPage() {
             <Link key={m.organizations.slug} href={`/org/${m.organizations.slug}`} className="flex items-center justify-between rounded-2xl bg-white shadow-card ring-1 ring-navy/[0.06] p-4 hover:bg-secondary/60">
               <div>
                 <p className="font-semibold text-navy">{m.organizations.name}</p>
-                <p className="text-sm capitalize text-muted-foreground">{m.role}</p>
+                <p className="text-sm text-muted-foreground">{roleLabel(m.role)}</p>
               </div>
               <StatusBadge status={m.organizations.status} />
             </Link>

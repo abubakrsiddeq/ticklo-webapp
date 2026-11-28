@@ -14,7 +14,7 @@ export function MemberRowActions({ orgSlug, userId, name, role }: { orgSlug: str
     <div className="flex flex-wrap items-center gap-2">
       <NativeSelect
         aria-label={`Role for ${name}`}
-        className="w-36"
+        className="w-40"
         defaultValue={role}
         disabled={pending}
         onChange={(e) =>
@@ -27,14 +27,14 @@ export function MemberRowActions({ orgSlug, userId, name, role }: { orgSlug: str
         }
       >
         <option value="member">Member</option>
-        <option value="scanner">Scanner</option>
+        <option value="scanner">Gate volunteer</option>
       </NativeSelect>
       <ActionButton
         variant="ghost"
         size="sm"
         className="text-destructive"
         action={removeMember.bind(null, orgSlug, userId)}
-        confirm={{ title: `Remove ${name} from the team?`, description: "They lose access to the dashboard and scanner.", confirmLabel: "Remove" }}
+        confirm={{ title: `Remove ${name} from the team?`, description: "They lose access to the dashboard and event day screens.", confirmLabel: "Remove" }}
       >
         Remove
       </ActionButton>

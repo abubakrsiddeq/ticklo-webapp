@@ -35,7 +35,7 @@ export function InviteForm({ orgSlug }: { orgSlug: string }) {
       </FormField>
       <FormField id="invite-role" label="Role" error={errors.role?.message}>
         <NativeSelect {...fieldAria("invite-role", errors.role?.message)} {...form.register("role")}>
-          <option value="scanner">Scanner (gate volunteer)</option>
+          <option value="scanner">Gate volunteer (lets people in)</option>
           <option value="member">Member (core team)</option>
         </NativeSelect>
       </FormField>

@@ -98,7 +98,7 @@ export async function assignScanner(orgSlug: string, eventId: string, userId: st
   const { error } = await supabase.rpc("assign_scanner", { p_event_id: eventId, p_user_id: userId });
   if (error) return fail(error);
   revalidatePath(`/org/${orgSlug}`, "layout");
-  return { ok: true, message: "Scanner assigned." };
+  return { ok: true, message: "Gate volunteer added." };
 }
 
 export async function unassignScanner(orgSlug: string, eventId: string, userId: string): Promise<ActionResult> {
@@ -107,7 +107,7 @@ export async function unassignScanner(orgSlug: string, eventId: string, userId: 
   const { error } = await supabase.rpc("unassign_scanner", { p_event_id: eventId, p_user_id: userId });
   if (error) return fail(error);
   revalidatePath(`/org/${orgSlug}`, "layout");
-  return { ok: true, message: "Scanner removed." };
+  return { ok: true, message: "Gate volunteer removed." };
 }
 
 // ---------------------------------------------------------------------------

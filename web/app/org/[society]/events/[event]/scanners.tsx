@@ -7,9 +7,10 @@ import { NativeSelect } from "@/components/native-select";
 import { ActionButton } from "@/components/action-button";
 import { formatDateTime } from "@/lib/format";
 import { assignScanner, unassignScanner } from "@/app/org/_actions/manage";
+import { roleLabel } from "@/lib/roles";
 import { ScannerSessionsDialog } from "./scanner-sessions";
 
-// ORG-10: choose scanners for this event; access ends 6 hours after the event.
+// ORG-10: choose gate volunteers for this event; access ends 6 hours after the event.
 export function ScannersCard({
   orgSlug,
   eventId,
@@ -40,7 +41,7 @@ export function ScannersCard({
                 <p className="text-xs text-muted-foreground">Access until {formatDateTime(a.expires_at)}</p>
                 {sessions.length ? (
                   <p className="text-xs text-slate-700">
-                    {a.session_ids?.length ? `Only: ${sessions.filter((x) => a.session_ids!.includes(x.id)).map((x) => x.name).join(", ")}` : "Whole event (main entry + all sessions)"}
+                    {a.session_ids?.length ? `Only these doors: ${sessions.filter((x) => a.session_ids!.includes(x.id)).map((x) => x.name).join(", ")}` : "Every door (main gate + all sessions)"}
                   </p>
                 ) : null}
               </div>
@@ -54,34 +55,34 @@ export function ScannersCard({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No scanners assigned. Organizers (owner and members) can always scan their own events.</p>
+        <p className="text-sm text-muted-foreground">No gate volunteers added yet. Organizers (owner and members) can always scan their own events.</p>
       )}
       {options.length ? (
         <div className="flex flex-col gap-2 sm:flex-row">
-          <NativeSelect value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Team member to assign">
+          <NativeSelect value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Team member to add">
             <option value="">Choose a team member…</option>
             {options.map((o) => (
               <option key={o.user_id} value={o.user_id}>
-                {o.name} ({o.role})
+                {o.name} ({roleLabel(o.role)})
               </option>
             ))}
           </NativeSelect>
           <ActionButton variant="outline" disabled={!pick} action={() => assignScanner(orgSlug, eventId, pick)}>
-            <UserPlus /> Assign
+            <UserPlus /> Add
           </ActionButton>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
           {isOwner ? (
             <>
-              Invite volunteers as <strong>scanner</strong> on the{" "}
+              Invite volunteers as <strong>Gate volunteer</strong> on the{" "}
               <Link href={`/org/${orgSlug}/team`} className="text-brand-strong underline">
                 Team page
               </Link>
-              , then assign them here.
+              , then add them here.
             </>
           ) : (
-            "Ask the owner to invite volunteers as scanners."
+            "Ask the owner to invite gate volunteers on the Team page."
           )}
         </p>
       )}

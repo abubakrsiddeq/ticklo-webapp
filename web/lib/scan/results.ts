@@ -67,7 +67,7 @@ export function describeScan(r: ScanResponse): ScanView {
     case "not_sold":
       return { ok: false, title: "Not sold", subtitle: `Paper ticket ${r.serial ?? ""} was never sold. Send the guest to the ticket desk or seller.` };
     case "not_allowed":
-      return { ok: false, title: "Not allowed", subtitle: r.session ? "You can't scan this session." : "You are not a scanner for this event right now." };
+      return { ok: false, title: "Not allowed", subtitle: r.session ? "You can't scan this session." : "You are not a gate volunteer for this event right now." };
     default:
       return { ok: false, title: "Invalid", subtitle: "Not a TickLO ticket, or the code is damaged." };
   }

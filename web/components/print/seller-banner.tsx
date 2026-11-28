@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Megaphone, ScanLine, Ticket } from "lucide-react";
+import { Megaphone, Ticket } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 /**
- * "You are a seller for … – open the scanner" (D-042). Shown on the home page and
+ * "You sell tickets for … – Sell tickets" (D-042, D-086). Shown on the home page and
  * My tickets to people who sell printed tickets (not to organizers – they have the
  * dashboard). Streams in, never holds the page back.
  */
@@ -56,7 +56,7 @@ async function SellerBannerContent({ className }: { className?: string }) {
               </div>
             </div>
             <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-3 py-2 text-sm font-semibold text-navy">
-              {promote ? <Megaphone className="size-4" aria-hidden /> : <ScanLine className="size-4" aria-hidden />} {promote ? "My link" : "Open scanner"}
+              {promote ? <Megaphone className="size-4" aria-hidden /> : <Ticket className="size-4" aria-hidden />} {promote ? "My link" : "Sell tickets"}
             </span>
           </Link>
         );

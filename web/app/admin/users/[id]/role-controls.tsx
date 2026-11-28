@@ -12,7 +12,7 @@ import { useActionTransition } from "@/lib/use-action-transition";
 export const ROLE_LABELS: Record<string, string> = {
   owner: "Owner",
   member: "Member (core team)",
-  scanner: "Scanner (gate volunteer)",
+  scanner: "Gate volunteer",
 };
 
 /** D-037: turn TickLO admin access on or off. */
@@ -74,7 +74,7 @@ export function OrgRoleRow({ orgId, userId, role, orgName }: { orgId: string; us
           size="sm"
           className="text-destructive"
           action={removeOrgMember.bind(null, orgId, userId)}
-          confirm={{ title: `Remove from ${orgName}?`, description: "They lose access to this society's dashboard and scanner.", confirmLabel: "Remove" }}
+          confirm={{ title: `Remove from ${orgName}?`, description: "They lose access to this society's dashboard and event day screens.", confirmLabel: "Remove" }}
         >
           Remove
         </ActionButton>

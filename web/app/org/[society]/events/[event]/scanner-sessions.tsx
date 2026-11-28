@@ -24,8 +24,8 @@ export function ScannerSessionsDialog(props: { orgSlug: string; eventId: string;
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>What can {props.name} scan?</DialogTitle>
-            <DialogDescription>Nothing ticked = the whole event (main entry and every session). Ticked = only those sessions.</DialogDescription>
+            <DialogTitle>Which doors can {props.name} scan?</DialogTitle>
+            <DialogDescription>Nothing ticked = every door (main gate and every session). Ticked = only those sessions, not the main gate.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
             {props.sessions.map((s) => (
