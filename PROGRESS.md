@@ -317,6 +317,31 @@ Event dashboard → **Schedule** tab; managers use **/manage**; buyers see the s
 - **Not clicked through in a real browser yet.** Hostinger still runs the old build – it keeps
   working; deploy the new build to switch festivals on.
 
+## Change 2026-11-28: easier printed tickets for festivals (D-079 to D-083)
+- **Right details on the paper (D-079):** a printed session ticket shows the session (QAWWALI
+  NIGHT, its date, time, venue and poster) with "AUREX 2.0 PRESENTS" above it; passes show the
+  festival with "FESTIVAL PASS" and its dates ("From 9:00 PM"); entry tickets "ENTRY TICKET".
+  Single and competition events print as before. Re-downloading an older festival batch also
+  prints the session's details (QR codes unchanged).
+- **Wizard in four steps (D-080, D-082):** 1. Ticket (cards grouped like the festival page, with
+  what each prints) → 2. Design → 3. Text & look ("What the ticket says": retype the headline,
+  top line, date, time, place; then the optional editor) → 4. How many (one number, quick picks,
+  a plain summary; prefix and batch name under More options).
+- **Suggested designs (D-081):** Concert / night and Other sessions ask "What kind of night?" /
+  "What kind of event?" (guessed from the name). Step 2 shows that category's six designs first.
+- **Printed tickets page (D-083):** tickets grouped by what they print, "Can still print or sell",
+  unnamed batches called after their headline.
+- Migration `20261128000600_session_style.sql` (column `event_sessions.style`, function
+  `set_session_style`). **Not applied to TICkLO yet** (see Needs from Abubakar).
+- Unit tests: 2 new files (23 tests), 125 pass. DB tests: 2 new, registration-fixes 24 pass.
+  Typecheck, lint and build pass. The wizard was checked in headless Chrome with sample festival
+  data (desktop and phone), and the 96 templates with festival and normal values.
+- Test (after the migration): festival → Schedule → edit "Qawwali Night" (Concert / night) → "What
+  kind of night?" shows Qawwali → Edit & tickets → a ticket that opens only Qawwali Night →
+  Printed tickets → New → pick the Qawwali Night card → "Designs for Qawwali" → Use → change the
+  big name → Next → 4 → Create → Download PDF: QAWWALI NIGHT (or your name), 2 Dec, 8:00 PM,
+  Main Lawn, "AUREX 2.0 PRESENTS".
+
 ## Change 2026-11-28: decision history for students (D-078)
 - **My history** (`/me/history`, user menu + My tickets): payments, payment reports, team
   registrations and ambassador applications with who / when / reason. Deciders are shown as the
@@ -540,6 +565,14 @@ Password for all seed accounts: `TickLO@12345`. Set up per README sections 2–3
 
 ## Needs from Abubakar
 (things only you can provide – the app runs with placeholders until then)
+- **Apply migration `20261128000600_session_style.sql` to TICkLO before running or deploying the
+  printed-ticket build (D-081).** Auto mode would not let me write to the hosted database. From the
+  repo root (same D-034 method as before, one transaction, recorded in the history):
+  `{ echo "begin;"; cat supabase/migrations/20261128000600_session_style.sql; echo "insert into supabase_migrations.schema_migrations (version, name) values ('20261128000600', 'session_style');"; echo "commit;"; } > /tmp/apply.sql && supabase db query --linked -f /tmp/apply.sql`
+  (or `supabase db push`). Until it is applied, the new code cannot read session styles: festival
+  printed tickets would show as "ENTRY TICKET" with the festival name, and saving a session fails. The live Hostinger
+  build is not affected (old code). It only adds a nullable column and one function.
+- **Deploy the new web build on Hostinger (D-079 to D-083)** after the migration above.
 - **Deploy the new web build on Hostinger (D-073, D-074, D-076, D-077, D-078):** the migrations are applied; until the
   build is deployed the live site still shows the full-page error screen when a form fails, and
   the admin Decisions tab, organizer History tab and student My history are not there yet.
