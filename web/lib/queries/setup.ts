@@ -16,7 +16,7 @@ export async function getSetupSteps(event: { id: string; status: string; format:
   const supabase = await createClient();
   const [{ data: types }, { data: sessions }, { count: accounts }] = await Promise.all([
     supabase.from("ticket_types").select("id, price_paisa, all_sessions, registration_session_id").eq("event_id", event.id),
-    supabase.from("event_sessions").select("id, kind").eq("event_id", event.id),
+    supabase.from("event_sessions").select("id, kind, pass_access").eq("event_id", event.id),
     supabase.from("event_payment_accounts").select("payment_account_id", { count: "exact", head: true }).eq("event_id", event.id),
   ]);
   const format = event.format as EventFormat;
@@ -26,9 +26,15 @@ export async function getSetupSteps(event: { id: string; status: string; format:
   const comps = (sessions ?? []).filter((s) => s.kind === "competition").length;
   const others = (sessions ?? []).length - comps;
   const paid = (types ?? []).some((t) => t.price_paisa > 0);
+  // D-087: sessions nobody can get into yet (no ticket of their own, not in a pass that exists)
+  const sessionTicketIds = tickets.filter((t) => !t.all_sessions).map((t) => t.id);
+  const { data: opened } =
+    format === "festival" && sessionTicketIds.length ? await supabase.from("ticket_type_sessions").select("session_id").in("ticket_type_id", sessionTicketIds) : { data: [] };
+  const openedIds = new Set((opened ?? []).map((o) => o.session_id));
+  const noWayIn = (sessions ?? []).filter((s) => s.kind !== "competition" && !openedIds.has(s.id) && !(s.pass_access && passes > 0)).length;
   const submitted = event.status === "pending_review" || event.status === "published";
 
-  const details: SetupStep = { key: "details", label: "Event details", detail: "Name, dates, venue, poster", done: true, href: `${base}/edit#details` };
+  const details: SetupStep = { key: "details", label: "Event details", detail: "Name, dates, venue, poster", done: true, href: `${base}/details` };
   const payment: SetupStep = {
     key: "payment",
     label: "Payment accounts",
@@ -56,10 +62,14 @@ export async function getSetupSteps(event: { id: string; status: string; format:
       },
       {
         key: "tickets",
-        label: "Tickets",
-        detail: tickets.length ? `${passes} pass${passes === 1 ? "" : "es"}, ${sessionTickets} session ticket${sessionTickets === 1 ? "" : "s"}` : "Passes and/or tickets for single sessions",
-        done: tickets.length > 0 || (comps > 0 && others === 0),
-        href: `${base}/edit#tickets`,
+        label: "Passes & tickets",
+        detail: noWayIn
+          ? `${noWayIn} session${noWayIn === 1 ? "" : "s"} with no way in yet`
+          : tickets.length
+            ? `${passes} pass${passes === 1 ? "" : "es"}, ${sessionTickets} ticket${sessionTickets === 1 ? "" : "s"} for one event`
+            : "Set a price in each session's form, or add a pass",
+        done: (tickets.length > 0 && noWayIn === 0) || (comps > 0 && others === 0),
+        href: noWayIn ? `${base}/schedule` : `${base}/edit#tickets`,
       },
       payment,
       submit,

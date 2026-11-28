@@ -52,7 +52,7 @@ export function TicketPicker({ types, festival, selectedId, onPick }: { types: W
             <span className="text-sm">
               <b className="text-navy">{formatPKR(t.price_paisa, { freeLabel: "Free" })}</b>
               <span className={cn("ml-2", none ? "text-warning" : "text-muted-foreground")}>
-                {none ? "None left. Raise its quantity on Edit & tickets." : `${t.remaining} can be printed`}
+                {none ? "None left. Raise its quantity on the tickets tab." : `${t.remaining} can be printed`}
               </span>
             </span>
           </span>

@@ -7,6 +7,7 @@ import { CopyButton } from "@/components/copy-button";
 import { ActionButton } from "@/components/action-button";
 import { requireOrgEvent } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { ticketsTabLabel } from "@/lib/ticket-groups";
 import { absoluteUrl, eventPath } from "@/lib/site";
 import { serverNow } from "@/lib/time";
 import { formatShortDateTime } from "@/lib/format";
@@ -53,7 +54,7 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
             <p className="text-sm text-navy">This event is a {event.status === "draft" ? "draft" : "rejected draft"}. Add ticket types, then submit it.</p>
             <div className="flex gap-2">
               <Button asChild variant="outline">
-                <Link href={`${base}/edit`}>Edit & tickets</Link>
+                <Link href={`${base}/edit`}>{ticketsTabLabel(event.format)}</Link>
               </Button>
               <ActionButton variant="brand" action={submitEvent.bind(null, org.slug, event.id)}>
                 Submit for approval

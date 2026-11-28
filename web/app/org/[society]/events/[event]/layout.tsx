@@ -5,6 +5,7 @@ import { Pill, StatusBadge } from "@/components/status-badge";
 import { requireOrgEvent } from "@/lib/auth";
 import { formatEventRange } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { ticketsTabLabel } from "@/lib/ticket-groups";
 
 export default async function EventLayout({
   children,
@@ -47,11 +48,13 @@ export default async function EventLayout({
         items={[
           { href: base, label: "Overview" },
           { href: `${base}/payments`, label: "Payments" },
+          // D-087: details and tickets are separate tabs (festivals: Details → Schedule → Passes & tickets)
+          { href: `${base}/details`, label: "Details" },
           ...(showSchedule ? [{ href: `${base}/schedule`, label: event.format === "competition" ? "Competition" : "Schedule" }] : []),
+          { href: `${base}/edit`, label: ticketsTabLabel(event.format) },
           { href: `${base}/attendees`, label: "Attendees" },
           { href: `${base}/print`, label: "Printed tickets" },
           { href: `${base}/ambassadors`, label: "Ambassadors" },
-          { href: `${base}/edit`, label: "Edit & tickets" },
           { href: `${base}/report`, label: "Report" },
           { href: `${base}/history`, label: "History" },
         ]}

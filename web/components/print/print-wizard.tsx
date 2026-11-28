@@ -103,7 +103,7 @@ export function PrintWizard({
   const problems = design ? designProblems(design) : [];
 
   if (!types.length) {
-    return <p className="rounded-2xl bg-white p-6 text-sm text-muted-foreground shadow-card">Add a ticket type on Edit &amp; tickets first.</p>;
+    return <p className="rounded-2xl bg-white p-6 text-sm text-muted-foreground shadow-card">Add a ticket type on the tickets tab first.</p>;
   }
 
   const steps: { key: Step; label: string }[] = [
@@ -182,7 +182,7 @@ export function PrintWizard({
         <div className="grid gap-4">
           {type && type.remaining < 1 ? (
             <p role="alert" className="rounded-xl bg-warning-soft p-3 text-sm text-warning">
-              No &quot;{type.name}&quot; tickets are left. Raise its quantity on Edit &amp; tickets, or choose another ticket.
+              No &quot;{type.name}&quot; tickets are left. Raise its quantity on the tickets tab, or choose another ticket.
             </p>
           ) : null}
           <TemplateGallery
